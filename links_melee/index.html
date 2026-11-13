@@ -1,12 +1,50 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>Link's Melee | Castle Duel</title><style>*{box-sizing:border-box}body{margin:0;background:#0d1321;color:#ead8af;font:14px system-ui;text-align:center}header{padding:8px;font-size:21px;font-weight:900;letter-spacing:2px}header small{font-size:12px;color:#b5b4ba;letter-spacing:0}canvas{display:block;width:min(100%,1100px);aspect-ratio:16/9;margin:auto;image-rendering:pixelated;border:3px solid #ac8d5e;box-shadow:0 16px 50px #000b;touch-action:none}.hint{margin:7px 6px;color:#c5c8cc}.controls{display:flex;justify-content:center;flex-wrap:wrap;gap:7px;padding:8px}button{background:#28364b;border:1px solid #9e886c;border-radius:7px;color:white;padding:13px 17px;font-size:15px;font-weight:700;touch-action:none;user-select:none}button:active{background:#657b95}footer{font-size:12px;color:#a9b5c4;padding:8px}</style></head><body><header>LINK'S MELEE <small>v0.3 · Castle Duel</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · J attack · K block · L heavy attack · R restart</div><div class="controls"><button data-k="a">◀</button><button data-k="d">▶</button><button data-k="w">JUMP</button><button data-k="j">STRIKE</button><button data-k="k">BLOCK</button><button data-k="l">HEAVY</button><button id="restart">RESTART</button></div><footer>Playable offline · Swordsman vs Dark Swordsman · Single-stage prototype · Combat update</footer><script>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>Link's Melee | Castle Duel</title><style>*{box-sizing:border-box}body{margin:0;background:#0d1321;color:#ead8af;font:14px system-ui;text-align:center}header{padding:8px;font-size:21px;font-weight:900;letter-spacing:2px}header small{font-size:12px;color:#b5b4ba;letter-spacing:0}canvas{display:block;width:min(100%,1100px);aspect-ratio:16/9;margin:auto;image-rendering:pixelated;border:3px solid #ac8d5e;box-shadow:0 16px 50px #000b;touch-action:none}.hint{margin:7px 6px;color:#c5c8cc}.controls{display:flex;justify-content:space-between;align-items:center;gap:12px;width:min(100%,780px);margin:8px auto 0;padding:6px 14px 4px;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}.pad{display:grid;grid-template-columns:repeat(3,clamp(46px,13vw,72px));grid-template-rows:repeat(3,clamp(46px,13vw,72px));gap:5px;touch-action:none}.pad button{width:100%;height:100%;padding:0;border:2px solid #9e886c;border-radius:13px;background:linear-gradient(#34455c,#1b293d);touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;appearance:none;-webkit-tap-highlight-color:transparent;outline:none}.pad button:active,.pad button.pressed{background:#687f98;border-color:#e2c78c;box-shadow:inset 0 0 0 3px #34465b}.pad .up{grid-column:2;grid-row:1}.pad .left{grid-column:1;grid-row:2}.pad .right{grid-column:3;grid-row:2}.pad .down{grid-column:2;grid-row:3}.pad .blank{grid-column:2;grid-row:2;background:#172334;border:1px solid #455368;border-radius:7px}.legend{font-size:12px;color:#c4cbd5;margin:3px auto 8px;padding:0 8px}.restart{font-size:12px;padding:7px 15px;border:1px solid #9e886c;border-radius:6px;background:#29364b;color:#fff;touch-action:manipulation;user-select:none;-webkit-user-select:none}body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}button{font-family:inherit} @media(max-width:410px){.controls{padding:5px 6px;gap:5px}.pad{gap:4px;grid-template-columns:repeat(3,clamp(43px,12vw,60px));grid-template-rows:repeat(3,clamp(43px,12vw,60px))}}footer{font-size:12px;color:#a9b5c4;padding:8px}</style></head><body><header>LINK'S MELEE <small>v0.3.1 · Castle Duel</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · J attack · K block · L heavy · R restart</div>
+<div class="controls" aria-label="Touch game controls">
+ <div class="pad" aria-label="Movement controls">
+  <button class="up" data-k="w" aria-label="Jump"></button>
+  <button class="left" data-k="a" aria-label="Move left"></button>
+  <span class="blank" aria-hidden="true"></span>
+  <button class="right" data-k="d" aria-label="Move right"></button>
+  <button class="down" data-k="k" aria-label="Block"></button>
+ </div>
+ <div class="pad" aria-label="Combat controls">
+  <button class="up" data-k="l" aria-label="Heavy attack"></button>
+  <span class="blank" aria-hidden="true"></span>
+  <button class="right" data-k="k" aria-label="Block"></button>
+  <button class="down" data-k="j" aria-label="Light attack"></button>
+ </div>
+</div>
+<div class="legend">LEFT PAD: ↑ Jump · ← → Move · ↓ Block &nbsp; | &nbsp; RIGHT PAD: ↑ Heavy · → Block · ↓ Attack</div>
+<button class="restart" id="restart">RESTART</button>
+<footer>Playable offline · Swordsman vs Dark Swordsman · Single-stage prototype · Combat update</footer><script>
 (()=>{
 const canvas=document.getElementById('game'),c=canvas.getContext('2d');c.imageSmoothingEnabled=false;const W=960,H=540,FLOOR=438;
 const assets={};let loaded=0;const files=['castle_arena.jpg',...Array.from({length:6},(_,i)=>`swordsman_${i}.png`),...Array.from({length:6},(_,i)=>`dark_${i}.png`)];files.forEach(f=>{let im=new Image;im.onload=()=>loaded++;im.src=f;assets[f]=im});
 const keys={};let just={};const key=k=>!!keys[k];let player,foe,particles,clock,round,notice,shake,aiTick,phaseTick,noticeTick;
 function reset(){player={x:220,y:FLOOR,w:72,h:135,vx:0,vy:0,face:1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,attackKind:'',attackPhase:0};foe={x:730,y:FLOOR,w:72,h:135,vx:0,vy:0,face:-1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,attackKind:'',attackPhase:0};particles=[];clock=90*60;round='intro';phaseTick=165;notice='CASTLE DUEL';noticeTick=0;shake=0;aiTick=0;just={}}
 reset();document.getElementById('restart').onclick=reset;
-document.addEventListener('keydown',e=>{let k=e.key.toLowerCase();if(k.startsWith('arrow'))k={arrowleft:'a',arrowright:'d',arrowup:'w'}[k]||k;if(k===' ')k='w';if(['a','d','w','j','k','l'].includes(k))e.preventDefault();if(k==='r')reset();if(!keys[k])just[k]=true;keys[k]=true});document.addEventListener('keyup',e=>{let k=e.key.toLowerCase();if(k.startsWith('arrow'))k={arrowleft:'a',arrowright:'d',arrowup:'w'}[k]||k;if(k===' ')k='w';keys[k]=false});
-document.querySelectorAll('[data-k]').forEach(b=>{let k=b.dataset.k;for(let [evt,on] of [['pointerdown',true],['pointerup',false],['pointercancel',false],['pointerleave',false]])b.addEventListener(evt,e=>{e.preventDefault();if(on&&!keys[k])just[k]=true;keys[k]=on})});
+document.addEventListener('keydown',e=>{let k=e.key.toLowerCase();if(k.startsWith('arrow'))k={arrowleft:'a',arrowright:'d',arrowup:'w'}[k]||k;if(k===' ')k='w';if(['a','d','w','j','k','l'].includes(k))e.preventDefault();if(k==='r')reset();if(!keys[k])just[k]=true;keyboardHolds[k]=true;keys[k]=true});document.addEventListener('keyup',e=>{let k=e.key.toLowerCase();if(k.startsWith('arrow'))k={arrowleft:'a',arrowright:'d',arrowup:'w'}[k]||k;if(k===' ')k='w';keyboardHolds[k]=false;syncTouch(k)});
+const touchHolds=new Map();
+function syncTouch(k){const held=[...touchHolds.values()].some(v=>v===k);keys[k]=held||!!keyboardHolds[k]}
+const keyboardHolds={};
+document.querySelectorAll('[data-k]').forEach(b=>{
+ b.addEventListener('contextmenu',e=>e.preventDefault());
+ b.addEventListener('selectstart',e=>e.preventDefault());
+ b.addEventListener('pointerdown',e=>{
+  e.preventDefault();const k=b.dataset.k;
+  if(!keys[k])just[k]=true;
+  touchHolds.set(e.pointerId,k);keys[k]=true;b.classList.add('pressed');
+  try{b.setPointerCapture(e.pointerId)}catch(_){}
+ });
+ const release=e=>{
+  e.preventDefault();const k=touchHolds.get(e.pointerId);
+  if(!k)return;touchHolds.delete(e.pointerId);syncTouch(k);
+  if(![...touchHolds.entries()].some(([id,key])=>key===b.dataset.k&&b.hasPointerCapture(id)))b.classList.remove('pressed');
+ };
+ b.addEventListener('pointerup',release);b.addEventListener('pointercancel',release);
+ b.addEventListener('lostpointercapture',release);
+});
+document.addEventListener('selectionchange',()=>{if(document.activeElement?.matches?.('.pad button'))getSelection()?.removeAllRanges()});
 
 const moves={light:{duration:21,activeStart:7,activeEnd:11,recovery:13,cost:8,range:110,damage:10,knock:5,stun:12},
 heavy:{duration:37,activeStart:15,activeEnd:21,recovery:22,cost:28,range:139,damage:19,knock:9,stun:18}};
