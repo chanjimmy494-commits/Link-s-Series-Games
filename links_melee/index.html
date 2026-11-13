@@ -1,44 +1,146 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>Link's Melee | Castle Duel</title><style>*{box-sizing:border-box}body{margin:0;background:#0d1321;color:#ead8af;font:14px system-ui;text-align:center}header{padding:8px;font-size:21px;font-weight:900;letter-spacing:2px}header small{font-size:12px;color:#b5b4ba;letter-spacing:0}canvas{display:block;width:min(100%,1100px);aspect-ratio:16/9;margin:auto;image-rendering:pixelated;border:3px solid #ac8d5e;box-shadow:0 16px 50px #000b;touch-action:none}.hint{margin:7px 6px;color:#c5c8cc}.controls{display:flex;justify-content:center;flex-wrap:wrap;gap:7px;padding:8px}button{background:#28364b;border:1px solid #9e886c;border-radius:7px;color:white;padding:13px 17px;font-size:15px;font-weight:700;touch-action:none;user-select:none}button:active{background:#657b95}footer{font-size:12px;color:#a9b5c4;padding:8px}</style></head><body><header>LINK'S MELEE <small>v0.2 · Castle Duel</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · J attack · K block · L heavy attack · R restart</div><div class="controls"><button data-k="a">◀</button><button data-k="d">▶</button><button data-k="w">JUMP</button><button data-k="j">STRIKE</button><button data-k="k">BLOCK</button><button data-k="l">HEAVY</button><button id="restart">RESTART</button></div><footer>Playable offline · Swordsman vs Dark Swordsman · Single-stage prototype · Combat update</footer><script>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>Link's Melee | Castle Duel</title><style>*{box-sizing:border-box}body{margin:0;background:#0d1321;color:#ead8af;font:14px system-ui;text-align:center}header{padding:8px;font-size:21px;font-weight:900;letter-spacing:2px}header small{font-size:12px;color:#b5b4ba;letter-spacing:0}canvas{display:block;width:min(100%,1100px);aspect-ratio:16/9;margin:auto;image-rendering:pixelated;border:3px solid #ac8d5e;box-shadow:0 16px 50px #000b;touch-action:none}.hint{margin:7px 6px;color:#c5c8cc}.controls{display:flex;justify-content:center;flex-wrap:wrap;gap:7px;padding:8px}button{background:#28364b;border:1px solid #9e886c;border-radius:7px;color:white;padding:13px 17px;font-size:15px;font-weight:700;touch-action:none;user-select:none}button:active{background:#657b95}footer{font-size:12px;color:#a9b5c4;padding:8px}</style></head><body><header>LINK'S MELEE <small>v0.3 · Castle Duel</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · J attack · K block · L heavy attack · R restart</div><div class="controls"><button data-k="a">◀</button><button data-k="d">▶</button><button data-k="w">JUMP</button><button data-k="j">STRIKE</button><button data-k="k">BLOCK</button><button data-k="l">HEAVY</button><button id="restart">RESTART</button></div><footer>Playable offline · Swordsman vs Dark Swordsman · Single-stage prototype · Combat update</footer><script>
 (()=>{
 const canvas=document.getElementById('game'),c=canvas.getContext('2d');c.imageSmoothingEnabled=false;const W=960,H=540,FLOOR=438;
 const assets={};let loaded=0;const files=['castle_arena.jpg',...Array.from({length:6},(_,i)=>`swordsman_${i}.png`),...Array.from({length:6},(_,i)=>`dark_${i}.png`)];files.forEach(f=>{let im=new Image;im.onload=()=>loaded++;im.src=f;assets[f]=im});
-const keys={};let just={};const key=k=>!!keys[k];let player,foe,particles,clock,round,notice,shake,aiTick;
-function reset(){player={x:220,y:FLOOR,w:72,h:135,vx:0,vy:0,face:1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0};foe={x:730,y:FLOOR,w:72,h:135,vx:0,vy:0,face:-1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0};particles=[];clock=90*60;round='play';notice='CASTLE DUEL';shake=0;aiTick=0;just={}}
+const keys={};let just={};const key=k=>!!keys[k];let player,foe,particles,clock,round,notice,shake,aiTick,phaseTick,noticeTick;
+function reset(){player={x:220,y:FLOOR,w:72,h:135,vx:0,vy:0,face:1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,attackKind:'',attackPhase:0};foe={x:730,y:FLOOR,w:72,h:135,vx:0,vy:0,face:-1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,attackKind:'',attackPhase:0};particles=[];clock=90*60;round='intro';phaseTick=165;notice='CASTLE DUEL';noticeTick=0;shake=0;aiTick=0;just={}}
 reset();document.getElementById('restart').onclick=reset;
 document.addEventListener('keydown',e=>{let k=e.key.toLowerCase();if(k.startsWith('arrow'))k={arrowleft:'a',arrowright:'d',arrowup:'w'}[k]||k;if(k===' ')k='w';if(['a','d','w','j','k','l'].includes(k))e.preventDefault();if(k==='r')reset();if(!keys[k])just[k]=true;keys[k]=true});document.addEventListener('keyup',e=>{let k=e.key.toLowerCase();if(k.startsWith('arrow'))k={arrowleft:'a',arrowright:'d',arrowup:'w'}[k]||k;if(k===' ')k='w';keys[k]=false});
 document.querySelectorAll('[data-k]').forEach(b=>{let k=b.dataset.k;for(let [evt,on] of [['pointerdown',true],['pointerup',false],['pointercancel',false],['pointerleave',false]])b.addEventListener(evt,e=>{e.preventDefault();if(on&&!keys[k])just[k]=true;keys[k]=on})});
-function attack(a,b,heavy){if(a.cool||a.stun||round!=='play')return;if(heavy&&a.stamina<32)return;a.heavy=heavy;a.atk=heavy?24:15;a.cool=heavy?40:24;a.stamina-=heavy?32:9;a.didHit=false;a.block=false;a.combo=(a.combo+1)%3}
-function hit(a,b){let range=a.heavy?125:96;let delta=b.x-a.x;if(a.didHit||Math.abs(delta)>range||Math.sign(delta)!==a.face||Math.abs(b.y-a.y)>85)return;a.didHit=true;let blocked=b.block&&b.face===-a.face;let damage=a.heavy?20:11;if(blocked){damage=Math.ceil(damage*.18);b.stamina=Math.max(0,b.stamina-17);if(b.stamina===0)b.block=false}b.hp=Math.max(0,b.hp-damage);b.inv=12;b.stun=blocked?4:13;b.vx=a.face*(blocked?2.2:7.5);shake=blocked?2:5;for(let i=0;i<14;i++)particles.push({x:b.x,y:b.y-78,vx:(Math.random()-.5)*10,vy:(Math.random()-.5)*10,life:22,color:blocked?'#a8d8fa':'#f9c987'});notice=blocked?'GUARDED':a.heavy?'HEAVY HIT':'STRIKE';if(b.hp<=0){shake=0;round=a===player?'win':'lose';notice=round==='win'?'VICTORY — DARK SWORDSMAN DEFEATED':'DEFEAT — TRY AGAIN'}}
-function physics(a){a.cool=Math.max(0,a.cool-1);a.inv=Math.max(0,a.inv-1);a.stun=Math.max(0,a.stun-1);a.stamina=Math.min(100,a.stamina+(a.block?.13:.35));if(a.atk){a.atk--;let elapsed=(a.heavy?24:15)-a.atk;if(elapsed===(a.heavy?13:7))hit(a,a===player?foe:player)}a.vy+=.7;a.y+=a.vy;if(a.y>FLOOR){a.y=FLOOR;a.vy=0}a.x=Math.max(50,Math.min(910,a.x+a.vx));a.vx*=a.y===FLOOR?.77:.94}
-function update(){if(round!=='play')return;clock--;if(clock<=0){shake=0;round=player.hp>=foe.hp?'win':'lose';notice=round==='win'?'TIME — VICTORY':'TIME — DEFEAT'}if(!player.stun){player.block=key('k')&&!player.atk&&player.stamina>0;let move=(key('d')?1:0)-(key('a')?1:0);if(move&&!player.block){player.vx=move*4.7;player.face=move}if(just.w&&player.y===FLOOR)player.vy=-13;if(just.j)attack(player,foe,false);if(just.l)attack(player,foe,true)}else player.block=false;
 
- aiTick++;let dx=player.x-foe.x,dist=Math.abs(dx);foe.face=Math.sign(dx)||-1;
- // Opening grace period and measured footwork: the opponent probes rather than rushing.
- if(!foe.stun){
-  let active=aiTick>115,ideal=foe.hp<35?135:175;
-  if(!active){foe.vx*=.75;foe.block=false}
-  else if(dist>ideal+45){foe.vx=Math.sign(dx)*(foe.hp<35?2.5:1.65);foe.block=false}
-  else if(dist<105){foe.vx=-Math.sign(dx)*1.35;foe.block=player.atk>0&&foe.stamina>20&&aiTick%4!==0}
-  else{foe.vx*=.68;foe.block=player.atk>0&&dist<150&&foe.stamina>20&&aiTick%3===0}
-  if(active&&dist<140&&foe.cool===0&&aiTick%75===0&&!foe.block)attack(foe,player,aiTick%225===0);
+const moves={light:{duration:21,activeStart:7,activeEnd:11,recovery:13,cost:8,range:110,damage:10,knock:5,stun:12},
+heavy:{duration:37,activeStart:15,activeEnd:21,recovery:22,cost:28,range:139,damage:19,knock:9,stun:18}};
+function attack(a,b,heavy){
+ if(a.cool>0||a.stun>0||a.atk>0||round!=='play'||a.block||a.guardBreak>0)return;
+ const m=moves[heavy?'heavy':'light'];if(a.stamina<m.cost)return;
+ a.heavy=heavy;a.attackKind=heavy?'heavy':'light';a.atk=m.duration;a.attackPhase=0;
+ a.cool=m.duration+ (heavy?13:7);a.stamina-=m.cost;a.didHit=false;a.block=false;
+ a.combo=(a.combo+1)%3;a.vx*=.5;
+}
+function spawnHit(x,y,blocked,dark){
+ for(let i=0;i<12;i++)particles.push({x,y,vx:(Math.random()-.5)*8,vy:(Math.random()-.5)*9,life:16,color:blocked?'#9fd5f6':dark?'#c09cff':'#f4d394'});
+}
+function hit(a,b){
+ const m=moves[a.attackKind];if(!m||a.didHit)return;
+ const delta=b.x-a.x;
+ if(Math.abs(delta)>m.range||Math.sign(delta)!==a.face||Math.abs(b.y-a.y)>110)return;
+ a.didHit=true;
+ const guarded=b.block&&b.face===-a.face&&b.guardBreak===0;
+ const damage=guarded?Math.max(1,Math.round(m.damage*.15)):m.damage;
+ b.hp=Math.max(0,b.hp-damage);
+ b.stamina=Math.max(0,b.stamina-(guarded?(a.heavy?32:17):3));
+ b.inv=guarded?6:13;b.stun=guarded?5:m.stun;b.vx=a.face*(guarded?2.4:m.knock);
+ if(guarded&&b.stamina<=0){b.guardBreak=62;b.block=false;b.stun=62;notice='GUARD BROKEN'}
+ else notice=guarded?'BLOCKED':a.heavy?'HEAVY STRIKE':'STRIKE';
+ noticeTick=38;shake=guarded?1:4;spawnHit(b.x,b.y-83,guarded,a===foe);
+ if(b.hp<=0){shake=0;round=a===player?'win':'lose';phaseTick=0;notice=round==='win'?'VICTORY':'DEFEAT'}
+}
+function physics(a){
+ a.cool=Math.max(0,a.cool-1);a.inv=Math.max(0,a.inv-1);a.stun=Math.max(0,a.stun-1);
+ a.guardBreak=Math.max(0,a.guardBreak-1);
+ a.stamina=Math.min(100,a.stamina+(a.block?.10:.43));
+ if(a.atk>0){
+  let m=moves[a.attackKind];a.atk--;a.attackPhase=m.duration-a.atk;
+  if(a.attackPhase>=m.activeStart&&a.attackPhase<=m.activeEnd)hit(a,a===player?foe:player);
  }
-
- if(player.x<foe.x){player.face=key('a')?-1:key('d')?1:player.face}else{player.face=key('a')?-1:key('d')?1:player.face}
- physics(player);physics(foe);if(Math.abs(player.x-foe.x)<64){let overlap=64-Math.abs(player.x-foe.x),dir=player.x<foe.x?-1:1;player.x+=dir*overlap*.5;foe.x-=dir*overlap*.5}particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.28;p.life--});particles=particles.filter(p=>p.life>0);shake=Math.max(0,shake-1);just={}}
+ const wasAir=a.y<FLOOR;
+ a.vy+=.65;a.y+=a.vy;
+ if(a.y>=FLOOR){a.y=FLOOR;a.vy=0;if(wasAir)a.land=9}
+ a.land=Math.max(0,a.land-1);
+ a.x=Math.max(55,Math.min(905,a.x+a.vx));
+ a.vx*=a.y===FLOOR?.75:.93;
+ a.step+=Math.abs(a.vx)*.045;
+}
+function update(){
+ if(round==='intro'){phaseTick--;if(phaseTick<=0){round='play';notice='FIGHT';noticeTick=65}just={};return}
+ if(round!=='play'){phaseTick++;shake=0;just={};return}
+ clock--;if(clock<=0){shake=0;round=player.hp>=foe.hp?'win':'lose';phaseTick=0;notice=round==='win'?'TIME — VICTORY':'TIME — DEFEAT';just={};return}
+ noticeTick=Math.max(0,noticeTick-1);
+ if(!player.stun){
+  player.block=key('k')&&player.atk===0&&player.stamina>0&&player.guardBreak===0;
+  let move=(key('d')?1:0)-(key('a')?1:0);
+  if(move&&!player.block){
+   player.vx=move*(player.atk?1.6:4.25);player.face=move;
+  }
+  if(just.w&&player.y>=FLOOR&&player.atk===0&&!player.block){player.vy=-12.6;player.land=0}
+  // Both attack types are allowed in the air, subject to cooldown.
+  if(just.j)attack(player,foe,false);
+  if(just.l)attack(player,foe,true);
+ }else player.block=false;
+ aiTick++;
+ let dx=player.x-foe.x,dist=Math.abs(dx);
+ foe.face=Math.sign(dx)||-1;
+ if(!foe.stun&&foe.guardBreak===0){
+  // Deliberate spacing, occasional feints, and clear punish windows.
+  let cycle=aiTick%240;
+  let desired=cycle<60?188:cycle<130?133:cycle<180?205:145;
+  if(dist>desired+26)foe.vx=Math.sign(dx)*(cycle<60?1.25:1.95);
+  else if(dist<desired-24)foe.vx=-Math.sign(dx)*1.55;
+  else foe.vx*=.6;
+  let threat=player.atk>0&&player.attackPhase<15&&dist<150;
+  foe.block=threat&&foe.atk===0&&foe.stamina>18&&(cycle%7<4);
+  if(foe.atk>0)foe.block=false;
+  if(foe.cool===0&&dist<145&&!foe.block&&cycle%105===65){
+   attack(foe,player,cycle%210===65);
+  }
+ }
+ physics(player);physics(foe);
+ if(Math.abs(player.x-foe.x)<65){
+  let overlap=65-Math.abs(player.x-foe.x),dir=player.x<foe.x?-1:1;
+  player.x+=dir*overlap*.5;foe.x-=dir*overlap*.5;
+ }
+ particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.3;p.life--});
+ particles=particles.filter(p=>p.life>0);
+ shake=Math.max(0,shake-1);just={};
+}
 function text(t,x,y,size=20,color='#fff2cd',align='center'){c.font=`bold ${size}px system-ui`;c.textAlign=align;c.fillStyle='#111b27';c.fillText(t,x+2,y+2);c.fillStyle=color;c.fillText(t,x,y)}
 function bar(x,y,hp,stam,reverse=false){c.fillStyle='#0b1220d9';c.fillRect(x-5,y-5,355,49);c.fillStyle='#293341';c.fillRect(x,y,340,19);c.fillStyle=hp>30?'#cb5c5a':'#ec925e';let w=340*Math.max(0,hp)/100;c.fillRect(reverse?x+340-w:x,y,w,19);c.fillStyle='#34404d';c.fillRect(x,y+25,340,7);c.fillStyle='#6ec5d7';let sw=340*stam/100;c.fillRect(reverse?x+340-sw:x,y+25,sw,7);c.strokeStyle='#d8c59b';c.lineWidth=2;c.strokeRect(x,y,340,19)}
-function fighter(a,dark){let id=a.block?4:a.atk?(a.heavy?3:3):Math.abs(a.vx)>1.2?((Math.floor(performance.now()/120)%2)?1:2):a.y<FLOOR?5:0;let im=assets[(dark?'dark_':'swordsman_')+id+'.png'];if(!im||!im.complete||!im.naturalWidth)return;let h=a.block?142:148,w=im.width/im.height*h;if(id===3)w*=1.1;c.save();c.translate(Math.round(a.x),Math.round(a.y));if(a.face<0)c.scale(-1,1);if(a.inv>0&&a.inv%4<2)c.globalAlpha=.58;c.fillStyle='#0b0e1b8c';c.beginPath();c.ellipse(0,2,42,9,0,0,Math.PI*2);c.fill();if(dark){c.shadowColor='#a35bf9';c.shadowBlur=22}c.drawImage(im,-w*.5,-h,w,h);c.shadowBlur=0;if(a.atk>0){
- // Frame-based arm/sword movement: a blade silhouette rotates with the attack.
- let duration=a.heavy?24:15,progress=1-a.atk/duration;
- let angle=(-1.4+progress*2.4),pivotX=26,pivotY=-99;
- c.save();c.translate(pivotX,pivotY);c.rotate(angle);
- c.fillStyle=dark?'#b3a0dc':'#c5dfe8';
- c.beginPath();c.moveTo(-5,0);c.lineTo(5,0);c.lineTo(4,-74);c.lineTo(0,-86);c.lineTo(-4,-74);c.closePath();c.fill();
- c.fillStyle=dark?'#4b316b':'#6b4d35';c.fillRect(-4,1,8,17);
- c.fillStyle='#d6b878';c.fillRect(-14,-2,28,6);
+
+function fighter(a,dark){
+ let moving=Math.abs(a.vx)>1.2;
+ let id=a.guardBreak>0||a.stun>6?5:a.block?4:a.atk>0?3:a.y<FLOOR?5:moving?(Math.floor(a.step)%2?1:2):0;
+ let im=assets[(dark?'dark_':'swordsman_')+id+'.png'];
+ if(!im||!im.complete||!im.naturalWidth)return;
+ let h=a.block?142:148,w=im.width/im.height*h;
+ if(id===3)w*=1.08;
+ c.save();c.translate(Math.round(a.x),Math.round(a.y));
+ if(a.face<0)c.scale(-1,1);
+ if(a.inv>0&&a.inv%4<2)c.globalAlpha=.72;
+ c.fillStyle='#0b0e1b8c';c.beginPath();c.ellipse(0,2,42,9,0,0,Math.PI*2);c.fill();
+ let lunge=a.atk>0&&a.attackPhase>8&&a.attackPhase<17?(a.heavy?9:5):0;
+ let bob=moving&&a.y===FLOOR?Math.sin(a.step*3)*2:0;
+ let crouch=a.land>0?a.land*.8:0;
+ let tilt=a.stun>0?-.10:a.atk>0?Math.sin(a.attackPhase/ (a.heavy?37:21)*Math.PI)*.09:0;
+ c.translate(lunge,-bob+crouch);
+ c.rotate(tilt);
+ if(dark){c.shadowColor='#a35bf9';c.shadowBlur=16}
+ c.drawImage(im,-w*.5,-h,w,h);c.shadowBlur=0;
+ if(a.atk>0){
+  const m=moves[a.attackKind],progress=a.attackPhase/m.duration;
+  const swing=Math.max(0,Math.min(1,(progress-(a.heavy?.25:.17))/(a.heavy?.40:.43)));
+  const eased=swing*swing*(3-2*swing);
+  const angle=-1.25+eased*2.4;
+  c.save();c.translate(22,-100);c.rotate(angle);
+  // Blade is attached to the hand; active frames include a short sword trail.
+  c.fillStyle=dark?'#a9a1ca':'#d0e2eb';
+  c.beginPath();c.moveTo(-4,0);c.lineTo(4,0);c.lineTo(3,-66);c.lineTo(0,-79);c.lineTo(-3,-66);c.closePath();c.fill();
+  c.fillStyle=dark?'#4b316b':'#684b34';c.fillRect(-4,0,8,16);
+  c.fillStyle='#d9bc79';c.fillRect(-12,-3,24,5);
+  c.restore();
+  if(swing>.08&&swing<.92){
+   c.globalAlpha=.35;
+   c.strokeStyle=dark?'#b99bff':'#c7e8f8';c.lineWidth=a.heavy?5:3;
+   c.beginPath();c.arc(22,-100,a.heavy?85:76,-1.25,-1.25+eased*2.4);c.stroke();
+   c.globalAlpha=1;
+  }
+ }
+ if(a.block){c.strokeStyle=dark?'#b29aff':'#94e2ee';c.lineWidth=2;c.beginPath();c.arc(0,-73,57,-.7,.9);c.stroke()}
+ if(a.guardBreak>0){c.fillStyle='#ffe6a3';c.font='bold 14px system-ui';c.textAlign='center';c.fillText('GUARD BREAK',0,-165)}
  c.restore();
-}if(a.block){c.strokeStyle=dark?'#b29aff':'#94e2ee';c.lineWidth=3;c.beginPath();c.arc(0,-73,57,-.7,.9);c.stroke()}c.restore()}
-function render(){c.save();if(shake&&round==='play')c.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);let bg=assets['castle_arena.jpg'];if(bg.complete&&bg.naturalWidth)c.drawImage(bg,0,0,W,H);else{c.fillStyle='#1b2838';c.fillRect(0,0,W,H)}fighter(player,false);fighter(foe,true);for(let p of particles){c.globalAlpha=p.life/22;c.fillStyle=p.color;c.fillRect(p.x,p.y,5,5)}c.globalAlpha=1;c.restore();bar(28,20,player.hp,player.stamina);bar(592,20,foe.hp,foe.stamina,true);text('SWORDSMAN',28,85,18,'#f8e0ad','left');text('DARK SWORDSMAN',932,85,18,'#e4baff','right');text(String(Math.max(0,Math.ceil(clock/60))),480,48,38);if(round!=='play'){c.fillStyle='#0a1020cc';c.fillRect(160,155,640,200);text(notice,480,232,33,round==='win'?'#f8d587':'#f1a1a1');text('Press R or RESTART to fight again',480,285,19)}else if(notice!=='CASTLE DUEL'&&Math.floor(performance.now()/1000)%3!==2)text(notice,480,120,21,'#ffe4a8')}
+}
+function render(){c.save();if(shake&&round==='play')c.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);let bg=assets['castle_arena.jpg'];if(bg.complete&&bg.naturalWidth)c.drawImage(bg,0,0,W,H);else{c.fillStyle='#1b2838';c.fillRect(0,0,W,H)}fighter(player,false);fighter(foe,true);for(let p of particles){c.globalAlpha=p.life/22;c.fillStyle=p.color;c.fillRect(p.x,p.y,5,5)}c.globalAlpha=1;c.restore();bar(28,20,player.hp,player.stamina);bar(592,20,foe.hp,foe.stamina,true);text('SWORDSMAN',28,85,18,'#f8e0ad','left');text('DARK SWORDSMAN',932,85,18,'#e4baff','right');text(String(Math.max(0,Math.ceil(clock/60))),480,48,38);if(round==='intro'){c.fillStyle='#0a1020a8';c.fillRect(245,175,470,145);text('CASTLE DUEL',480,226,35,'#f7db9e');text(phaseTick>105?'READY':phaseTick>45?'DRAW YOUR SWORD':'FIGHT!',480,278,27,'#dce9f4')}
+else if(round!=='play'){c.fillStyle='#0a1020cc';c.fillRect(160,155,640,200);text(notice,480,232,33,round==='win'?'#f8d587':'#f1a1a1');text('Press R or RESTART to fight again',480,285,19)}
+else if(noticeTick>0)text(notice,480,120,21,'#ffe4a8')}
 let last=0,acc=0;function loop(now){let dt=Math.min(50,now-last||16.7);last=now;acc+=dt;while(acc>=16.667){update();acc-=16.667}render();requestAnimationFrame(loop)}requestAnimationFrame(loop);
 })();
 </script></body></html>
