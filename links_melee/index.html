@@ -33,7 +33,25 @@
 .combat-buttons button{width:clamp(76px,11vw,114px);height:clamp(82px,14vh,124px);border:2px solid #bfa579;border-radius:15px;color:#f4e7cb;font:800 clamp(12px,1.5vw,17px) system-ui;letter-spacing:.5px;background:linear-gradient(#405369d9,#18263ddc);touch-action:none!important;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
 .combat-buttons button.pressed{background:#71849b;border-color:#f3d9a0;box-shadow:inset 0 0 0 3px #34465b}
 @media(orientation:landscape) and (pointer:coarse){.combat-buttons{position:absolute;right:max(12px,env(safe-area-inset-right,0px));bottom:max(10px,env(safe-area-inset-bottom,0px));pointer-events:auto;gap:10px}.combat-buttons button{width:clamp(68px,19vh,100px);height:clamp(86px,28vh,135px)}}
-</style></head><body><header>LINK'S MELEE <small>v0.6.4 · Adventure Motion</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
+
+/* Adventure-matched translucent controls and three-action layout. */
+.labyrinth-pad{border:3px solid #aa8a59!important;border-radius:13px!important;background:#252d3b26!important;box-shadow:none!important;overflow:hidden}
+.labyrinth-pad button{background:#36445520!important}
+.labyrinth-pad button.pressed{background:#74869d55!important}
+.labyrinth-pad .blank{background:#1b2534!important;border-radius:4px!important}
+.labyrinth-pad .blank:after{display:none!important}
+.combat-buttons{gap:clamp(12px,2.1vw,26px)!important;align-items:stretch}
+.combat-buttons button{width:clamp(58px,13vh,94px)!important;height:clamp(87px,19.5vh,141px)!important;border:3px solid #bb9a65!important;border-radius:12px!important;background:#33465d26!important;color:transparent!important;box-shadow:none!important;font-size:0!important}
+.combat-buttons button.pressed{background:#6883a65c!important;border-color:#f0d39b!important;box-shadow:none!important}
+@media(orientation:landscape) and (pointer:coarse){
+ .labyrinth-pad{width:clamp(118px,32vh,218px)!important;bottom:max(12px,env(safe-area-inset-bottom))!important;left:max(12px,env(safe-area-inset-left))!important}
+ .combat-buttons{right:max(12px,env(safe-area-inset-right))!important;bottom:max(15px,env(safe-area-inset-bottom))!important}
+}
+@media(orientation:portrait){
+ .combat-buttons{display:flex;gap:clamp(6px,1.7vw,13px)!important}
+ .combat-buttons button{width:clamp(45px,14vw,73px)!important;height:clamp(72px,23vw,110px)!important}
+}
+</style></head><body><header>LINK'S MELEE <small>v0.6.7 · Adventure Controls</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
 <div class="controls" aria-label="Touch game controls">
  <div class="pad labyrinth-pad" aria-label="Movement controls">
   <button class="up" data-k="w" aria-label="Jump"></button>
@@ -45,9 +63,10 @@
  <div class="combat-buttons" aria-label="Combat controls">
   <button class="combat-attack" data-action="attack" aria-label="Attack; hold for strong attack">ATTACK</button>
   <button class="combat-block" data-action="block" aria-label="Hold to block">BLOCK</button>
+  <button class="combat-jump" data-action="jump" aria-label="Jump">JUMP</button>
  </div>
 </div>
-<div class="legend">LEFT PAD: ↑ Jump · ← → Move · ↓ Crouch &nbsp; | &nbsp; RIGHT: Tap Attack for light strike · Hold Attack for strong strike · Hold Block to guard</div>
+<div class="legend">LEFT PAD: ↑ Jump · ← → Move · ↓ Crouch &nbsp; | &nbsp; RIGHT: Attack · Block · Jump</div>
 <button class="restart" id="restart">RESTART</button>
 <footer>Playable offline · Swordsman vs Dark Swordsman · Single-stage prototype · Combat update</footer><script>
 (()=>{
@@ -71,7 +90,7 @@ const canvas=document.getElementById('game'),c=canvas.getContext('2d');c.imageSm
 const assets={};let loaded=0;const files=['castle_arena.jpg',...Array.from({length:6},(_,i)=>`swordsman_${i}.png`),...Array.from({length:6},(_,i)=>`dark_${i}.png`)];files.forEach(f=>{let im=new Image;im.onload=()=>loaded++;im.src=f;assets[f]=im});
 const keys={};let just={};const key=k=>!!keys[k];let player,foe,particles,clock,round,notice,shake,aiTick,phaseTick,noticeTick,aiMode,aiModeTick,aiAttackLock,aiCommitDir,aiLastPlayerX;
 let attackHeld=false,attackHoldFrames=0,attackCharged=false,attackQueued=false;
-function reset(){player={x:600,y:FLOOR,w:72,h:135,vx:0,vy:0,face:1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,blockAnim:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};foe={x:1060,y:FLOOR,w:72,h:135,vx:0,vy:0,face:-1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};particles=[];clock=90*60;round='intro';phaseTick=165;notice='CASTLE DUEL';noticeTick=0;shake=0;aiTick=0;camera=350;aiMode='observe';aiModeTick=85;aiAttackLock=75;aiCommitDir=0;aiLastPlayerX=player.x;attackHeld=false;attackHoldFrames=0;attackCharged=false;attackQueued=false;just={}}
+function reset(){player={x:600,y:FLOOR,w:72,h:135,vx:0,vy:0,face:1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,blockAnim:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};foe={x:1060,y:FLOOR,w:72,h:135,vx:0,vy:0,face:-1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,blockAnim:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};particles=[];clock=90*60;round='intro';phaseTick=165;notice='CASTLE DUEL';noticeTick=0;shake=0;aiTick=0;camera=350;aiMode='observe';aiModeTick=85;aiAttackLock=75;aiCommitDir=0;aiLastPlayerX=player.x;attackHeld=false;attackHoldFrames=0;attackCharged=false;attackQueued=false;just={}}
 reset();document.getElementById('restart').onclick=reset;
 document.addEventListener('keydown',e=>{let k=e.key.toLowerCase();if(k.startsWith('arrow'))k={arrowleft:'a',arrowright:'d',arrowup:'w'}[k]||k;if(k===' ')k='w';if(['a','d','w','s','j','k','l'].includes(k))e.preventDefault();if(k==='r')reset();if(!keys[k])just[k]=true;keyboardHolds[k]=true;keys[k]=true});document.addEventListener('keyup',e=>{let k=e.key.toLowerCase();if(k.startsWith('arrow'))k={arrowleft:'a',arrowright:'d',arrowup:'w'}[k]||k;if(k===' ')k='w';keyboardHolds[k]=false;syncTouch(k)});
 const keyboardHolds={},touchPointers=new Map();
@@ -108,7 +127,7 @@ function padHit(pad,x,y,previous=new Set()){
 // A quick release executes a light attack; a sustained hold executes a heavy attack.
 // Timing is evaluated in the game loop so touch and mouse behave consistently.
 
-const attackButton=document.querySelector('[data-action="attack"]'),blockButton=document.querySelector('[data-action="block"]');
+const attackButton=document.querySelector('[data-action="attack"]'),blockButton=document.querySelector('[data-action="block"]'),jumpButton=document.querySelector('[data-action="jump"]');
 function startCombatPointer(b,down,up){
  b.addEventListener('pointerdown',e=>{e.preventDefault();try{b.setPointerCapture(e.pointerId)}catch(_){}down();b.classList.add('pressed')});
  for(const ev of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(ev,e=>{if(!b.classList.contains('pressed'))return;e.preventDefault();b.classList.remove('pressed');up()});
@@ -119,6 +138,7 @@ startCombatPointer(attackButton,()=>{attackHeld=true;attackHoldFrames=0;attackCh
  attackHeld=false;attackHoldFrames=0;
 });
 startCombatPointer(blockButton,()=>{keyboardHolds.k=true;keys.k=true},()=>{keyboardHolds.k=false;syncTouch('k')});
+startCombatPointer(jumpButton,()=>{if(!keys.w)just.w=true;keyboardHolds.w=true;keys.w=true},()=>{keyboardHolds.w=false;syncTouch('w')});
 pads.forEach(pad=>{
  pad.addEventListener('contextmenu',e=>e.preventDefault());
  pad.addEventListener('selectstart',e=>e.preventDefault());
@@ -189,7 +209,7 @@ function physics(a){
  a.step+=Math.abs(a.vx)*.045;
  // Play the nine authored Adventure guard frames once on raising the sword;
  // keep the final guarded pose while held, and restart on the next block.
- a.blockAnim=a.block?Math.min(26,(a.blockAnim||0)+1):0;
+ a.blockAnim=a.block?Math.min(8,(a.blockAnim||0)+1):0;
 }
 function update(){
  if(round==='intro'){phaseTick--;if(phaseTick<=0){round='play';notice='FIGHT';noticeTick=65}just={};return}
@@ -286,6 +306,18 @@ for(const action of Object.keys(animationCounts)){
 }
 // Both fighters use identical Adventure motion frames and timing.
 // Dark Swordsman is recolored at render time, retaining the authored poses.
+// Cache a genuinely dark variant of every Adventure pose rather than relying
+// on canvas.filter, which can fail or look unchanged in mobile browsers.
+const darkSpriteCache=new WeakMap();
+function darkSprite(source){
+ if(!source||!source.complete||!source.naturalWidth)return source;
+ if(darkSpriteCache.has(source))return darkSpriteCache.get(source);
+ const layer=document.createElement('canvas');layer.width=source.naturalWidth;layer.height=source.naturalHeight;
+ const g=layer.getContext('2d');g.drawImage(source,0,0);
+ g.globalCompositeOperation='multiply';g.fillStyle='#45345d';g.fillRect(0,0,layer.width,layer.height);
+ g.globalCompositeOperation='destination-in';g.drawImage(source,0,0);
+ darkSpriteCache.set(source,layer);return layer;
+}
 function fighter(a,dark){
  const airborne=a.ground===-1,attacking=a.atk>0,guarding=a.block&&!a.guardBreak;
  const moving=Math.abs(a.vx)>1.1,crouching=a.crouch&&!airborne;
@@ -293,7 +325,7 @@ function fighter(a,dark){
  const frames=animationFrames[action];
  const attackProgress=attacking?Math.max(0,Math.min(1,a.attackPhase/moves[a.attackKind].duration)):0;
  let frame=0;
- if(action==='block')frame=Math.min(frames.length-1,Math.floor(a.blockAnim/3));
+ if(action==='block')frame=Math.min(2,Math.floor((a.blockAnim||0)/3));
  else if(attacking)frame=Math.min(frames.length-1,Math.floor(attackProgress*frames.length));
  else if(airborne){
   // Takeoff, rising, apex, falling; avoid velocity-driven frame flicker.
@@ -316,9 +348,7 @@ function fighter(a,dark){
  c.fillStyle='#0b0e1b85';c.beginPath();c.ellipse(0,2,38,7,0,0,Math.PI*2);c.fill();
  // Render authored poses at a fixed height and ground anchor. No extra swords,
  // squashing, rotation or frame blending that deforms the illustrations.
- if(dark){c.filter='brightness(0.66) saturate(0.65) hue-rotate(165deg)';c.shadowColor='#8d5cc4';c.shadowBlur=5;}
- c.drawImage(im,-w/2,-h,w,h);
- c.filter='none';c.shadowBlur=0;
+ c.drawImage(dark?darkSprite(im):im,-w/2,-h,w,h);
  if(a.guardBreak>0){c.fillStyle='#ffe6a3';c.font='bold 14px system-ui';c.textAlign='center';c.fillText('GUARD BREAK',0,-163)}
  c.restore();
 }
