@@ -15,7 +15,7 @@
 @media (orientation:landscape) and (pointer:coarse) and (max-height:390px){
  .pad{grid-template-columns:repeat(3,clamp(30px,8.2vh,46px));grid-template-rows:repeat(3,clamp(30px,8.2vh,46px))}
 }
-.pad{gap:0!important}.pad button{border-radius:6px!important;min-width:0;min-height:0}.pad .blank{border-radius:0!important;background:#27364b!important;border:0!important}.pad .up{border-radius:12px 12px 2px 2px!important}.pad .down{border-radius:2px 2px 12px 12px!important}.pad .left{border-radius:12px 2px 2px 12px!important}.pad .right{border-radius:2px 12px 12px 2px!important}.pad{grid-template-columns:repeat(3,clamp(51px,13vw,76px));grid-template-rows:repeat(3,clamp(51px,13vw,76px))}@media(orientation:landscape) and (pointer:coarse){.pad{grid-template-columns:repeat(3,clamp(39px,10.4vh,67px));grid-template-rows:repeat(3,clamp(39px,10.4vh,67px))}.pad button{background:linear-gradient(#425872c9,#25354bc9)}}html{touch-action:manipulation;-webkit-text-size-adjust:100%}body,canvas,.controls,.pad,.pad button{touch-action:none!important;overscroll-behavior:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}.pad button{-webkit-tap-highlight-color:transparent} @media(orientation:landscape) and (pointer:coarse){html,body{position:fixed;inset:0;overflow:hidden;overscroll-behavior:none}} </style></head><body><header>LINK'S MELEE <small>v0.5 · Castle Duel</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
+.pad{gap:0!important}.pad button{border-radius:6px!important;min-width:0;min-height:0}.pad .blank{border-radius:0!important;background:#27364b!important;border:0!important}.pad .up{border-radius:12px 12px 2px 2px!important}.pad .down{border-radius:2px 2px 12px 12px!important}.pad .left{border-radius:12px 2px 2px 12px!important}.pad .right{border-radius:2px 12px 12px 2px!important}.pad{grid-template-columns:repeat(3,clamp(51px,13vw,76px));grid-template-rows:repeat(3,clamp(51px,13vw,76px))}@media(orientation:landscape) and (pointer:coarse){.pad{grid-template-columns:repeat(3,clamp(39px,10.4vh,67px));grid-template-rows:repeat(3,clamp(39px,10.4vh,67px))}.pad button{background:linear-gradient(#425872c9,#25354bc9)}}html{touch-action:manipulation;-webkit-text-size-adjust:100%}body,canvas,.controls,.pad,.pad button{touch-action:none!important;overscroll-behavior:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}.pad button{-webkit-tap-highlight-color:transparent} @media(orientation:landscape) and (pointer:coarse){html,body{position:fixed;inset:0;overflow:hidden;overscroll-behavior:none}} </style></head><body><header>LINK'S MELEE <small>v0.5.1 · Castle Duel</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
 <div class="controls" aria-label="Touch game controls">
  <div class="pad" aria-label="Movement controls">
   <button class="up" data-k="w" aria-label="Jump"></button>
@@ -42,10 +42,10 @@ document.addEventListener('gestureend',e=>e.preventDefault(),{passive:false});
 let lastTouchEnd=0;
 document.addEventListener('touchend',e=>{const now=Date.now();if(now-lastTouchEnd<320&&e.target.closest('.controls'))e.preventDefault();lastTouchEnd=now},{passive:false});
 document.querySelectorAll('.pad').forEach(p=>p.addEventListener('touchmove',e=>e.preventDefault(),{passive:false}));
-const canvas=document.getElementById('game'),c=canvas.getContext('2d');c.imageSmoothingEnabled=false;const W=960,H=540,FLOOR=438,WORLD=1720,platforms=[{x:375,y:345,w:235,h:16},{x:1110,y:345,w:235,h:16}];let camera=0;
+const canvas=document.getElementById('game'),c=canvas.getContext('2d');c.imageSmoothingEnabled=false;const W=960,H=540,FLOOR=438,WORLD=1720,platforms=[{x:375,y:345,w:235,h:16},{x:1110,y:345,w:235,h:16},{x:175,y:263,w:240,h:13},{x:730,y:267,w:250,h:13},{x:1325,y:263,w:215,h:13}];let camera=0;
 const assets={};let loaded=0;const files=['castle_arena.jpg',...Array.from({length:6},(_,i)=>`swordsman_${i}.png`),...Array.from({length:6},(_,i)=>`dark_${i}.png`)];files.forEach(f=>{let im=new Image;im.onload=()=>loaded++;im.src=f;assets[f]=im});
-const keys={};let just={};const key=k=>!!keys[k];let player,foe,particles,clock,round,notice,shake,aiTick,phaseTick,noticeTick;
-function reset(){player={x:600,y:FLOOR,w:72,h:135,vx:0,vy:0,face:1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};foe={x:1060,y:FLOOR,w:72,h:135,vx:0,vy:0,face:-1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};particles=[];clock=90*60;round='intro';phaseTick=165;notice='CASTLE DUEL';noticeTick=0;shake=0;aiTick=0;camera=350;just={}}
+const keys={};let just={};const key=k=>!!keys[k];let player,foe,particles,clock,round,notice,shake,aiTick,phaseTick,noticeTick,aiMode,aiModeTick;
+function reset(){player={x:600,y:FLOOR,w:72,h:135,vx:0,vy:0,face:1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};foe={x:1060,y:FLOOR,w:72,h:135,vx:0,vy:0,face:-1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};particles=[];clock=90*60;round='intro';phaseTick=165;notice='CASTLE DUEL';noticeTick=0;shake=0;aiTick=0;camera=350;aiMode='approach';aiModeTick=0;just={}}
 reset();document.getElementById('restart').onclick=reset;
 document.addEventListener('keydown',e=>{let k=e.key.toLowerCase();if(k.startsWith('arrow'))k={arrowleft:'a',arrowright:'d',arrowup:'w'}[k]||k;if(k===' ')k='w';if(['a','d','w','s','j','k','l'].includes(k))e.preventDefault();if(k==='r')reset();if(!keys[k])just[k]=true;keyboardHolds[k]=true;keys[k]=true});document.addEventListener('keyup',e=>{let k=e.key.toLowerCase();if(k.startsWith('arrow'))k={arrowleft:'a',arrowright:'d',arrowup:'w'}[k]||k;if(k===' ')k='w';keyboardHolds[k]=false;syncTouch(k)});
 const keyboardHolds={},touchPointers=new Map();
@@ -158,23 +158,34 @@ function update(){
   if(just.j)attack(player,foe,false);
   if(just.l)attack(player,foe,true);
  }else{player.block=false;player.crouch=false;}
- aiTick++;
- let dx=player.x-foe.x,dist=Math.abs(dx);
- foe.face=Math.sign(dx)||-1;
- if(!foe.stun&&foe.guardBreak===0){
-  // Deliberate spacing, occasional feints, and clear punish windows.
-  let cycle=aiTick%240;
-  let desired=cycle<60?188:cycle<130?133:cycle<180?205:145;
-  if(dist>desired+26)foe.vx=Math.sign(dx)*(cycle<60?1.25:1.95);
-  else if(dist<desired-24)foe.vx=-Math.sign(dx)*1.55;
-  else foe.vx*=.6;
-  let threat=player.atk>0&&player.attackPhase<15&&dist<150;
-  foe.block=threat&&foe.atk===0&&foe.stamina>18&&(cycle%7<4);
-  if(foe.atk>0)foe.block=false;
-  if(foe.cool===0&&dist<145&&!foe.block&&cycle%105===65){
-   attack(foe,player,cycle%210===65);
-  }
+ aiTick++;aiModeTick--;
+ let dx=player.x-foe.x,dist=Math.abs(dx),dir=Math.sign(dx)||-1;
+ foe.face=dir;
+ if(aiModeTick<=0){
+  // Independently chosen tactical commitments rather than perpetual distance mirroring.
+  const choices=dist>225?['approach','rush','approach','jump']:dist<100?['attack','guard','rush','retreat','attack']:['approach','attack','rush','guard','jump','attack'];
+  aiMode=choices[Math.floor(Math.random()*choices.length)];
+  aiModeTick=aiMode==='retreat'?25:aiMode==='guard'?27:aiMode==='attack'?45:65;
  }
+ if(!foe.stun&&foe.guardBreak===0){
+  foe.block=false;
+  if(aiMode==='approach')foe.vx=dir*2.65;
+  else if(aiMode==='rush')foe.vx=dir*4.0;
+  else if(aiMode==='retreat')foe.vx=-dir*2.1;
+  else if(aiMode==='guard'){foe.vx*=.8;foe.block=dist<175&&foe.stamina>18}
+  else if(aiMode==='jump'){
+   foe.vx=dir*3.3;
+   if(foe.coyote>0&&foe.ground!==-1){foe.vy=-16;foe.ground=-1;foe.coyote=0}
+  }
+  else if(aiMode==='attack'){foe.vx=dir*(dist>120?3.2:.6)}
+  // A committed attack can begin while closing in, rather than only at an exact distance.
+  if(dist<155&&foe.cool===0&&!foe.block&&(aiMode==='attack'||aiMode==='rush'||(aiMode==='approach'&&aiModeTick<22))){
+   attack(foe,player,aiMode==='rush'&&Math.random()<.5);
+   if(foe.atk>0){aiMode='attack';aiModeTick=Math.max(aiModeTick,foe.atk+7)}
+  }
+  if(player.atk>0&&dist<120&&foe.cool>0&&aiMode==='guard'&&foe.stamina>20)foe.block=true;
+ }
+
  physics(player);physics(foe);
  // Camera follows the midpoint but gives the player extra visibility when fighters separate.
  const target=Math.max(0,Math.min(WORLD-W,(player.x+foe.x)*.5-W*.5));camera+=(target-camera)*.085;
@@ -254,9 +265,11 @@ function drawStage(){
  c.fillStyle='#4a4540';c.fillRect(0,FLOOR+5,WORLD,15);
  for(const p of platforms){
   c.fillStyle='#151b21a0';c.fillRect(p.x+6,p.y+14,p.w,11);
-  c.fillStyle='#504c49';c.fillRect(p.x,p.y,p.w,p.h);
-  c.fillStyle='#93877a';c.fillRect(p.x,p.y,p.w,5);
-  c.fillStyle='#302d2c';c.fillRect(p.x,p.y+10,p.w,6);
+  const timber=p.y<300;
+  c.fillStyle=timber?'#473023':'#504c49';c.fillRect(p.x,p.y,p.w,p.h);
+  c.fillStyle=timber?'#9b7047':'#93877a';c.fillRect(p.x,p.y,p.w,5);
+  c.fillStyle=timber?'#251b19':'#302d2c';c.fillRect(p.x,p.y+10,p.w,6);
+  if(timber){c.strokeStyle='#73543a';c.lineWidth=5;for(let x=p.x+28;x<p.x+p.w-10;x+=62){c.beginPath();c.moveTo(x,p.y+14);c.lineTo(x+20,p.y+60);c.stroke()}}
   c.strokeStyle='#777068';c.lineWidth=1;
   for(let x=p.x+40;x<p.x+p.w;x+=55){c.beginPath();c.moveTo(x,p.y+5);c.lineTo(x,p.y+15);c.stroke()}
  }
