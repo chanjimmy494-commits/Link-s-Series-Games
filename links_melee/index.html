@@ -51,7 +51,15 @@
  .combat-buttons{display:flex;gap:clamp(6px,1.7vw,13px)!important}
  .combat-buttons button{width:clamp(45px,14vw,73px)!important;height:clamp(72px,23vw,110px)!important}
 }
-</style></head><body><header>LINK'S MELEE <small>v0.6.7 · Adventure Controls</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
+
+/* iOS embedded browser: lock the entire play surface to the visual viewport. */
+html,body{width:100%;height:100%;overflow:hidden;overscroll-behavior:none;touch-action:none!important}
+html *,body *{touch-action:none!important;-webkit-touch-callout:none}
+@media(orientation:landscape) and (pointer:coarse){
+ canvas{position:fixed!important;left:0!important;top:0!important;transform:none!important;width:100vw!important;height:100dvh!important;max-width:none!important;max-height:none!important;object-fit:contain!important}
+ .controls{position:fixed!important;inset:0!important;width:100vw!important;height:100dvh!important}
+}
+</style></head><body><header>LINK'S MELEE <small>v0.6.8 · Viewport Fix</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
 <div class="controls" aria-label="Touch game controls">
  <div class="pad labyrinth-pad" aria-label="Movement controls">
   <button class="up" data-k="w" aria-label="Jump"></button>
@@ -70,6 +78,12 @@
 <button class="restart" id="restart">RESTART</button>
 <footer>Playable offline · Swordsman vs Dark Swordsman · Single-stage prototype · Combat update</footer><script>
 (()=>{
+// Block double-tap smart zoom and pinch zoom at the document level,
+// including the space between buttons (which previously remained zoomable).
+document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});
+document.addEventListener('touchstart',e=>{if(e.touches.length>1)e.preventDefault()},{passive:false,capture:true});
+document.addEventListener('touchmove',e=>{if(e.touches.length>1)e.preventDefault()},{passive:false,capture:true});
+document.addEventListener('touchend',e=>{if(e.target.closest('.controls'))e.preventDefault()},{passive:false,capture:true});
 // Suppress Safari's double-tap-to-zoom and multi-touch page gestures during gameplay.
 document.addEventListener('gesturestart',e=>e.preventDefault(),{passive:false});
 document.addEventListener('gesturechange',e=>e.preventDefault(),{passive:false});
