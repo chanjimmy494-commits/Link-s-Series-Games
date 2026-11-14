@@ -15,7 +15,7 @@
 @media (orientation:landscape) and (pointer:coarse) and (max-height:390px){
  .pad{grid-template-columns:repeat(3,clamp(30px,8.2vh,46px));grid-template-rows:repeat(3,clamp(30px,8.2vh,46px))}
 }
-.pad{gap:0!important}.pad button{border-radius:6px!important;min-width:0;min-height:0}.pad .blank{border-radius:0!important;background:#27364b!important;border:0!important}.pad .up{border-radius:12px 12px 2px 2px!important}.pad .down{border-radius:2px 2px 12px 12px!important}.pad .left{border-radius:12px 2px 2px 12px!important}.pad .right{border-radius:2px 12px 12px 2px!important}.pad{grid-template-columns:repeat(3,clamp(51px,13vw,76px));grid-template-rows:repeat(3,clamp(51px,13vw,76px))}@media(orientation:landscape) and (pointer:coarse){.pad{grid-template-columns:repeat(3,clamp(39px,10.4vh,67px));grid-template-rows:repeat(3,clamp(39px,10.4vh,67px))}.pad button{background:linear-gradient(#425872c9,#25354bc9)}}html{touch-action:manipulation;-webkit-text-size-adjust:100%}body,canvas,.controls,.pad,.pad button{touch-action:none!important;overscroll-behavior:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}.pad button{-webkit-tap-highlight-color:transparent} @media(orientation:landscape) and (pointer:coarse){html,body{position:fixed;inset:0;overflow:hidden;overscroll-behavior:none}} /* Labyrinth 9.0.9 wedge-pad geometry: four full-area clipped directions and center dead zone. */
+.pad{gap:0!important}.pad button{border-radius:6px!important;min-width:0;min-height:0}.pad .blank{border-radius:0!important;background:#27364b!important;border:0!important}.pad .up{border-radius:12px 12px 2px 2px!important}.pad .down{border-radius:2px 2px 12px 12px!important}.pad .left{border-radius:12px 2px 2px 12px!important}.pad .right{border-radius:2px 12px 12px 2px!important}.pad{grid-template-columns:repeat(3,clamp(51px,13vw,76px));grid-template-rows:repeat(3,clamp(51px,13vw,76px))}@media(orientation:landscape) and (pointer:coarse){.pad{grid-template-columns:repeat(3,clamp(39px,10.4vh,67px));grid-template-rows:repeat(3,clamp(39px,10.4vh,67px))}.pad button{background:linear-gradient(#425872c9,#25354bc9)}}html{touch-action:none!important;-webkit-text-size-adjust:100%;overscroll-behavior:none}body,canvas,.controls,.pad,.pad button,.combat-buttons,.combat-buttons button{touch-action:none!important;overscroll-behavior:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}.pad button{-webkit-tap-highlight-color:transparent} @media(orientation:landscape) and (pointer:coarse){html,body{position:fixed;inset:0;overflow:hidden;overscroll-behavior:none}} /* Labyrinth 9.0.9 wedge-pad geometry: four full-area clipped directions and center dead zone. */
 .labyrinth-pad{position:absolute!important;display:block!important;aspect-ratio:1!important;width:clamp(153px,39vw,228px)!important;height:auto!important;background:#2b2e36!important;border-radius:10px;overflow:hidden;box-shadow:inset 0 0 0 2px #1f2128;touch-action:none!important}
 .labyrinth-pad button{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;border:0!important;border-radius:0!important;background:#454a56!important;pointer-events:none;box-shadow:none!important}
 .labyrinth-pad button.pressed{background:#6a7080!important;box-shadow:none!important}
@@ -33,7 +33,7 @@
 .combat-buttons button{width:clamp(76px,11vw,114px);height:clamp(82px,14vh,124px);border:2px solid #bfa579;border-radius:15px;color:#f4e7cb;font:800 clamp(12px,1.5vw,17px) system-ui;letter-spacing:.5px;background:linear-gradient(#405369d9,#18263ddc);touch-action:none!important;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
 .combat-buttons button.pressed{background:#71849b;border-color:#f3d9a0;box-shadow:inset 0 0 0 3px #34465b}
 @media(orientation:landscape) and (pointer:coarse){.combat-buttons{position:absolute;right:max(12px,env(safe-area-inset-right,0px));bottom:max(10px,env(safe-area-inset-bottom,0px));pointer-events:auto;gap:10px}.combat-buttons button{width:clamp(68px,19vh,100px);height:clamp(86px,28vh,135px)}}
-</style></head><body><header>LINK'S MELEE <small>v0.5.5 · Castle Duel</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
+</style></head><body><header>LINK'S MELEE <small>v0.5.6 · Castle Duel</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
 <div class="controls" aria-label="Touch game controls">
  <div class="pad labyrinth-pad" aria-label="Movement controls">
   <button class="up" data-k="w" aria-label="Jump"></button>
@@ -58,6 +58,15 @@ document.addEventListener('gestureend',e=>e.preventDefault(),{passive:false});
 let lastTouchEnd=0;
 document.addEventListener('touchend',e=>{const now=Date.now();if(now-lastTouchEnd<320&&e.target.closest('.controls'))e.preventDefault();lastTouchEnd=now},{passive:false});
 document.querySelectorAll('.pad').forEach(p=>p.addEventListener('touchmove',e=>e.preventDefault(),{passive:false}));
+// Prevent iOS double-tap and multi-touch zoom throughout the game surface,
+// including the two action buttons (not only the directional pad).
+document.addEventListener('touchmove',e=>{if(e.target.closest('.controls')||e.touches.length>1)e.preventDefault()},{passive:false});
+let lastGameTouch=0;
+document.addEventListener('touchstart',e=>{
+ if(!e.target.closest('.controls'))return;
+ if(e.touches.length>1){e.preventDefault();return}
+ const now=Date.now();if(now-lastGameTouch<350)e.preventDefault();lastGameTouch=now;
+},{passive:false});
 const canvas=document.getElementById('game'),c=canvas.getContext('2d');c.imageSmoothingEnabled=false;const W=960,H=540,FLOOR=438,WORLD=1720,platforms=[{x:375,y:345,w:235,h:16},{x:1110,y:345,w:235,h:16},{x:175,y:263,w:240,h:13},{x:730,y:267,w:250,h:13},{x:1325,y:263,w:215,h:13}];let camera=0;
 const assets={};let loaded=0;const files=['castle_arena.jpg',...Array.from({length:6},(_,i)=>`swordsman_${i}.png`),...Array.from({length:6},(_,i)=>`dark_${i}.png`)];files.forEach(f=>{let im=new Image;im.onload=()=>loaded++;im.src=f;assets[f]=im});
 const keys={};let just={};const key=k=>!!keys[k];let player,foe,particles,clock,round,notice,shake,aiTick,phaseTick,noticeTick,aiMode,aiModeTick,aiAttackLock,aiCommitDir,aiLastPlayerX;
