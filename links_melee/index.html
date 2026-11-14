@@ -33,7 +33,7 @@
 .combat-buttons button{width:clamp(76px,11vw,114px);height:clamp(82px,14vh,124px);border:2px solid #bfa579;border-radius:15px;color:#f4e7cb;font:800 clamp(12px,1.5vw,17px) system-ui;letter-spacing:.5px;background:linear-gradient(#405369d9,#18263ddc);touch-action:none!important;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
 .combat-buttons button.pressed{background:#71849b;border-color:#f3d9a0;box-shadow:inset 0 0 0 3px #34465b}
 @media(orientation:landscape) and (pointer:coarse){.combat-buttons{position:absolute;right:max(12px,env(safe-area-inset-right,0px));bottom:max(10px,env(safe-area-inset-bottom,0px));pointer-events:auto;gap:10px}.combat-buttons button{width:clamp(68px,19vh,100px);height:clamp(86px,28vh,135px)}}
-</style></head><body><header>LINK'S MELEE <small>v0.6.2 · Illustrated Animation</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
+</style></head><body><header>LINK'S MELEE <small>v0.6.3 · Illustrated Animation</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
 <div class="controls" aria-label="Touch game controls">
  <div class="pad labyrinth-pad" aria-label="Movement controls">
   <button class="up" data-k="w" aria-label="Jump"></button>
@@ -271,7 +271,7 @@ for(const side of ['','dark_'])for(const [action,count] of Object.entries(animat
  const frames=[];
  for(let i=0;i<count;i++){
   const im=new Image();
-  im.src='animation/'+side+action+'_'+String(i).padStart(2,'0')+'.png';
+  im.src=(side?'Links_Melee_Animation_Package_Fresh - 2/animation/':'Links_Melee_Animation_Package_Fresh_1/animation/')+side+action+'_'+String(i).padStart(2,'0')+'.png';
   frames.push(im);
  }
  animationFrames[side+action]=frames;
