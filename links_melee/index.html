@@ -15,7 +15,7 @@
 @media (orientation:landscape) and (pointer:coarse) and (max-height:390px){
  .pad{grid-template-columns:repeat(3,clamp(30px,8.2vh,46px));grid-template-rows:repeat(3,clamp(30px,8.2vh,46px))}
 }
-.pad{gap:0!important}.pad button{border-radius:6px!important;min-width:0;min-height:0}.pad .blank{border-radius:0!important;background:#27364b!important;border:0!important}.pad .up{border-radius:12px 12px 2px 2px!important}.pad .down{border-radius:2px 2px 12px 12px!important}.pad .left{border-radius:12px 2px 2px 12px!important}.pad .right{border-radius:2px 12px 12px 2px!important}.pad{grid-template-columns:repeat(3,clamp(51px,13vw,76px));grid-template-rows:repeat(3,clamp(51px,13vw,76px))}@media(orientation:landscape) and (pointer:coarse){.pad{grid-template-columns:repeat(3,clamp(39px,10.4vh,67px));grid-template-rows:repeat(3,clamp(39px,10.4vh,67px))}.pad button{background:linear-gradient(#425872c9,#25354bc9)}}</style></head><body><header>LINK'S MELEE <small>v0.4 · Castle Duel</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
+.pad{gap:0!important}.pad button{border-radius:6px!important;min-width:0;min-height:0}.pad .blank{border-radius:0!important;background:#27364b!important;border:0!important}.pad .up{border-radius:12px 12px 2px 2px!important}.pad .down{border-radius:2px 2px 12px 12px!important}.pad .left{border-radius:12px 2px 2px 12px!important}.pad .right{border-radius:2px 12px 12px 2px!important}.pad{grid-template-columns:repeat(3,clamp(51px,13vw,76px));grid-template-rows:repeat(3,clamp(51px,13vw,76px))}@media(orientation:landscape) and (pointer:coarse){.pad{grid-template-columns:repeat(3,clamp(39px,10.4vh,67px));grid-template-rows:repeat(3,clamp(39px,10.4vh,67px))}.pad button{background:linear-gradient(#425872c9,#25354bc9)}}html{touch-action:manipulation;-webkit-text-size-adjust:100%}body,canvas,.controls,.pad,.pad button{touch-action:none!important;overscroll-behavior:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}.pad button{-webkit-tap-highlight-color:transparent} @media(orientation:landscape) and (pointer:coarse){html,body{position:fixed;inset:0;overflow:hidden;overscroll-behavior:none}} </style></head><body><header>LINK'S MELEE <small>v0.4.1 · Castle Duel</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
 <div class="controls" aria-label="Touch game controls">
  <div class="pad" aria-label="Movement controls">
   <button class="up" data-k="w" aria-label="Jump"></button>
@@ -35,6 +35,13 @@
 <button class="restart" id="restart">RESTART</button>
 <footer>Playable offline · Swordsman vs Dark Swordsman · Single-stage prototype · Combat update</footer><script>
 (()=>{
+// Suppress Safari's double-tap-to-zoom and multi-touch page gestures during gameplay.
+document.addEventListener('gesturestart',e=>e.preventDefault(),{passive:false});
+document.addEventListener('gesturechange',e=>e.preventDefault(),{passive:false});
+document.addEventListener('gestureend',e=>e.preventDefault(),{passive:false});
+let lastTouchEnd=0;
+document.addEventListener('touchend',e=>{const now=Date.now();if(now-lastTouchEnd<320&&e.target.closest('.controls'))e.preventDefault();lastTouchEnd=now},{passive:false});
+document.querySelectorAll('.pad').forEach(p=>p.addEventListener('touchmove',e=>e.preventDefault(),{passive:false}));
 const canvas=document.getElementById('game'),c=canvas.getContext('2d');c.imageSmoothingEnabled=false;const W=960,H=540,FLOOR=438;
 const assets={};let loaded=0;const files=['castle_arena.jpg',...Array.from({length:6},(_,i)=>`swordsman_${i}.png`),...Array.from({length:6},(_,i)=>`dark_${i}.png`)];files.forEach(f=>{let im=new Image;im.onload=()=>loaded++;im.src=f;assets[f]=im});
 const keys={};let just={};const key=k=>!!keys[k];let player,foe,particles,clock,round,notice,shake,aiTick,phaseTick,noticeTick;
