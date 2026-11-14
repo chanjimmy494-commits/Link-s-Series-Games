@@ -33,7 +33,7 @@
 .combat-buttons button{width:clamp(76px,11vw,114px);height:clamp(82px,14vh,124px);border:2px solid #bfa579;border-radius:15px;color:#f4e7cb;font:800 clamp(12px,1.5vw,17px) system-ui;letter-spacing:.5px;background:linear-gradient(#405369d9,#18263ddc);touch-action:none!important;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
 .combat-buttons button.pressed{background:#71849b;border-color:#f3d9a0;box-shadow:inset 0 0 0 3px #34465b}
 @media(orientation:landscape) and (pointer:coarse){.combat-buttons{position:absolute;right:max(12px,env(safe-area-inset-right,0px));bottom:max(10px,env(safe-area-inset-bottom,0px));pointer-events:auto;gap:10px}.combat-buttons button{width:clamp(68px,19vh,100px);height:clamp(86px,28vh,135px)}}
-</style></head><body><header>LINK'S MELEE <small>v0.6.3 · Illustrated Animation</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
+</style></head><body><header>LINK'S MELEE <small>v0.6.4 · Adventure Motion</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
 <div class="controls" aria-label="Touch game controls">
  <div class="pad labyrinth-pad" aria-label="Movement controls">
   <button class="up" data-k="w" aria-label="Jump"></button>
@@ -265,89 +265,56 @@ function bar(x,y,hp,stam,reverse=false){c.fillStyle='#0b1220d9';c.fillRect(x-5,y
    animate while running, crouching or airborne rather than replacing those poses. */
 /* Original illustrated sprites retained. Motion is driven by pose selection,
    timed anticipation/follow-through, layered cloak/weapon movement, and transitions. */
-const animationCounts={idle:5,walk:8,run:7,jump:10,attack:9,crouch:8,block:8};
+// Adventure's authored frames drive the playable swordsman; Melee's recolored
+// frames continue to drive the dark swordsman. All frames are foot-registered.
+const adventureRoot='../links_adventure_0_22_ancient_outpost/Links_Adventure_Ancient_Outpost_Dual_Orientation - Sprites/sprites/';
+const meleeRoot='Links_Melee_Animation_Package_Fresh - 2/animation/';
+const animationCounts={idle:4,walk:8,run:8,jump:4,attack:7,block:9,crouch:8};
+const darkCounts={idle:5,walk:8,run:7,jump:10,attack:9,block:8,crouch:8};
 const animationFrames={};
-for(const side of ['','dark_'])for(const [action,count] of Object.entries(animationCounts)){
- const frames=[];
+for(const dark of [false,true])for(const action of Object.keys(animationCounts)){
+ const count=(dark?darkCounts:animationCounts)[action],arr=[];
  for(let i=0;i<count;i++){
   const im=new Image();
-  im.src=(side?'Links_Melee_Animation_Package_Fresh - 2/animation/':'Links_Melee_Animation_Package_Fresh_1/animation/')+side+action+'_'+String(i).padStart(2,'0')+'.png';
-  frames.push(im);
+  const name=action+'_'+String(i).padStart(2,'0')+'.png';
+  im.src=dark?meleeRoot+'dark_'+name:
+   action==='crouch'?'Links_Melee_Animation_Package_Fresh_1/animation/'+name:adventureRoot+name;
+  arr.push(im);
  }
- animationFrames[side+action]=frames;
-}
-function animatedFrame(a,dark){
- const side=dark?'dark_':'',air=a.ground===-1,moving=Math.abs(a.vx)>1.1;
- const action=a.block?'block':a.atk>0?'attack':air?'jump':a.crouch?'crouch':moving?(Math.abs(a.vx)>3.7?'run':'walk'):'idle';
- const arr=animationFrames[side+action];
- const progress=a.atk>0?a.attackPhase/moves[a.attackKind].duration:0;
- const i=action==='attack'?Math.min(arr.length-1,Math.floor(progress*arr.length)):action==='jump'?Math.min(arr.length-1,Math.max(0,Math.floor((a.vy+17.4)/34.8*arr.length))):Math.floor(a.step*(action==='run'?2.6:1.5))%arr.length;
- const im=arr[i];return im&&im.complete&&im.naturalWidth?im:null;
+ animationFrames[(dark?'dark_':'')+action]=arr;
 }
 function fighter(a,dark){
- const moving=Math.abs(a.vx)>1.05,air=a.ground===-1;
- const stunned=a.guardBreak>0||a.stun>6,attacking=a.atk>0;
- const phase=attacking?a.attackPhase/moves[a.attackKind].duration:0;
- const heavy=attacking&&a.attackKind==='heavy';
- const crouch=a.crouch&&!air,guard=a.block&&!stunned;
- const step=Math.floor(a.step*1.9);
- // Preserve original costume, silhouette, face, armor and rendering detail.
- let pose=stunned?5:guard?4:attacking?3:air?5:crouch?0:moving?(step%2?1:2):0;
- const animated=animatedFrame(a,dark);
- const base=animated||assets[(dark?'dark_':'swordsman_')+pose+'.png'];
- const idle=assets[(dark?'dark_':'swordsman_')+'0.png'];
- if(!base||!base.complete||!base.naturalWidth)return;
- const size=148,ratio=base.width/base.height;
- let w=size*ratio;
- const speed=Math.min(1,Math.abs(a.vx)/5.2);
- const cycle=a.step*2.8;
- const bob=moving&&!air?Math.abs(Math.sin(cycle))*3*speed:0;
- const lean=stunned?-.16:attacking?(heavy?-.10:.07)*Math.sin(Math.PI*phase):air?(a.vy<0?-.09:.10):moving?.045:0;
- const compression=crouch?.79:guard?.96:1;
- const squash=a.land>0?1-Math.min(.09,a.land*.012):1;
- const lunge=attacking?Math.sin(Math.PI*phase)*(heavy?15:10):0;
- const flutter=moving?Math.sin(cycle)*.035*speed:0;
- c.save();c.translate(Math.round(a.x),Math.round(a.y-bob));
+ const airborne=a.ground===-1,attacking=a.atk>0,guarding=a.block&&!a.guardBreak;
+ const moving=Math.abs(a.vx)>1.1,crouching=a.crouch&&!airborne;
+ const action=attacking?'attack':guarding?'block':airborne?'jump':crouching?'crouch':moving?(Math.abs(a.vx)>3.7?'run':'walk'):'idle';
+ const frames=animationFrames[(dark?'dark_':'')+action];
+ const attackProgress=attacking?Math.max(0,Math.min(1,a.attackPhase/moves[a.attackKind].duration)):0;
+ let frame=0;
+ if(attacking)frame=Math.min(frames.length-1,Math.floor(attackProgress*frames.length));
+ else if(airborne){
+  // Takeoff, rising, apex, falling; avoid velocity-driven frame flicker.
+  const v=a.vy;
+  frame=v< -7?0:v<0?Math.floor(frames.length*.28):v<7?Math.floor(frames.length*.55):frames.length-1;
+ }else if(action==='idle'||action==='block'||action==='crouch'){
+  frame=Math.floor(a.step*.45+(a.idleAnim||0))%frames.length;
+ }else{
+  // Step is accumulated world distance, so animation cadence follows travel.
+  frame=Math.floor(a.step*(action==='run'?1.65:1.22))%frames.length;
+ }
+ const sprite=frames[frame];
+ const fallback=assets[(dark?'dark_':'swordsman_')+'0.png'];
+ const im=sprite&&sprite.complete&&sprite.naturalWidth?sprite:fallback;
+ if(!im||!im.complete||!im.naturalWidth)return;
+ const h=148,w=h*im.naturalWidth/im.naturalHeight;
+ c.save();c.translate(Math.round(a.x),Math.round(a.y));
  if(a.face<0)c.scale(-1,1);
- if(a.inv>0&&a.inv%4<2)c.globalAlpha=.63;
- c.fillStyle='#0b0e1b8c';c.beginPath();c.ellipse(0,2,41,8,0,0,Math.PI*2);c.fill();
- c.translate(lunge,0);c.rotate(lean+flutter);
- c.scale(1+(1-squash)*.28,compression*squash);
- if(dark){c.shadowColor='#9e63da';c.shadowBlur=9}
- // Every drawn body is an original sprite, never a geometric replacement.
- c.drawImage(base,-w/2,-size,w,size);
- c.shadowBlur=0;
- // Crouch transition blends a second original frame to retain illustrated anatomy.
- if(crouch&&idle&&idle.complete&&idle.naturalWidth&&moving){
-  c.globalAlpha=.12+.10*Math.abs(Math.sin(cycle));
-  c.drawImage(idle,-w/2,-size,w,size);
-  c.globalAlpha=1;
- }
- // Dynamic sword action is layered over the original hand/sword sprite.
- if(attacking){
-  const begin=heavy?.30:.19,end=heavy?.68:.53;
-  const t=Math.max(0,Math.min(1,(phase-begin)/(end-begin)));
-  const e=t*t*(3-2*t);
-  const angle=heavy?-.95+e*2.18:-.56+e*1.20;
-  const handX=heavy?24:30,handY=heavy?-107:-91;
-  c.save();c.translate(handX,handY);c.rotate(angle);
-  c.fillStyle=dark?'#c9bed8':'#e3edf4';
-  c.strokeStyle=dark?'#746784':'#8da9b9';c.lineWidth=2;
-  c.beginPath();c.moveTo(-4,0);c.lineTo(4,0);c.lineTo(3,-65);c.lineTo(0,-79);c.lineTo(-3,-65);c.closePath();c.fill();c.stroke();
-  c.fillStyle=dark?'#5b3649':'#715338';c.fillRect(-4,1,8,16);
-  c.fillStyle='#d8bd7c';c.fillRect(-12,-3,24,5);
-  c.restore();
-  if(t>.08&&t<.94){
-   c.save();c.globalAlpha=.35;c.strokeStyle=dark?'#d8a2ed':'#c7edff';c.lineWidth=heavy?6:3;
-   c.beginPath();c.arc(handX,handY,80,heavy?-.95:-.56,angle);c.stroke();c.restore();
-  }
- }
- if(guard){
-  c.save();c.globalAlpha=.72;c.strokeStyle=dark?'#bba0ec':'#9de0ed';c.lineWidth=3;
-  c.beginPath();c.arc(9,-83,56,-.8,.62);c.stroke();c.restore();
- }
+ if(a.inv>0&&a.inv%4<2)c.globalAlpha=.60;
+ c.fillStyle='#0b0e1b85';c.beginPath();c.ellipse(0,2,38,7,0,0,Math.PI*2);c.fill();
+ // Render authored poses at a fixed height and ground anchor. No extra swords,
+ // squashing, rotation or frame blending that deforms the illustrations.
+ c.drawImage(im,-w/2,-h,w,h);
+ if(a.guardBreak>0){c.fillStyle='#ffe6a3';c.font='bold 14px system-ui';c.textAlign='center';c.fillText('GUARD BREAK',0,-163)}
  c.restore();
- if(a.guardBreak>0){c.fillStyle='#ffe6a3';c.font='bold 14px system-ui';c.textAlign='center';c.fillText('GUARD BREAK',a.x,a.y-163)}
 }
 function drawStage(){
  const bg=assets['castle_arena.jpg'];
