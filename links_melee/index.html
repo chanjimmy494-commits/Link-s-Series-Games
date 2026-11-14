@@ -59,7 +59,7 @@ html *,body *{touch-action:none!important;-webkit-touch-callout:none}
  canvas{position:fixed!important;left:0!important;top:0!important;transform:none!important;width:100vw!important;height:100dvh!important;max-width:none!important;max-height:none!important;object-fit:contain!important}
  .controls{position:fixed!important;inset:0!important;width:100vw!important;height:100dvh!important}
 }
-</style></head><body><header>LINK'S MELEE <small>v0.6.8 · Viewport Fix</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
+</style></head><body><header>LINK'S MELEE <small>v0.6.9 · Adventure Guard Fix</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
 <div class="controls" aria-label="Touch game controls">
  <div class="pad labyrinth-pad" aria-label="Movement controls">
   <button class="up" data-k="w" aria-label="Jump"></button>
@@ -221,9 +221,7 @@ function physics(a){
  a.x=Math.max(55,Math.min(WORLD-55,a.x+a.vx));
  a.vx*=a.ground!==-1?.70:.94;
  a.step+=Math.abs(a.vx)*.045;
- // Play the nine authored Adventure guard frames once on raising the sword;
- // keep the final guarded pose while held, and restart on the next block.
- a.blockAnim=a.block?Math.min(8,(a.blockAnim||0)+1):0;
+
 }
 function update(){
  if(round==='intro'){phaseTick--;if(phaseTick<=0){round='play';notice='FIGHT';noticeTick=65}just={};return}
@@ -339,7 +337,7 @@ function fighter(a,dark){
  const frames=animationFrames[action];
  const attackProgress=attacking?Math.max(0,Math.min(1,a.attackPhase/moves[a.attackKind].duration)):0;
  let frame=0;
- if(action==='block')frame=Math.min(2,Math.floor((a.blockAnim||0)/3));
+ if(action==='block')frame=1; // Exact Adventure guard pose: sprite('hero','block',1,...)
  else if(attacking)frame=Math.min(frames.length-1,Math.floor(attackProgress*frames.length));
  else if(airborne){
   // Takeoff, rising, apex, falling; avoid velocity-driven frame flicker.
