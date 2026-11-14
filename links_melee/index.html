@@ -270,24 +270,24 @@ function bar(x,y,hp,stam,reverse=false){c.fillStyle='#0b1220d9';c.fillRect(x-5,y
 const adventureRoot='../links_adventure_0_22_ancient_outpost/Links_Adventure_Ancient_Outpost_Dual_Orientation - Sprites/sprites/';
 const meleeRoot='Links_Melee_Animation_Package_Fresh - 2/animation/';
 const animationCounts={idle:4,walk:8,run:8,jump:4,attack:7,block:9,crouch:8};
-const darkCounts={idle:5,walk:8,run:7,jump:10,attack:9,block:8,crouch:8};
 const animationFrames={};
-for(const dark of [false,true])for(const action of Object.keys(animationCounts)){
- const count=(dark?darkCounts:animationCounts)[action],arr=[];
+for(const action of Object.keys(animationCounts)){
+ const count=animationCounts[action],arr=[];
  for(let i=0;i<count;i++){
   const im=new Image();
   const name=action+'_'+String(i).padStart(2,'0')+'.png';
-  im.src=dark?meleeRoot+'dark_'+name:
-   action==='crouch'?'Links_Melee_Animation_Package_Fresh_1/animation/'+name:adventureRoot+name;
+  im.src=action==='crouch'?'Links_Melee_Animation_Package_Fresh_1/animation/'+name:adventureRoot+name;
   arr.push(im);
  }
- animationFrames[(dark?'dark_':'')+action]=arr;
+ animationFrames[action]=arr;
 }
+// Both fighters use identical Adventure motion frames and timing.
+// Dark Swordsman is recolored at render time, retaining the authored poses.
 function fighter(a,dark){
  const airborne=a.ground===-1,attacking=a.atk>0,guarding=a.block&&!a.guardBreak;
  const moving=Math.abs(a.vx)>1.1,crouching=a.crouch&&!airborne;
  const action=attacking?'attack':guarding?'block':airborne?'jump':crouching?'crouch':moving?(Math.abs(a.vx)>3.7?'run':'walk'):'idle';
- const frames=animationFrames[(dark?'dark_':'')+action];
+ const frames=animationFrames[action];
  const attackProgress=attacking?Math.max(0,Math.min(1,a.attackPhase/moves[a.attackKind].duration)):0;
  let frame=0;
  if(attacking)frame=Math.min(frames.length-1,Math.floor(attackProgress*frames.length));
@@ -312,7 +312,9 @@ function fighter(a,dark){
  c.fillStyle='#0b0e1b85';c.beginPath();c.ellipse(0,2,38,7,0,0,Math.PI*2);c.fill();
  // Render authored poses at a fixed height and ground anchor. No extra swords,
  // squashing, rotation or frame blending that deforms the illustrations.
+ if(dark){c.filter='brightness(0.66) saturate(0.65) hue-rotate(165deg)';c.shadowColor='#8d5cc4';c.shadowBlur=5;}
  c.drawImage(im,-w/2,-h,w,h);
+ c.filter='none';c.shadowBlur=0;
  if(a.guardBreak>0){c.fillStyle='#ffe6a3';c.font='bold 14px system-ui';c.textAlign='center';c.fillText('GUARD BREAK',0,-163)}
  c.restore();
 }
