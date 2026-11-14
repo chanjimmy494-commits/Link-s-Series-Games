@@ -71,7 +71,7 @@ const canvas=document.getElementById('game'),c=canvas.getContext('2d');c.imageSm
 const assets={};let loaded=0;const files=['castle_arena.jpg',...Array.from({length:6},(_,i)=>`swordsman_${i}.png`),...Array.from({length:6},(_,i)=>`dark_${i}.png`)];files.forEach(f=>{let im=new Image;im.onload=()=>loaded++;im.src=f;assets[f]=im});
 const keys={};let just={};const key=k=>!!keys[k];let player,foe,particles,clock,round,notice,shake,aiTick,phaseTick,noticeTick,aiMode,aiModeTick,aiAttackLock,aiCommitDir,aiLastPlayerX;
 let attackHeld=false,attackHoldFrames=0,attackCharged=false,attackQueued=false;
-function reset(){player={x:600,y:FLOOR,w:72,h:135,vx:0,vy:0,face:1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};foe={x:1060,y:FLOOR,w:72,h:135,vx:0,vy:0,face:-1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};particles=[];clock=90*60;round='intro';phaseTick=165;notice='CASTLE DUEL';noticeTick=0;shake=0;aiTick=0;camera=350;aiMode='observe';aiModeTick=85;aiAttackLock=75;aiCommitDir=0;aiLastPlayerX=player.x;attackHeld=false;attackHoldFrames=0;attackCharged=false;attackQueued=false;just={}}
+function reset(){player={x:600,y:FLOOR,w:72,h:135,vx:0,vy:0,face:1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,blockAnim:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};foe={x:1060,y:FLOOR,w:72,h:135,vx:0,vy:0,face:-1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};particles=[];clock=90*60;round='intro';phaseTick=165;notice='CASTLE DUEL';noticeTick=0;shake=0;aiTick=0;camera=350;aiMode='observe';aiModeTick=85;aiAttackLock=75;aiCommitDir=0;aiLastPlayerX=player.x;attackHeld=false;attackHoldFrames=0;attackCharged=false;attackQueued=false;just={}}
 reset();document.getElementById('restart').onclick=reset;
 document.addEventListener('keydown',e=>{let k=e.key.toLowerCase();if(k.startsWith('arrow'))k={arrowleft:'a',arrowright:'d',arrowup:'w'}[k]||k;if(k===' ')k='w';if(['a','d','w','s','j','k','l'].includes(k))e.preventDefault();if(k==='r')reset();if(!keys[k])just[k]=true;keyboardHolds[k]=true;keys[k]=true});document.addEventListener('keyup',e=>{let k=e.key.toLowerCase();if(k.startsWith('arrow'))k={arrowleft:'a',arrowright:'d',arrowup:'w'}[k]||k;if(k===' ')k='w';keyboardHolds[k]=false;syncTouch(k)});
 const keyboardHolds={},touchPointers=new Map();
@@ -187,6 +187,9 @@ function physics(a){
  a.x=Math.max(55,Math.min(WORLD-55,a.x+a.vx));
  a.vx*=a.ground!==-1?.70:.94;
  a.step+=Math.abs(a.vx)*.045;
+ // Play the nine authored Adventure guard frames once on raising the sword;
+ // keep the final guarded pose while held, and restart on the next block.
+ a.blockAnim=a.block?Math.min(26,(a.blockAnim||0)+1):0;
 }
 function update(){
  if(round==='intro'){phaseTick--;if(phaseTick<=0){round='play';notice='FIGHT';noticeTick=65}just={};return}
@@ -286,11 +289,12 @@ for(const action of Object.keys(animationCounts)){
 function fighter(a,dark){
  const airborne=a.ground===-1,attacking=a.atk>0,guarding=a.block&&!a.guardBreak;
  const moving=Math.abs(a.vx)>1.1,crouching=a.crouch&&!airborne;
- const action=attacking?'attack':guarding?'block':airborne?'jump':crouching?'crouch':moving?(Math.abs(a.vx)>3.7?'run':'walk'):'idle';
+ const action=guarding?'block':attacking?'attack':airborne?'jump':crouching?'crouch':moving?(Math.abs(a.vx)>3.7?'run':'walk'):'idle';
  const frames=animationFrames[action];
  const attackProgress=attacking?Math.max(0,Math.min(1,a.attackPhase/moves[a.attackKind].duration)):0;
  let frame=0;
- if(attacking)frame=Math.min(frames.length-1,Math.floor(attackProgress*frames.length));
+ if(action==='block')frame=Math.min(frames.length-1,Math.floor(a.blockAnim/3));
+ else if(attacking)frame=Math.min(frames.length-1,Math.floor(attackProgress*frames.length));
  else if(airborne){
   // Takeoff, rising, apex, falling; avoid velocity-driven frame flicker.
   const v=a.vy;
