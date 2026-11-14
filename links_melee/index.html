@@ -15,7 +15,7 @@
 @media (orientation:landscape) and (pointer:coarse) and (max-height:390px){
  .pad{grid-template-columns:repeat(3,clamp(30px,8.2vh,46px));grid-template-rows:repeat(3,clamp(30px,8.2vh,46px))}
 }
-.pad{gap:0!important}.pad button{border-radius:6px!important;min-width:0;min-height:0}.pad .blank{border-radius:0!important;background:#27364b!important;border:0!important}.pad .up{border-radius:12px 12px 2px 2px!important}.pad .down{border-radius:2px 2px 12px 12px!important}.pad .left{border-radius:12px 2px 2px 12px!important}.pad .right{border-radius:2px 12px 12px 2px!important}.pad{grid-template-columns:repeat(3,clamp(51px,13vw,76px));grid-template-rows:repeat(3,clamp(51px,13vw,76px))}@media(orientation:landscape) and (pointer:coarse){.pad{grid-template-columns:repeat(3,clamp(39px,10.4vh,67px));grid-template-rows:repeat(3,clamp(39px,10.4vh,67px))}.pad button{background:linear-gradient(#425872c9,#25354bc9)}}html{touch-action:manipulation;-webkit-text-size-adjust:100%}body,canvas,.controls,.pad,.pad button{touch-action:none!important;overscroll-behavior:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}.pad button{-webkit-tap-highlight-color:transparent} @media(orientation:landscape) and (pointer:coarse){html,body{position:fixed;inset:0;overflow:hidden;overscroll-behavior:none}} </style></head><body><header>LINK'S MELEE <small>v0.4.1 · Castle Duel</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
+.pad{gap:0!important}.pad button{border-radius:6px!important;min-width:0;min-height:0}.pad .blank{border-radius:0!important;background:#27364b!important;border:0!important}.pad .up{border-radius:12px 12px 2px 2px!important}.pad .down{border-radius:2px 2px 12px 12px!important}.pad .left{border-radius:12px 2px 2px 12px!important}.pad .right{border-radius:2px 12px 12px 2px!important}.pad{grid-template-columns:repeat(3,clamp(51px,13vw,76px));grid-template-rows:repeat(3,clamp(51px,13vw,76px))}@media(orientation:landscape) and (pointer:coarse){.pad{grid-template-columns:repeat(3,clamp(39px,10.4vh,67px));grid-template-rows:repeat(3,clamp(39px,10.4vh,67px))}.pad button{background:linear-gradient(#425872c9,#25354bc9)}}html{touch-action:manipulation;-webkit-text-size-adjust:100%}body,canvas,.controls,.pad,.pad button{touch-action:none!important;overscroll-behavior:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}.pad button{-webkit-tap-highlight-color:transparent} @media(orientation:landscape) and (pointer:coarse){html,body{position:fixed;inset:0;overflow:hidden;overscroll-behavior:none}} </style></head><body><header>LINK'S MELEE <small>v0.5 · Castle Duel</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
 <div class="controls" aria-label="Touch game controls">
  <div class="pad" aria-label="Movement controls">
   <button class="up" data-k="w" aria-label="Jump"></button>
@@ -42,10 +42,10 @@ document.addEventListener('gestureend',e=>e.preventDefault(),{passive:false});
 let lastTouchEnd=0;
 document.addEventListener('touchend',e=>{const now=Date.now();if(now-lastTouchEnd<320&&e.target.closest('.controls'))e.preventDefault();lastTouchEnd=now},{passive:false});
 document.querySelectorAll('.pad').forEach(p=>p.addEventListener('touchmove',e=>e.preventDefault(),{passive:false}));
-const canvas=document.getElementById('game'),c=canvas.getContext('2d');c.imageSmoothingEnabled=false;const W=960,H=540,FLOOR=438;
+const canvas=document.getElementById('game'),c=canvas.getContext('2d');c.imageSmoothingEnabled=false;const W=960,H=540,FLOOR=438,WORLD=1720,platforms=[{x:375,y:345,w:235,h:16},{x:1110,y:345,w:235,h:16}];let camera=0;
 const assets={};let loaded=0;const files=['castle_arena.jpg',...Array.from({length:6},(_,i)=>`swordsman_${i}.png`),...Array.from({length:6},(_,i)=>`dark_${i}.png`)];files.forEach(f=>{let im=new Image;im.onload=()=>loaded++;im.src=f;assets[f]=im});
 const keys={};let just={};const key=k=>!!keys[k];let player,foe,particles,clock,round,notice,shake,aiTick,phaseTick,noticeTick;
-function reset(){player={x:220,y:FLOOR,w:72,h:135,vx:0,vy:0,face:1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,attackKind:'',attackPhase:0};foe={x:730,y:FLOOR,w:72,h:135,vx:0,vy:0,face:-1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,attackKind:'',attackPhase:0};particles=[];clock=90*60;round='intro';phaseTick=165;notice='CASTLE DUEL';noticeTick=0;shake=0;aiTick=0;just={}}
+function reset(){player={x:600,y:FLOOR,w:72,h:135,vx:0,vy:0,face:1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};foe={x:1060,y:FLOOR,w:72,h:135,vx:0,vy:0,face:-1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};particles=[];clock=90*60;round='intro';phaseTick=165;notice='CASTLE DUEL';noticeTick=0;shake=0;aiTick=0;camera=350;just={}}
 reset();document.getElementById('restart').onclick=reset;
 document.addEventListener('keydown',e=>{let k=e.key.toLowerCase();if(k.startsWith('arrow'))k={arrowleft:'a',arrowright:'d',arrowup:'w'}[k]||k;if(k===' ')k='w';if(['a','d','w','s','j','k','l'].includes(k))e.preventDefault();if(k==='r')reset();if(!keys[k])just[k]=true;keyboardHolds[k]=true;keys[k]=true});document.addEventListener('keyup',e=>{let k=e.key.toLowerCase();if(k.startsWith('arrow'))k={arrowleft:'a',arrowright:'d',arrowup:'w'}[k]||k;if(k===' ')k='w';keyboardHolds[k]=false;syncTouch(k)});
 const keyboardHolds={},touchPointers=new Map();
@@ -118,6 +118,7 @@ function hit(a,b){
  noticeTick=38;shake=guarded?1:4;spawnHit(b.x,b.y-83,guarded,a===foe);
  if(b.hp<=0){shake=0;round=a===player?'win':'lose';phaseTick=0;notice=round==='win'?'VICTORY':'DEFEAT'}
 }
+function aerialDrop(a){a.y+=9;a.ground=-1;a.coyote=0}
 function physics(a){
  a.cool=Math.max(0,a.cool-1);a.inv=Math.max(0,a.inv-1);a.stun=Math.max(0,a.stun-1);
  a.guardBreak=Math.max(0,a.guardBreak-1);
@@ -127,11 +128,16 @@ function physics(a){
   if(a.attackPhase>=m.activeStart&&a.attackPhase<=m.activeEnd)hit(a,a===player?foe:player);
  }
  const wasAir=a.y<FLOOR;
- a.vy+=.65;a.y+=a.vy;
- if(a.y>=FLOOR){a.y=FLOOR;a.vy=0;if(wasAir)a.land=9}
+ a.jumpBuffer=Math.max(0,a.jumpBuffer-1);a.drop=Math.max(0,a.drop-1);
+ const oldY=a.y;
+ a.vy+=.72;a.y+=a.vy;
+ let surface=FLOOR;
+ if(a.vy>=0&&a.drop===0)for(const p of platforms){if(oldY<=p.y+5&&a.y>=p.y&&a.x>p.x-20&&a.x<p.x+p.w+20)surface=Math.min(surface,p.y)}
+ if(a.y>=surface){a.y=surface;a.vy=0;a.ground=surface;a.coyote=7;if(wasAir)a.land=9}
+ else{a.ground=-1;a.coyote=Math.max(0,a.coyote-1)}
  a.land=Math.max(0,a.land-1);
- a.x=Math.max(55,Math.min(905,a.x+a.vx));
- a.vx*=a.y===FLOOR?.70:.94;
+ a.x=Math.max(55,Math.min(WORLD-55,a.x+a.vx));
+ a.vx*=a.ground!==-1?.70:.94;
  a.step+=Math.abs(a.vx)*.045;
 }
 function update(){
@@ -140,12 +146,14 @@ function update(){
  clock--;if(clock<=0){shake=0;round=player.hp>=foe.hp?'win':'lose';phaseTick=0;notice=round==='win'?'TIME — VICTORY':'TIME — DEFEAT';just={};return}
  noticeTick=Math.max(0,noticeTick-1);
  if(!player.stun){
-  player.crouch=key('s')&&player.y>=FLOOR;player.block=key('k')&&player.atk===0&&player.stamina>0&&player.guardBreak===0;
+  player.crouch=key('s')&&player.ground!==-1;player.block=key('k')&&player.atk===0&&player.stamina>0&&player.guardBreak===0;
   let move=(key('d')?1:0)-(key('a')?1:0);
   if(move&&!player.block){
    player.vx=move*(player.crouch?1.65:player.atk?2.1:5.2);player.face=move;
   }
-  if(just.w&&player.y>=FLOOR&&player.atk===0&&!player.block&&!key('s')){player.vy=-12.6;player.land=0}
+  if(just.w)player.jumpBuffer=9;
+  if(player.jumpBuffer>0&&player.coyote>0&&player.atk===0&&!player.block&&!key('s')){player.vy=-17.4;player.land=0;player.coyote=0;player.jumpBuffer=0;player.ground=-1}
+  if(just.s&&player.ground!==FLOOR&&player.ground!==-1){player.drop=17;player.vy=3;aerialDrop(player)}
   // Both attack types are allowed in the air, subject to cooldown.
   if(just.j)attack(player,foe,false);
   if(just.l)attack(player,foe,true);
@@ -168,7 +176,9 @@ function update(){
   }
  }
  physics(player);physics(foe);
- if(Math.abs(player.x-foe.x)<65){
+ // Camera follows the midpoint but gives the player extra visibility when fighters separate.
+ const target=Math.max(0,Math.min(WORLD-W,(player.x+foe.x)*.5-W*.5));camera+=(target-camera)*.085;
+ if(Math.abs(player.x-foe.x)<65&&Math.abs(player.y-foe.y)<100){
   let overlap=65-Math.abs(player.x-foe.x),dir=player.x<foe.x?-1:1;
   player.x+=dir*overlap*.5;foe.x-=dir*overlap*.5;
  }
@@ -191,13 +201,13 @@ function fighter(a,dark){
  if(a.inv>0&&a.inv%4<2)c.globalAlpha=.72;
  c.fillStyle='#0b0e1b8c';c.beginPath();c.ellipse(0,2,42,9,0,0,Math.PI*2);c.fill();
  let lunge=a.atk>0&&a.attackPhase>8&&a.attackPhase<17?(a.heavy?9:5):0;
- let bob=moving&&a.y===FLOOR?Math.sin(a.step*3)*2:0;
+ let bob=moving&&a.ground!==-1?Math.sin(a.step*3)*2:0;
  let crouch=a.land>0?a.land*.8:0;if(a.crouch)crouch+=23;
  let tilt=a.stun>0?-.10:a.atk>0?Math.sin(a.attackPhase/ (a.heavy?37:21)*Math.PI)*.09:0;
  c.translate(lunge,-bob+crouch);
  c.rotate(tilt);
  if(dark){c.shadowColor='#a35bf9';c.shadowBlur=16}
- if(a.crouch)c.scale(1,.82);c.drawImage(im,-w*.5,-h,w,h);c.shadowBlur=0;
+ if(a.crouch){c.translate(0,-1);c.scale(1,.72)}c.drawImage(im,-w*.5,-h,w,h);c.shadowBlur=0;
  if(a.atk>0){
   const m=moves[a.attackKind],progress=a.attackPhase/m.duration;
 
@@ -226,9 +236,45 @@ function fighter(a,dark){
  if(a.guardBreak>0){c.fillStyle='#ffe6a3';c.font='bold 14px system-ui';c.textAlign='center';c.fillText('GUARD BREAK',0,-165)}
  c.restore();
 }
-function render(){c.save();if(shake&&round==='play')c.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);let bg=assets['castle_arena.jpg'];if(bg.complete&&bg.naturalWidth)c.drawImage(bg,0,0,W,H);else{c.fillStyle='#1b2838';c.fillRect(0,0,W,H)}fighter(player,false);fighter(foe,true);for(let p of particles){c.globalAlpha=p.life/22;c.fillStyle=p.color;c.fillRect(p.x,p.y,5,5)}c.globalAlpha=1;c.restore();bar(28,20,player.hp,player.stamina);bar(592,20,foe.hp,foe.stamina,true);text('SWORDSMAN',28,85,18,'#f8e0ad','left');text('DARK SWORDSMAN',932,85,18,'#e4baff','right');text(String(Math.max(0,Math.ceil(clock/60))),480,48,38);if(round==='intro'){c.fillStyle='#0a1020a8';c.fillRect(245,175,470,145);text('CASTLE DUEL',480,226,35,'#f7db9e');text(phaseTick>105?'READY':phaseTick>45?'DRAW YOUR SWORD':'FIGHT!',480,278,27,'#dce9f4')}
-else if(round!=='play'){c.fillStyle='#0a1020cc';c.fillRect(160,155,640,200);text(notice,480,232,33,round==='win'?'#f8d587':'#f1a1a1');text('Press R or RESTART to fight again',480,285,19)}
-else if(noticeTick>0)text(notice,480,120,21,'#ffe4a8')}
+function drawStage(){
+ const bg=assets['castle_arena.jpg'];
+ c.fillStyle='#172331';c.fillRect(0,0,W,H);
+ if(bg.complete&&bg.naturalWidth){
+  // Wide arena uses a softened, mirrored extension of the original static artwork.
+  const scale=1.08,tw=W*scale;
+  for(let i=0;i<3;i++){
+   c.save();c.translate(i*tw,0);
+   if(i%2){c.translate(tw,0);c.scale(-1,1)}
+   c.drawImage(bg,0,0,tw,H);c.restore();
+  }
+ }
+ // Ground and raised masonry are integrated into the castle palette.
+ c.fillStyle='#262c32';c.fillRect(0,FLOOR+2,WORLD,H-FLOOR);
+ c.fillStyle='#6b6257';c.fillRect(0,FLOOR,WORLD,5);
+ c.fillStyle='#4a4540';c.fillRect(0,FLOOR+5,WORLD,15);
+ for(const p of platforms){
+  c.fillStyle='#151b21a0';c.fillRect(p.x+6,p.y+14,p.w,11);
+  c.fillStyle='#504c49';c.fillRect(p.x,p.y,p.w,p.h);
+  c.fillStyle='#93877a';c.fillRect(p.x,p.y,p.w,5);
+  c.fillStyle='#302d2c';c.fillRect(p.x,p.y+10,p.w,6);
+  c.strokeStyle='#777068';c.lineWidth=1;
+  for(let x=p.x+40;x<p.x+p.w;x+=55){c.beginPath();c.moveTo(x,p.y+5);c.lineTo(x,p.y+15);c.stroke()}
+ }
+}
+function render(){
+ c.save();
+ if(shake&&round==='play')c.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);
+ c.translate(-Math.round(camera),0);
+ drawStage();fighter(player,false);fighter(foe,true);
+ for(let p of particles){c.globalAlpha=p.life/22;c.fillStyle=p.color;c.fillRect(p.x,p.y,5,5)}
+ c.globalAlpha=1;c.restore();
+ bar(28,20,player.hp,player.stamina);bar(592,20,foe.hp,foe.stamina,true);
+ text('SWORDSMAN',28,85,18,'#f8e0ad','left');text('DARK SWORDSMAN',932,85,18,'#e4baff','right');
+ text(String(Math.max(0,Math.ceil(clock/60))),480,48,38);
+ if(round==='intro'){c.fillStyle='#0a1020a8';c.fillRect(245,175,470,145);text('CASTLE DUEL',480,226,35,'#f7db9e');text(phaseTick>105?'READY':phaseTick>45?'DRAW YOUR SWORD':'FIGHT!',480,278,27,'#dce9f4')}
+ else if(round!=='play'){c.fillStyle='#0a1020cc';c.fillRect(160,155,640,200);text(notice,480,232,33,round==='win'?'#f8d587':'#f1a1a1');text('Press R or RESTART to fight again',480,285,19)}
+ else if(noticeTick>0)text(notice,480,120,21,'#ffe4a8');
+}
 let last=0,acc=0;function loop(now){let dt=Math.min(50,now-last||16.7);last=now;acc+=dt;while(acc>=16.667){update();acc-=16.667}render();requestAnimationFrame(loop)}requestAnimationFrame(loop);
 })();
 </script></body></html>
