@@ -33,7 +33,7 @@
 .combat-buttons button{width:clamp(76px,11vw,114px);height:clamp(82px,14vh,124px);border:2px solid #bfa579;border-radius:15px;color:#f4e7cb;font:800 clamp(12px,1.5vw,17px) system-ui;letter-spacing:.5px;background:linear-gradient(#405369d9,#18263ddc);touch-action:none!important;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
 .combat-buttons button.pressed{background:#71849b;border-color:#f3d9a0;box-shadow:inset 0 0 0 3px #34465b}
 @media(orientation:landscape) and (pointer:coarse){.combat-buttons{position:absolute;right:max(12px,env(safe-area-inset-right,0px));bottom:max(10px,env(safe-area-inset-bottom,0px));pointer-events:auto;gap:10px}.combat-buttons button{width:clamp(68px,19vh,100px);height:clamp(86px,28vh,135px)}}
-</style></head><body><header>LINK'S MELEE <small>v0.6.1 · Illustrated Duel</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
+</style></head><body><header>LINK'S MELEE <small>v0.6.2 · Illustrated Animation</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
 <div class="controls" aria-label="Touch game controls">
  <div class="pad labyrinth-pad" aria-label="Movement controls">
   <button class="up" data-k="w" aria-label="Jump"></button>
@@ -265,6 +265,25 @@ function bar(x,y,hp,stam,reverse=false){c.fillStyle='#0b1220d9';c.fillRect(x-5,y
    animate while running, crouching or airborne rather than replacing those poses. */
 /* Original illustrated sprites retained. Motion is driven by pose selection,
    timed anticipation/follow-through, layered cloak/weapon movement, and transitions. */
+const animationCounts={idle:5,walk:8,run:7,jump:10,attack:9,crouch:8,block:8};
+const animationFrames={};
+for(const side of ['','dark_'])for(const [action,count] of Object.entries(animationCounts)){
+ const frames=[];
+ for(let i=0;i<count;i++){
+  const im=new Image();
+  im.src='animation/'+side+action+'_'+String(i).padStart(2,'0')+'.png';
+  frames.push(im);
+ }
+ animationFrames[side+action]=frames;
+}
+function animatedFrame(a,dark){
+ const side=dark?'dark_':'',air=a.ground===-1,moving=Math.abs(a.vx)>1.1;
+ const action=a.block?'block':a.atk>0?'attack':air?'jump':a.crouch?'crouch':moving?(Math.abs(a.vx)>3.7?'run':'walk'):'idle';
+ const arr=animationFrames[side+action];
+ const progress=a.atk>0?a.attackPhase/moves[a.attackKind].duration:0;
+ const i=action==='attack'?Math.min(arr.length-1,Math.floor(progress*arr.length)):action==='jump'?Math.min(arr.length-1,Math.max(0,Math.floor((a.vy+17.4)/34.8*arr.length))):Math.floor(a.step*(action==='run'?2.6:1.5))%arr.length;
+ const im=arr[i];return im&&im.complete&&im.naturalWidth?im:null;
+}
 function fighter(a,dark){
  const moving=Math.abs(a.vx)>1.05,air=a.ground===-1;
  const stunned=a.guardBreak>0||a.stun>6,attacking=a.atk>0;
@@ -274,7 +293,8 @@ function fighter(a,dark){
  const step=Math.floor(a.step*1.9);
  // Preserve original costume, silhouette, face, armor and rendering detail.
  let pose=stunned?5:guard?4:attacking?3:air?5:crouch?0:moving?(step%2?1:2):0;
- const base=assets[(dark?'dark_':'swordsman_')+pose+'.png'];
+ const animated=animatedFrame(a,dark);
+ const base=animated||assets[(dark?'dark_':'swordsman_')+pose+'.png'];
  const idle=assets[(dark?'dark_':'swordsman_')+'0.png'];
  if(!base||!base.complete||!base.naturalWidth)return;
  const size=148,ratio=base.width/base.height;
