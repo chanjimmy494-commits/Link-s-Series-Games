@@ -33,7 +33,7 @@
 .combat-buttons button{width:clamp(76px,11vw,114px);height:clamp(82px,14vh,124px);border:2px solid #bfa579;border-radius:15px;color:#f4e7cb;font:800 clamp(12px,1.5vw,17px) system-ui;letter-spacing:.5px;background:linear-gradient(#405369d9,#18263ddc);touch-action:none!important;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
 .combat-buttons button.pressed{background:#71849b;border-color:#f3d9a0;box-shadow:inset 0 0 0 3px #34465b}
 @media(orientation:landscape) and (pointer:coarse){.combat-buttons{position:absolute;right:max(12px,env(safe-area-inset-right,0px));bottom:max(10px,env(safe-area-inset-bottom,0px));pointer-events:auto;gap:10px}.combat-buttons button{width:clamp(68px,19vh,100px);height:clamp(86px,28vh,135px)}}
-</style></head><body><header>LINK'S MELEE <small>v0.5.6 · Castle Duel</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
+</style></head><body><header>LINK'S MELEE <small>v0.6.0 · Animated Duel</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
 <div class="controls" aria-label="Touch game controls">
  <div class="pad labyrinth-pad" aria-label="Movement controls">
   <button class="up" data-k="w" aria-label="Jump"></button>
@@ -259,51 +259,102 @@ function update(){
 function text(t,x,y,size=20,color='#fff2cd',align='center'){c.font=`bold ${size}px system-ui`;c.textAlign=align;c.fillStyle='#111b27';c.fillText(t,x+2,y+2);c.fillStyle=color;c.fillText(t,x,y)}
 function bar(x,y,hp,stam,reverse=false){c.fillStyle='#0b1220d9';c.fillRect(x-5,y-5,355,49);c.fillStyle='#293341';c.fillRect(x,y,340,19);c.fillStyle=hp>30?'#cb5c5a':'#ec925e';let w=340*Math.max(0,hp)/100;c.fillRect(reverse?x+340-w:x,y,w,19);c.fillStyle='#34404d';c.fillRect(x,y+25,340,7);c.fillStyle='#6ec5d7';let sw=340*stam/100;c.fillRect(reverse?x+340-sw:x,y+25,sw,7);c.strokeStyle='#d8c59b';c.lineWidth=2;c.strokeRect(x,y,340,19)}
 
-function fighter(a,dark){
- let moving=Math.abs(a.vx)>1.2;
- let id=a.guardBreak>0||a.stun>6?5:a.block?4:a.atk>0?3:a.y<FLOOR?5:moving?(Math.floor(a.step)%2?1:2):0;
- let im=assets[(dark?'dark_':'swordsman_')+id+'.png'];
- if(!im||!im.complete||!im.naturalWidth)return;
- let h=a.block?142:148,w=im.width/im.height*h;
- if(id===3)w*=1.08;
- c.save();c.translate(Math.round(a.x),Math.round(a.y));
- if(a.face<0)c.scale(-1,1);
- if(a.inv>0&&a.inv%4<2)c.globalAlpha=.72;
- c.fillStyle='#0b0e1b8c';c.beginPath();c.ellipse(0,2,42,9,0,0,Math.PI*2);c.fill();
- let lunge=a.atk>0&&a.attackPhase>8&&a.attackPhase<17?(a.heavy?9:5):0;
- let bob=moving&&a.ground!==-1?Math.sin(a.step*3)*2:0;
- let crouch=a.land>0?a.land*.8:0;if(a.crouch)crouch+=23;
- let tilt=a.stun>0?-.10:a.atk>0?Math.sin(a.attackPhase/ (a.heavy?37:21)*Math.PI)*.09:0;
- c.translate(lunge,-bob+crouch);
- c.rotate(tilt);
- if(dark){c.shadowColor='#a35bf9';c.shadowBlur=16}
- if(a.crouch){c.translate(0,-1);c.scale(1,.72)}c.drawImage(im,-w*.5,-h,w,h);c.shadowBlur=0;
- if(a.atk>0){
-  const m=moves[a.attackKind],progress=a.attackPhase/m.duration;
 
-  const heavy=a.attackKind==='heavy';
-  const start=heavy?.32:.18,end=heavy?.63:.49;
-  const swing=Math.max(0,Math.min(1,(progress-start)/(end-start)));
-  const eased=swing*swing*(3-2*swing);
-  // Light: forward horizontal cut at opponent's torso. Heavy: descending diagonal chop.
-  const angle=heavy?(-.55+eased*1.75):(-.22+eased*.65);
-  const pivotX=heavy?21:28,pivotY=heavy?-108:-91;
-  c.save();c.translate(pivotX,pivotY);c.rotate(angle);
-  c.fillStyle=dark?'#a9a1ca':'#d0e2eb';
-  c.beginPath();c.moveTo(-4,0);c.lineTo(4,0);c.lineTo(3,-66);c.lineTo(0,-79);c.lineTo(-3,-66);c.closePath();c.fill();
-  c.fillStyle=dark?'#4b316b':'#684b34';c.fillRect(-4,0,8,16);
-  c.fillStyle='#d9bc79';c.fillRect(-12,-3,24,5);
-  c.restore();
-  if(swing>.05&&swing<.95){
-   c.globalAlpha=.30;c.strokeStyle=dark?'#b99bff':'#c7e8f8';c.lineWidth=heavy?6:3;
-   c.beginPath();
-   if(heavy)c.arc(pivotX,pivotY,83,-.55,-.55+eased*1.75);
-   else{c.moveTo(38,-94);c.lineTo(122,-94+eased*18)}
-   c.stroke();c.globalAlpha=1;
-  }
+/* Animated articulated fighter renderer: independent leg, arm, cloak, head and blade
+   rigs. Locomotion and action are layered, so attacks, guards and hit reactions
+   animate while running, crouching or airborne rather than replacing those poses. */
+function fighter(a,dark){
+ const speed=Math.min(1,Math.abs(a.vx)/5.2),moving=speed>.13;
+ const airborne=a.ground===-1,falling=airborne&&a.vy>1;
+ const crouch=a.crouch?1:0,phase=a.step*2.4;
+ const stride=moving&&!airborne?Math.sin(phase)*speed:0;
+ const swing=a.atk>0?Math.min(1,a.attackPhase/moves[a.attackKind].duration):0;
+ const heavy=a.atk>0&&a.attackKind==='heavy',attacking=a.atk>0;
+ const wind=attacking?(heavy?.32:.23):0;
+ const cut=attacking?Math.max(0,Math.min(1,(swing-wind)/(heavy?.36:.29))):0;
+ const eased=cut*cut*(3-2*cut);
+ const recoil=a.stun>0?Math.min(1,a.stun/15):0;
+ const guarding=a.block&&a.guardBreak===0;
+ const bodyY=crouch*25+(a.land>0?Math.min(10,a.land):0);
+ const bounce=airborne?0:moving?Math.abs(Math.sin(phase))*3*speed:Math.sin(a.step*.35)*.9;
+ const coat=dark?'#3a3448':'#26558b',coatLight=dark?'#62536b':'#477fae';
+ const armor=dark?'#424550':'#a5aab0',edge=dark?'#a84e57':'#d7b879';
+ const skin=dark?'#4e4853':'#e4b58b',boot=dark?'#25232d':'#4b3429';
+ c.save();c.translate(Math.round(a.x),Math.round(a.y-bounce+bodyY));
+ if(a.face<0)c.scale(-1,1);
+ if(a.inv>0&&a.inv%4<2)c.globalAlpha=.58;
+ c.fillStyle='#0b0d17a0';c.beginPath();c.ellipse(0,2,39,7,0,0,Math.PI*2);c.fill();
+ c.translate(attacking?eased*(heavy?8:12):0,0);
+ c.rotate(recoil*-.12+(airborne?(falling?.07:-.09):0));
+ // All anatomy uses joint-to-joint strokes with armor and highlight layers.
+ const limb=(x,y,X,Y,w,color,hi)=>{
+  c.lineCap='round';c.strokeStyle='#151822';c.lineWidth=w+4;c.beginPath();c.moveTo(x,y);c.lineTo(X,Y);c.stroke();
+  c.strokeStyle=color;c.lineWidth=w;c.beginPath();c.moveTo(x,y);c.lineTo(X,Y);c.stroke();
+  if(hi){c.strokeStyle=hi;c.lineWidth=Math.max(2,w*.2);c.beginPath();c.moveTo(x-2,y-2);c.lineTo(X-2,Y-2);c.stroke()}
+ };
+ const plate=(x,y,w,h,color)=>{c.fillStyle='#141925';c.fillRect(x-2,y-2,w+4,h+4);c.fillStyle=color;c.fillRect(x,y,w,h)};
+ const hipY=-56+crouch*10;
+ // Leg rig: running cycle, crouch, aerial tuck and falling extension.
+ for(let i=0;i<2;i++){
+  const side=i?1:-1;
+  let kneeX=side*13+stride*(i?-18:18),kneeY=-30;
+  let footX=side*16+stride*(i?-31:31),footY=-5;
+  if(crouch){kneeX=side*25;kneeY=-21;footX=side*35;footY=-3}
+  if(airborne){kneeX=side*18+(falling?3:10);kneeY=falling?-34:-37;footX=side*22+(falling?7:17);footY=falling?-10:-21}
+  limb(side*12,hipY,kneeX,kneeY,13,armor,edge);
+  limb(kneeX,kneeY,footX,footY,11,boot,armor);
+  limb(footX-5,footY,footX+12,footY,8,boot,edge);
  }
- if(a.block){c.strokeStyle=dark?'#b29aff':'#94e2ee';c.lineWidth=2;c.beginPath();c.arc(0,-73,57,-.7,.9);c.stroke()}
- if(a.guardBreak>0){c.fillStyle='#ffe6a3';c.font='bold 14px system-ui';c.textAlign='center';c.fillText('GUARD BREAK',0,-165)}
+ // Animated cloth trails the body with running, falling and recoil.
+ const flutter=Math.sin(phase)*5*speed+(airborne?-11:0);
+ c.fillStyle=dark?'#8c293d':'#285da0';c.strokeStyle='#131927';c.lineWidth=3;
+ c.beginPath();c.moveTo(-16,-108);c.quadraticCurveTo(-48+flutter,-86,-48+flutter,-53);
+ c.lineTo(-19,-65);c.lineTo(-10,-107);c.closePath();c.fill();c.stroke();
+ // Chest, waist, shoulder plates, belt, face and helmet/hair.
+ plate(-19,-108+crouch*3,38,51,coat);
+ plate(-22,-71+crouch*3,44,12,boot);
+ c.fillStyle=edge;c.fillRect(-4,-70+crouch*3,8,8);
+ c.fillStyle=coatLight;c.fillRect(-15,-103+crouch*3,8,35);
+ c.fillStyle=edge;c.fillRect(-20,-109+crouch*3,40,6);
+ const headY=-124+crouch*4;
+ plate(-14,headY-21,29,28,skin);
+ if(dark){
+  c.fillStyle='#222631';c.beginPath();c.moveTo(-18,headY-12);c.lineTo(-12,headY-32);c.lineTo(12,headY-32);c.lineTo(19,headY-12);c.lineTo(12,headY+4);c.lineTo(-12,headY+4);c.fill();
+  c.fillStyle='#b7464c';c.fillRect(-10,headY-12,21,3);
+ }else{
+  c.fillStyle='#b9833f';c.fillRect(-16,headY-23,32,9);c.fillRect(-19,headY-15,10,13);
+  c.fillStyle='#222a32';c.fillRect(8,headY-10,3,3);
+ }
+ // Off-hand and shield guard follow action state.
+ const shoulderY=-99+crouch*4;
+ const offX=guarding?24:-24,offY=guarding?-100:-69+stride*7;
+ limb(-17,shoulderY,offX,offY,11,armor,edge);
+ if(guarding){
+  c.save();c.translate(31,-90+crouch*4);c.rotate(-.12);
+  c.fillStyle=dark?'#422d46':'#3b688d';c.strokeStyle=edge;c.lineWidth=4;
+  c.beginPath();c.moveTo(-13,-27);c.lineTo(15,-23);c.lineTo(18,13);c.lineTo(0,27);c.lineTo(-16,13);c.closePath();c.fill();c.stroke();
+  c.strokeStyle=dark?'#d08d9a':'#a4d4e6';c.lineWidth=2;c.beginPath();c.moveTo(0,-20);c.lineTo(0,17);c.stroke();c.restore();
+ }
+ // Sword arm follows a distinct authored arc for each attack type.
+ let handX=30,handY=-78+crouch*7,bladeAngle=.25;
+ if(guarding){handX=21;handY=-112;bladeAngle=-.52}
+ else if(attacking){
+  handX=25+eased*(heavy?13:26);
+  handY=(heavy?-128:-94)+eased*(heavy?46:13);
+  bladeAngle=heavy?(-.98+eased*2.45):(-.78+eased*1.42);
+ }else if(airborne){handX=31;handY=-98;bladeAngle=-.25}
+ else{handY+=stride*8}
+ limb(18,shoulderY,handX,handY,12,armor,edge);
+ c.save();c.translate(handX,handY);c.rotate(bladeAngle);
+ c.fillStyle=dark?'#dad5e6':'#dce9f2';c.strokeStyle=dark?'#5d5a70':'#8298a5';c.lineWidth=2;
+ c.beginPath();c.moveTo(-5,0);c.lineTo(5,0);c.lineTo(3,-68);c.lineTo(0,-83);c.lineTo(-3,-68);c.closePath();c.fill();c.stroke();
+ c.fillStyle=edge;c.fillRect(-13,-3,26,6);c.fillStyle=boot;c.fillRect(-4,3,8,17);
+ c.restore();
+ if(attacking&&cut>.06&&cut<.96){
+  c.save();c.globalAlpha=.45;c.strokeStyle=dark?'#ec7c92':'#c5edff';c.lineWidth=heavy?7:4;
+  c.beginPath();c.arc(handX,handY,78,heavy?-.95:-.75,(heavy?-.95:-.75)+eased*(heavy?2.3:1.4));c.stroke();c.restore();
+ }
+ if(a.guardBreak>0){c.fillStyle='#ffe5a5';c.font='bold 14px system-ui';c.textAlign='center';c.fillText('GUARD BREAK',0,-169)}
  c.restore();
 }
 function drawStage(){
