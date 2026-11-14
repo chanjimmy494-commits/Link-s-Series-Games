@@ -16,7 +16,7 @@
  .pad{grid-template-columns:repeat(3,clamp(30px,8.2vh,46px));grid-template-rows:repeat(3,clamp(30px,8.2vh,46px))}
 }
 .pad{gap:0!important}.pad button{border-radius:6px!important;min-width:0;min-height:0}.pad .blank{border-radius:0!important;background:#27364b!important;border:0!important}.pad .up{border-radius:12px 12px 2px 2px!important}.pad .down{border-radius:2px 2px 12px 12px!important}.pad .left{border-radius:12px 2px 2px 12px!important}.pad .right{border-radius:2px 12px 12px 2px!important}.pad{grid-template-columns:repeat(3,clamp(51px,13vw,76px));grid-template-rows:repeat(3,clamp(51px,13vw,76px))}@media(orientation:landscape) and (pointer:coarse){.pad{grid-template-columns:repeat(3,clamp(39px,10.4vh,67px));grid-template-rows:repeat(3,clamp(39px,10.4vh,67px))}.pad button{background:linear-gradient(#425872c9,#25354bc9)}}html{touch-action:manipulation;-webkit-text-size-adjust:100%}body,canvas,.controls,.pad,.pad button{touch-action:none!important;overscroll-behavior:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}.pad button{-webkit-tap-highlight-color:transparent} @media(orientation:landscape) and (pointer:coarse){html,body{position:fixed;inset:0;overflow:hidden;overscroll-behavior:none}} /* Labyrinth 9.0.9 wedge-pad geometry: four full-area clipped directions and center dead zone. */
-.labyrinth-pad{position:relative!important;display:block!important;aspect-ratio:1!important;width:clamp(153px,39vw,228px)!important;height:auto!important;background:#2b2e36!important;border-radius:10px;overflow:hidden;box-shadow:inset 0 0 0 2px #1f2128;touch-action:none!important}
+.labyrinth-pad{position:absolute!important;display:block!important;aspect-ratio:1!important;width:clamp(153px,39vw,228px)!important;height:auto!important;background:#2b2e36!important;border-radius:10px;overflow:hidden;box-shadow:inset 0 0 0 2px #1f2128;touch-action:none!important}
 .labyrinth-pad button{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;border:0!important;border-radius:0!important;background:#454a56!important;pointer-events:none;box-shadow:none!important}
 .labyrinth-pad button.pressed{background:#6a7080!important;box-shadow:none!important}
 .labyrinth-pad .up{clip-path:polygon(0 0,100% 0,62% 38%,38% 38%)}
@@ -27,7 +27,13 @@
 .labyrinth-pad .blank:after{content:"";display:block;width:40%;height:40%;margin:30%;border-radius:50%;background:#1f2128}
 @media(orientation:landscape) and (pointer:coarse){.labyrinth-pad{width:clamp(145px,38vh,205px)!important;height:auto!important;bottom:max(4px,env(safe-area-inset-bottom,0px))!important}}
 @media(orientation:landscape) and (pointer:coarse) and (max-height:390px){.labyrinth-pad{width:clamp(138px,40vh,170px)!important}}
-</style></head><body><header>LINK'S MELEE <small>v0.5.3 · Castle Duel</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
+
+/* Two-button fighting layout, independent of the movement pad. */
+.combat-buttons{display:flex;gap:12px;align-items:end;justify-content:end;touch-action:none}
+.combat-buttons button{width:clamp(76px,11vw,114px);height:clamp(82px,14vh,124px);border:2px solid #bfa579;border-radius:15px;color:#f4e7cb;font:800 clamp(12px,1.5vw,17px) system-ui;letter-spacing:.5px;background:linear-gradient(#405369d9,#18263ddc);touch-action:none!important;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+.combat-buttons button.pressed{background:#71849b;border-color:#f3d9a0;box-shadow:inset 0 0 0 3px #34465b}
+@media(orientation:landscape) and (pointer:coarse){.combat-buttons{position:absolute;right:max(12px,env(safe-area-inset-right,0px));bottom:max(10px,env(safe-area-inset-bottom,0px));pointer-events:auto;gap:10px}.combat-buttons button{width:clamp(68px,19vh,100px);height:clamp(86px,28vh,135px)}}
+</style></head><body><header>LINK'S MELEE <small>v0.5.4 · Castle Duel</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
 <div class="controls" aria-label="Touch game controls">
  <div class="pad labyrinth-pad" aria-label="Movement controls">
   <button class="up" data-k="w" aria-label="Jump"></button>
@@ -36,14 +42,12 @@
   <button class="right" data-k="d" aria-label="Move right"></button>
   <button class="down" data-k="s" aria-label="Crouch"></button>
  </div>
- <div class="pad" aria-label="Combat controls">
-  <button class="up" data-k="l" aria-label="Heavy attack"></button>
-  <span class="blank" aria-hidden="true"></span>
-  <button class="right" data-k="k" aria-label="Block"></button>
-  <button class="down" data-k="j" aria-label="Light attack"></button>
+ <div class="combat-buttons" aria-label="Combat controls">
+  <button class="combat-attack" data-action="attack" aria-label="Attack; hold for strong attack">ATTACK</button>
+  <button class="combat-block" data-action="block" aria-label="Hold to block">BLOCK</button>
  </div>
 </div>
-<div class="legend">LEFT PAD: ↑ Jump · ← → Move · ↓ Crouch &nbsp; | &nbsp; RIGHT PAD: ↑ Heavy · → Block · ↓ Attack</div>
+<div class="legend">LEFT PAD: ↑ Jump · ← → Move · ↓ Crouch &nbsp; | &nbsp; RIGHT: Tap Attack for light strike · Hold Attack for strong strike · Hold Block to guard</div>
 <button class="restart" id="restart">RESTART</button>
 <footer>Playable offline · Swordsman vs Dark Swordsman · Single-stage prototype · Combat update</footer><script>
 (()=>{
@@ -57,7 +61,7 @@ document.querySelectorAll('.pad').forEach(p=>p.addEventListener('touchmove',e=>e
 const canvas=document.getElementById('game'),c=canvas.getContext('2d');c.imageSmoothingEnabled=false;const W=960,H=540,FLOOR=438,WORLD=1720,platforms=[{x:375,y:345,w:235,h:16},{x:1110,y:345,w:235,h:16},{x:175,y:263,w:240,h:13},{x:730,y:267,w:250,h:13},{x:1325,y:263,w:215,h:13}];let camera=0;
 const assets={};let loaded=0;const files=['castle_arena.jpg',...Array.from({length:6},(_,i)=>`swordsman_${i}.png`),...Array.from({length:6},(_,i)=>`dark_${i}.png`)];files.forEach(f=>{let im=new Image;im.onload=()=>loaded++;im.src=f;assets[f]=im});
 const keys={};let just={};const key=k=>!!keys[k];let player,foe,particles,clock,round,notice,shake,aiTick,phaseTick,noticeTick,aiMode,aiModeTick,aiAttackLock,aiCommitDir,aiLastPlayerX;
-function reset(){player={x:600,y:FLOOR,w:72,h:135,vx:0,vy:0,face:1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};foe={x:1060,y:FLOOR,w:72,h:135,vx:0,vy:0,face:-1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};particles=[];clock=90*60;round='intro';phaseTick=165;notice='CASTLE DUEL';noticeTick=0;shake=0;aiTick=0;camera=350;aiMode='observe';aiModeTick=85;aiAttackLock=75;aiCommitDir=0;aiLastPlayerX=player.x;just={}}
+function reset(){player={x:600,y:FLOOR,w:72,h:135,vx:0,vy:0,face:1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};foe={x:1060,y:FLOOR,w:72,h:135,vx:0,vy:0,face:-1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};particles=[];clock=90*60;round='intro';phaseTick=165;notice='CASTLE DUEL';noticeTick=0;shake=0;aiTick=0;camera=350;aiMode='observe';aiModeTick=85;aiAttackLock=75;aiCommitDir=0;aiLastPlayerX=player.x;attackHeld=false;attackHoldFrames=0;attackCharged=false;attackQueued=false;just={}}
 reset();document.getElementById('restart').onclick=reset;
 document.addEventListener('keydown',e=>{let k=e.key.toLowerCase();if(k.startsWith('arrow'))k={arrowleft:'a',arrowright:'d',arrowup:'w'}[k]||k;if(k===' ')k='w';if(['a','d','w','s','j','k','l'].includes(k))e.preventDefault();if(k==='r')reset();if(!keys[k])just[k]=true;keyboardHolds[k]=true;keys[k]=true});document.addEventListener('keyup',e=>{let k=e.key.toLowerCase();if(k.startsWith('arrow'))k={arrowleft:'a',arrowright:'d',arrowup:'w'}[k]||k;if(k===' ')k='w';keyboardHolds[k]=false;syncTouch(k)});
 const keyboardHolds={},touchPointers=new Map();
@@ -91,6 +95,20 @@ function padHit(pad,x,y,previous=new Set()){
  if(dx>.25&&map.right)out.add(map.right);
  return out;
 }
+// A quick release executes a light attack; a sustained hold executes a heavy attack.
+// Timing is evaluated in the game loop so touch and mouse behave consistently.
+let attackHeld=false,attackHoldFrames=0,attackCharged=false,attackQueued=false;
+const attackButton=document.querySelector('[data-action="attack"]'),blockButton=document.querySelector('[data-action="block"]');
+function startCombatPointer(b,down,up){
+ b.addEventListener('pointerdown',e=>{e.preventDefault();try{b.setPointerCapture(e.pointerId)}catch(_){}down();b.classList.add('pressed')});
+ for(const ev of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(ev,e=>{if(!b.classList.contains('pressed'))return;e.preventDefault();b.classList.remove('pressed');up()});
+ b.addEventListener('contextmenu',e=>e.preventDefault());
+}
+startCombatPointer(attackButton,()=>{attackHeld=true;attackHoldFrames=0;attackCharged=false},()=>{
+ if(attackHeld&&!attackCharged)attackQueued=true;
+ attackHeld=false;attackHoldFrames=0;
+});
+startCombatPointer(blockButton,()=>{keyboardHolds.k=true;keys.k=true},()=>{keyboardHolds.k=false;syncTouch('k')});
 pads.forEach(pad=>{
  pad.addEventListener('contextmenu',e=>e.preventDefault());
  pad.addEventListener('selectstart',e=>e.preventDefault());
@@ -175,6 +193,8 @@ function update(){
   if(player.jumpBuffer>0&&player.coyote>0&&player.atk===0&&!player.block&&!key('s')){player.vy=-17.4;player.land=0;player.coyote=0;player.jumpBuffer=0;player.ground=-1}
   if(just.s&&player.ground!==FLOOR&&player.ground!==-1){player.drop=17;player.vy=3;aerialDrop(player)}
   // Both attack types are allowed in the air, subject to cooldown.
+  if(attackHeld&&!attackCharged){attackHoldFrames++;if(attackHoldFrames>=23){attackCharged=true;attack(player,foe,true)}}
+  if(attackQueued){attack(player,foe,false);attackQueued=false}
   if(just.j)attack(player,foe,false);
   if(just.l)attack(player,foe,true);
  }else{player.block=false;player.crouch=false;}
