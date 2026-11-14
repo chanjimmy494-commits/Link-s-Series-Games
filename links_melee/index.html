@@ -27,7 +27,7 @@
 .labyrinth-pad .blank:after{content:"";display:block;width:40%;height:40%;margin:30%;border-radius:50%;background:#1f2128}
 @media(orientation:landscape) and (pointer:coarse){.labyrinth-pad{width:clamp(145px,38vh,205px)!important;height:auto!important;bottom:max(4px,env(safe-area-inset-bottom,0px))!important}}
 @media(orientation:landscape) and (pointer:coarse) and (max-height:390px){.labyrinth-pad{width:clamp(138px,40vh,170px)!important}}
-</style></head><body><header>LINK'S MELEE <small>v0.5.2 · Castle Duel</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
+</style></head><body><header>LINK'S MELEE <small>v0.5.3 · Castle Duel</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
 <div class="controls" aria-label="Touch game controls">
  <div class="pad labyrinth-pad" aria-label="Movement controls">
   <button class="up" data-k="w" aria-label="Jump"></button>
@@ -56,8 +56,8 @@ document.addEventListener('touchend',e=>{const now=Date.now();if(now-lastTouchEn
 document.querySelectorAll('.pad').forEach(p=>p.addEventListener('touchmove',e=>e.preventDefault(),{passive:false}));
 const canvas=document.getElementById('game'),c=canvas.getContext('2d');c.imageSmoothingEnabled=false;const W=960,H=540,FLOOR=438,WORLD=1720,platforms=[{x:375,y:345,w:235,h:16},{x:1110,y:345,w:235,h:16},{x:175,y:263,w:240,h:13},{x:730,y:267,w:250,h:13},{x:1325,y:263,w:215,h:13}];let camera=0;
 const assets={};let loaded=0;const files=['castle_arena.jpg',...Array.from({length:6},(_,i)=>`swordsman_${i}.png`),...Array.from({length:6},(_,i)=>`dark_${i}.png`)];files.forEach(f=>{let im=new Image;im.onload=()=>loaded++;im.src=f;assets[f]=im});
-const keys={};let just={};const key=k=>!!keys[k];let player,foe,particles,clock,round,notice,shake,aiTick,phaseTick,noticeTick,aiMode,aiModeTick;
-function reset(){player={x:600,y:FLOOR,w:72,h:135,vx:0,vy:0,face:1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};foe={x:1060,y:FLOOR,w:72,h:135,vx:0,vy:0,face:-1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};particles=[];clock=90*60;round='intro';phaseTick=165;notice='CASTLE DUEL';noticeTick=0;shake=0;aiTick=0;camera=350;aiMode='approach';aiModeTick=0;just={}}
+const keys={};let just={};const key=k=>!!keys[k];let player,foe,particles,clock,round,notice,shake,aiTick,phaseTick,noticeTick,aiMode,aiModeTick,aiAttackLock,aiCommitDir,aiLastPlayerX;
+function reset(){player={x:600,y:FLOOR,w:72,h:135,vx:0,vy:0,face:1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};foe={x:1060,y:FLOOR,w:72,h:135,vx:0,vy:0,face:-1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};particles=[];clock=90*60;round='intro';phaseTick=165;notice='CASTLE DUEL';noticeTick=0;shake=0;aiTick=0;camera=350;aiMode='observe';aiModeTick=85;aiAttackLock=75;aiCommitDir=0;aiLastPlayerX=player.x;just={}}
 reset();document.getElementById('restart').onclick=reset;
 document.addEventListener('keydown',e=>{let k=e.key.toLowerCase();if(k.startsWith('arrow'))k={arrowleft:'a',arrowright:'d',arrowup:'w'}[k]||k;if(k===' ')k='w';if(['a','d','w','s','j','k','l'].includes(k))e.preventDefault();if(k==='r')reset();if(!keys[k])just[k]=true;keyboardHolds[k]=true;keys[k]=true});document.addEventListener('keyup',e=>{let k=e.key.toLowerCase();if(k.startsWith('arrow'))k={arrowleft:'a',arrowright:'d',arrowup:'w'}[k]||k;if(k===' ')k='w';keyboardHolds[k]=false;syncTouch(k)});
 const keyboardHolds={},touchPointers=new Map();
@@ -124,7 +124,7 @@ function spawnHit(x,y,blocked,dark){
  for(let i=0;i<12;i++)particles.push({x,y,vx:(Math.random()-.5)*8,vy:(Math.random()-.5)*9,life:16,color:blocked?'#9fd5f6':dark?'#c09cff':'#f4d394'});
 }
 function hit(a,b){
- const m=moves[a.attackKind];if(!m||a.didHit)return;
+ const m=moves[a.attackKind];if(!m||a.didHit||b.inv>0)return;
  const delta=b.x-a.x;
  if(Math.abs(delta)>m.range||Math.sign(delta)!==a.face||Math.abs(b.y-a.y)>110||(b.crouch&&!a.heavy&&a.y<FLOOR-25))return;
  a.didHit=true;
@@ -132,7 +132,7 @@ function hit(a,b){
  const damage=guarded?Math.max(1,Math.round(m.damage*.15)):m.damage;
  b.hp=Math.max(0,b.hp-damage);
  b.stamina=Math.max(0,b.stamina-(guarded?(a.heavy?32:17):3));
- b.inv=guarded?6:13;b.stun=guarded?5:m.stun;b.vx=a.face*(guarded?2.4:m.knock);
+ b.inv=guarded?10:24;b.stun=guarded?5:m.stun;b.vx=a.face*(guarded?2.4:m.knock);
  if(guarded&&b.stamina<=0){b.guardBreak=62;b.block=false;b.stun=62;notice='GUARD BROKEN'}
  else notice=guarded?'BLOCKED':a.heavy?'HEAVY STRIKE':'STRIKE';
  noticeTick=38;shake=guarded?1:4;spawnHit(b.x,b.y-83,guarded,a===foe);
@@ -178,33 +178,42 @@ function update(){
   if(just.j)attack(player,foe,false);
   if(just.l)attack(player,foe,true);
  }else{player.block=false;player.crouch=false;}
- aiTick++;aiModeTick--;
- let dx=player.x-foe.x,dist=Math.abs(dx),dir=Math.sign(dx)||-1;
- foe.face=dir;
+ aiTick++;aiModeTick--;aiAttackLock=Math.max(0,aiAttackLock-1);
+ let dx=player.x-foe.x,dist=Math.abs(dx),dir=Math.sign(dx)||foe.face;
+ const playerApproaching=Math.abs(player.x-foe.x)<Math.abs(aiLastPlayerX-foe.x)-1;
+ aiLastPlayerX=player.x;
+ // A readable decision cycle: observe, approach, telegraph, strike, recover, defend.
+ // No attacks while the player is outside meaningful reach, and no instant attack loops.
  if(aiModeTick<=0){
-  // Independently chosen tactical commitments rather than perpetual distance mirroring.
-  const choices=dist>225?['approach','rush','approach','jump']:dist<100?['attack','guard','rush','retreat','attack']:['approach','attack','rush','guard','jump','attack'];
-  aiMode=choices[Math.floor(Math.random()*choices.length)];
-  aiModeTick=aiMode==='retreat'?25:aiMode==='guard'?27:aiMode==='attack'?45:65;
+  if(aiMode==='windup'){aiMode='strike';aiModeTick=5}
+  else if(aiMode==='strike'){aiMode='recover';aiModeTick=42+Math.floor(Math.random()*25);aiAttackLock=Math.max(aiAttackLock,aiModeTick)}
+  else if(aiMode==='recover'){aiMode='observe';aiModeTick=25+Math.floor(Math.random()*23)}
+  else if(aiMode==='guard'){aiMode='observe';aiModeTick=22+Math.floor(Math.random()*20)}
+  else if(dist>215){aiMode='approach';aiModeTick=45+Math.floor(Math.random()*24);aiCommitDir=dir}
+  else if(aiAttackLock===0&&dist<155&&Math.abs(player.y-foe.y)<90&&Math.random()<.55){
+   aiMode='windup';aiModeTick=24+Math.floor(Math.random()*13);aiCommitDir=dir;
+  }else if(player.atk>0&&dist<165&&Math.random()<.65){aiMode='guard';aiModeTick=24;aiCommitDir=dir}
+  else{aiMode=Math.random()<.3?'reposition':'observe';aiModeTick=30+Math.floor(Math.random()*35);aiCommitDir=Math.random()<.5?1:-1}
  }
  if(!foe.stun&&foe.guardBreak===0){
   foe.block=false;
-  if(aiMode==='approach')foe.vx=dir*2.65;
-  else if(aiMode==='rush')foe.vx=dir*4.0;
-  else if(aiMode==='retreat')foe.vx=-dir*2.1;
-  else if(aiMode==='guard'){foe.vx*=.8;foe.block=dist<175&&foe.stamina>18}
-  else if(aiMode==='jump'){
-   foe.vx=dir*3.3;
-   if(foe.coyote>0&&foe.ground!==-1){foe.vy=-16;foe.ground=-1;foe.coyote=0}
-  }
-  else if(aiMode==='attack'){foe.vx=dir*(dist>120?3.2:.6)}
-  // A committed attack can begin while closing in, rather than only at an exact distance.
-  if(dist<155&&foe.cool===0&&!foe.block&&(aiMode==='attack'||aiMode==='rush'||(aiMode==='approach'&&aiModeTick<22))){
-   attack(foe,player,aiMode==='rush'&&Math.random()<.5);
-   if(foe.atk>0){aiMode='attack';aiModeTick=Math.max(aiModeTick,foe.atk+7)}
-  }
-  if(player.atk>0&&dist<120&&foe.cool>0&&aiMode==='guard'&&foe.stamina>20)foe.block=true;
- }
+  // Face the player only outside an attack commitment.
+  if(aiMode!=='windup'&&aiMode!=='strike')foe.face=dir;
+  if(aiMode==='approach'){foe.vx=aiCommitDir*2.25;if(dist<145){aiModeTick=Math.min(aiModeTick,12)}}
+  else if(aiMode==='reposition')foe.vx=aiCommitDir*1.5;
+  else if(aiMode==='observe')foe.vx*=.72;
+  else if(aiMode==='guard'){foe.vx*=.5;foe.block=foe.stamina>15}
+  else if(aiMode==='windup'){foe.face=aiCommitDir;foe.vx*=.55}
+  else if(aiMode==='strike'){
+   foe.face=aiCommitDir;foe.vx=aiCommitDir*1.05;
+   if(aiModeTick===4&&aiAttackLock===0){
+    attack(foe,player,Math.random()<.35);
+    aiAttackLock=100;
+   }
+  }else if(aiMode==='recover'){foe.vx*=.65;if(player.atk>0&&dist<120&&foe.atk===0&&foe.stamina>22&&aiModeTick<20)foe.block=true}
+  // Do not pursue a jumping player in lockstep; allow crossovers and repositioning.
+  if(player.ground===-1&&aiMode==='approach')foe.vx*=.35;
+ }else{foe.block=false;foe.vx*=.75}
 
  physics(player);physics(foe);
  // Camera follows the midpoint but gives the player extra visibility when fighters separate.
