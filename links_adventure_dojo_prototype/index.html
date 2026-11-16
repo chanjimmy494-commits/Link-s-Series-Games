@@ -12,7 +12,7 @@ const spriteRoot='../links_adventure_0_22_ancient_outpost/Links_Adventure_Ancien
 const counts={idle:4,walk:8,run:8,jump:4,attack:7,block:9};
 const sprites={};for(const [action,count] of Object.entries(counts)){sprites[action]=Array.from({length:count},(_,i)=>{let img=new Image();img.src=spriteRoot+action+'_'+String(i).padStart(2,'0')+'.png';return img})}
 // Dojo master sprite atlas: 8 columns x 18 rows, 112px square cells.
-const masterAtlas=new Image();masterAtlas.src='dojo_master_atlas.png?v=1';
+const masterAtlas=new Image();masterAtlas.src='IMG_2919.png?v=2';
 const masterActions={idle:[0,5,5],walk:[1,7,11],run:[2,7,14],light:[3,4,12],combo:[4,7,15],upward:[5,4,12],block:[6,4,6],hit:[7,4,10],getup:[8,4,10],turn:[9,3,8],crouch:[10,4,7],jump:[11,5,12],heavy:[12,5,12],thrust:[13,4,12],downward:[14,4,12],parry:[15,4,10],knockdown:[16,5,10],defeat:[17,3,4]};
 const held=new Set();let state='menu',clock=0,points=0,hits=0,blocks=0,taken=0,currency=300,exp=0,difficulty=1,player,master,particles=[],last=0,attackWasHeld=false;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
