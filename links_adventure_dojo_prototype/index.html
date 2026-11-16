@@ -33,7 +33,7 @@ function update(dt){if(state!=='fight')return;clock=Math.max(0,clock-dt);
  if(Math.abs(player.x-master.x)>12)player.face=player.x<master.x?1:-1;
  hit(player,master);hit(master,player);for(const p of particles)p.t-=dt;particles=particles.filter(p=>p.t>0);
  if(clock===0||player.hp===0||master.hp===0)finish()}
-const dojoBackground=new Image();dojoBackground.src='dojo_background.png';
+const dojoBackground=new Image();dojoBackground.src='IMG_2918.png';
 function drawBackdrop(){if(dojoBackground.complete&&dojoBackground.naturalWidth){ctx.drawImage(dojoBackground,0,0,W,H);return}let g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#1a1b28');g.addColorStop(1,'#494037');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
  ctx.fillStyle='#292b36';for(let y=0;y<390;y+=46){for(let x=(Math.floor(y/46)%2)*-50;x<W;x+=102){ctx.fillRect(x+2,y+2,98,42);ctx.strokeStyle='#5e5961';ctx.strokeRect(x+2,y+2,98,42)}}
  ctx.fillStyle='#6e4b32';ctx.fillRect(90,0,38,416);ctx.fillRect(832,0,38,416);ctx.fillRect(0,45,W,25);ctx.fillRect(0,370,W,25);
