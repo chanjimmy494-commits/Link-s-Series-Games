@@ -124,10 +124,10 @@ const progressKey='links-melee-campaign-v109';
 try{const saved=Number(sessionStorage.getItem(progressKey));if(Number.isInteger(saved)&&saved>=0&&saved<5)stageIndex=saved}catch(e){}
 const stages=[
  {name:'OUTPOST RUINS',opponent:'DARK SWORDSMAN',background:'castle_arena.jpg'},
- {name:'OVERGROWN RUINS',opponent:'RUINS CHALLENGER',background:'2EB80A3E-3DFF-4440-8CCA-30EA71D1CEC4.png'},
+ {name:'TRAINING DOJO',opponent:'RUINS CHALLENGER',background:'../links_adventure_dojo_prototype/IMG_2918.png'},
  {name:'FOREST CLEARING',opponent:'FOREST CHALLENGER',background:'62490EA1-5C4C-4938-95E4-35F25811C90F.png'},
  {name:'OUTPOST DUEL',opponent:'DUAL SWORDSMAN',background:'castle_arena.jpg'},
- {name:'TRAINING DOJO',opponent:'SHADOW LINK',background:'../links_adventure_dojo_prototype/IMG_2918.png'}
+ {name:'OVERGROWN RUINS',opponent:'SHADOW LINK',background:'2EB80A3E-3DFF-4440-8CCA-30EA71D1CEC4.png'}
 ];
 const stageBackgrounds=stages.map(stage=>{const im=new Image();im.src=stage.background;return im});
 function stagePlatforms(){return (stageIndex===0||stageIndex===3)?platforms:[]}
