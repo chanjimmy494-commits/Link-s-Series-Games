@@ -78,7 +78,7 @@ html *,body *{touch-action:none!important;-webkit-touch-callout:none}
  .labyrinth-pad{width:40vw!important;height:40vw!important}
  .combat-buttons button{width:15vw!important;height:22vw!important}
 }
-</style></head><body><header>LINK'S MELEE <small>v1.0.1 · Stage Opponent Prototypes</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
+</style></head><body><header>LINK'S MELEE <small>v1.0.2 · Shadow Link & Forest Challenger</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
 <div class="controls" aria-label="Touch game controls">
  <div class="pad labyrinth-pad" aria-label="Movement controls">
   <button class="up" data-k="w" aria-label="Jump"></button>
@@ -213,7 +213,7 @@ const moves={
  aerial:{duration:24,activeStart:8,activeEnd:15,cost:11,range:125,damage:12,knock:6,stun:12},
  heavy:{duration:48,activeStart:19,activeEnd:34,cost:24,range:143,damage:19,knock:9,stun:18}
 };
-const atlasImages={};for(const [name,file] of Object.entries({hero:'IMG_3200.PNG',foe:'IMG_3204.PNG',challenger2:'IMG_3205.PNG',challenger3:'IMG_3206.PNG'})){const im=new Image();im.src=file;atlasImages[name]=im}
+const atlasImages={};for(const [name,file] of Object.entries({hero:'IMG_3200.PNG',foe:'IMG_3204.PNG',challenger2:'IMG_3205.PNG',challenger3:'IMG_3207.PNG'})){const im=new Image();im.src=file;atlasImages[name]=im}
 const atlasMap={
  hero:{idle:[1,1,3],light:[2,7,9],lunge:[1,4,6],rising:[1,4,6],low:[4,7,9],aerial:[1,4,6],heavy:[6,1,3],block:[3,7,9],crouch:[4,7,9],jump:[1,4,6],walk:[1,7,9],defeat:[6,7,9]},
  foe:{idle:[1,1,3],light:[4,7,9],lunge:[1,7,9],rising:[1,4,6],low:[5,1,3],aerial:[1,4,6],heavy:[4,1,3],block:[2,7,9],crouch:[5,1,3],jump:[1,7,9],walk:[1,7,9],defeat:[6,7,9]}
@@ -251,7 +251,7 @@ async function loadApprovedSlash(){
  }catch(err){console.warn('Approved slash unavailable; retaining atlas fallback',err);slashFrames.length=0}
 }
 loadApprovedSlash();
-function drawSlashFrames(a){
+function drawSlashFrames(a,shadow=false){
  if(slashFrames.length!==17)return false;
  const progress=Math.min(1,a.attackPhase/moves[a.attackKind].duration);
  const ranges={light:[0,4],downward:[5,9],lunge:[10,16],heavy:[10,16]};
@@ -259,7 +259,7 @@ function drawSlashFrames(a){
  const elapsed=progress*slashFrameMs.slice(first,last+1).reduce((sum,ms)=>sum+ms,0);
  let frame=first,at=0;
  while(frame<last&&at+slashFrameMs[frame]<=elapsed){at+=slashFrameMs[frame];frame++}
- const im=slashFrames[frame];
+ const im=shadow?getShadowAtlas(slashFrames[frame]):slashFrames[frame];
  c.save();c.translate(Math.round(a.x),Math.round(a.y));
  // Original GIF faces right.
  if(a.face<0)c.scale(-1,1);
@@ -272,6 +272,22 @@ function drawSlashFrames(a){
  const footX=71,footY=115;
  c.drawImage(im,-footX*scale,-footY*scale,142*scale,127*scale);
  c.restore();return true;
+}
+const shadowAtlases=new WeakMap();
+function getShadowAtlas(im){
+ if(shadowAtlases.has(im))return shadowAtlases.get(im);
+ const out=document.createElement('canvas');out.width=im.naturalWidth;out.height=im.naturalHeight;
+ const cx=out.getContext('2d',{willReadFrequently:true});cx.drawImage(im,0,0);
+ const px=cx.getImageData(0,0,out.width,out.height),p=px.data;
+ for(let i=0;i<p.length;i+=4){if(p[i+3]<10)continue;
+  const r=p[i],g=p[i+1],b=p[i+2];
+  // Keep highlights and sword legible; darken tunic, hair, skin and shield alike.
+  const lum=.2126*r+.7152*g+.0722*b;
+  p[i]=Math.min(255,Math.round(lum*.24+24));
+  p[i+1]=Math.min(255,Math.round(lum*.27+17));
+  p[i+2]=Math.min(255,Math.round(lum*.43+45));
+ }
+ cx.putImageData(px,0,0);shadowAtlases.set(im,out);return out;
 }
 function drawAtlas(a,dark,action,progress){
  const role=dark?(stageIndex===3?'hero':stageIndex===2?'challenger3':stageIndex===1?'challenger2':'foe'):'hero',im=atlasImages[role];if(!im.complete||!im.naturalWidth)return false;
@@ -290,10 +306,14 @@ function drawAtlas(a,dark,action,progress){
  const sourceDir=(sourceFacing[role]||sourceFacing.foe)[action]??-1;
  if(sourceDir!==a.face)c.scale(-1,1);
  if(a.inv>0&&a.inv%4<2)c.globalAlpha=.6;
- if(dark&&stageIndex===3)c.filter='grayscale(1) brightness(.45) sepia(.65) hue-rotate(180deg) saturate(2.5)';
+ 
  c.imageSmoothingEnabled=false;
  // Keep a consistent foot anchor, independent of the source image's empty margins.
- c.drawImage(im,(first+frame-1)*cellW,(row-1)*cellH,cellW,cellH,-76,-166,152,166);
+ if(dark&&stageIndex===3){
+  // Recolor the *pixels*, rather than relying on canvas filter (unreliable in iOS WebViews).
+  const darkSheet=getShadowAtlas(im);
+  c.drawImage(darkSheet,(first+frame-1)*cellW,(row-1)*cellH,cellW,cellH,-76,-166,152,166);
+ }else c.drawImage(im,(first+frame-1)*cellW,(row-1)*cellH,cellW,cellH,-76,-166,152,166);
  c.restore();return true;
 }
 function attack(a,b,heavy,kind){
@@ -463,7 +483,7 @@ function fighter(a,dark){
   if(drawAtlas(a,false,'heavy',0))return;
  }
  const atlasAction=attacking?a.attackKind:action==='run'?'walk':action;
- if(!dark&&attacking&&['light','downward','lunge','heavy'].includes(a.attackKind)&&drawSlashFrames(a))return;
+ if((!dark||stageIndex===3)&&attacking&&['light','downward','lunge','heavy'].includes(a.attackKind)&&drawSlashFrames(a,dark&&stageIndex===3))return;
  const atlasProgress=attacking?a.attackPhase/moves[a.attackKind].duration:((a.step*.11)%1);
  if(drawAtlas(a,dark,atlasAction,atlasProgress))return;
  const frames=animationFrames[action];
