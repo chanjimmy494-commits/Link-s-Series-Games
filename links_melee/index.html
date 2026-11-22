@@ -59,7 +59,7 @@ html *,body *{touch-action:none!important;-webkit-touch-callout:none}
  canvas{position:fixed!important;left:0!important;top:0!important;transform:none!important;width:100vw!important;height:100dvh!important;max-width:none!important;max-height:none!important;object-fit:contain!important}
  .controls{position:fixed!important;inset:0!important;width:100vw!important;height:100dvh!important}
 }
-</style></head><body><header>LINK'S MELEE <small>v0.8.1 · Standard Slash Mapping</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
+</style></head><body><header>LINK'S MELEE <small>v0.8.2 · Slash Size Correction</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
 <div class="controls" aria-label="Touch game controls">
  <div class="pad labyrinth-pad" aria-label="Movement controls">
   <button class="up" data-k="w" aria-label="Jump"></button>
@@ -233,9 +233,12 @@ function drawSlashFrames(a){
  if(a.face<0)c.scale(-1,1);
  if(a.inv>0&&a.inv%4<2)c.globalAlpha=.6;
  c.imageSmoothingEnabled=false;
- // Foot position in the GIF is near y=115 of its 127px canvas.
- const scale=166/115;
- c.drawImage(im,-71*scale,-115*scale,142*scale,127*scale);
+ // Match the normal atlas sprite's apparent size. The GIF has substantial
+ // empty canvas around Link, so scaling by its canvas height shrank him.
+ // Use a single, stable scale for every frame to prevent size pumping.
+ const scale=2.05;
+ const footX=71,footY=115;
+ c.drawImage(im,-footX*scale,-footY*scale,142*scale,127*scale);
  c.restore();return true;
 }
 function drawAtlas(a,dark,action,progress){
