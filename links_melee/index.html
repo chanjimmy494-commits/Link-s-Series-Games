@@ -59,7 +59,7 @@ html *,body *{touch-action:none!important;-webkit-touch-callout:none}
  canvas{position:fixed!important;left:0!important;top:0!important;transform:none!important;width:100vw!important;height:100dvh!important;max-width:none!important;max-height:none!important;object-fit:contain!important}
  .controls{position:fixed!important;inset:0!important;width:100vw!important;height:100dvh!important}
 }
-</style></head><body><header>LINK'S MELEE <small>v0.8.2 · Slash Size Correction</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
+</style></head><body><header>LINK'S MELEE <small>v0.8.3 · Consistent Slash Timing</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
 <div class="controls" aria-label="Touch game controls">
  <div class="pad labyrinth-pad" aria-label="Movement controls">
   <button class="up" data-k="w" aria-label="Jump"></button>
@@ -176,7 +176,7 @@ pads.forEach(pad=>{
 document.addEventListener('visibilitychange',()=>{if(document.hidden){touchPointers.clear();for(const k in keyboardHolds)keyboardHolds[k]=false;recalc()}});
 // v0.7: directional attacks, shared three-button combat, and frame-mapped atlas poses.
 const moves={
- light:{duration:18,activeStart:5,activeEnd:10,cost:6,range:122,damage:10,knock:5,stun:12},
+ light:{duration:85,activeStart:35,activeEnd:49,cost:6,range:122,damage:10,knock:5,stun:12},
  lunge:{duration:85,activeStart:35,activeEnd:49,cost:11,range:154,damage:12,knock:8,stun:14},
  rising:{duration:25,activeStart:10,activeEnd:16,cost:12,range:115,damage:13,knock:6,stun:16},
  low:{duration:21,activeStart:7,activeEnd:12,cost:8,range:110,damage:8,knock:4,stun:10},
