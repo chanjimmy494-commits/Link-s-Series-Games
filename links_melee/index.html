@@ -78,7 +78,7 @@ html *,body *{touch-action:none!important;-webkit-touch-callout:none}
  .labyrinth-pad{width:40vw!important;height:40vw!important}
  .combat-buttons button{width:15vw!important;height:22vw!important}
 }
-</style></head><body><header>LINK'S MELEE <small>v0.9.5 · Portrait Controls</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
+</style></head><body><header>LINK'S MELEE <small>v1.0.0 · Four-Stage Campaign</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
 <div class="controls" aria-label="Touch game controls">
  <div class="pad labyrinth-pad" aria-label="Movement controls">
   <button class="up" data-k="w" aria-label="Jump"></button>
@@ -119,12 +119,22 @@ document.addEventListener('touchstart',e=>{
  if(e.touches.length>1){e.preventDefault();return}
  const now=Date.now();if(now-lastGameTouch<350)e.preventDefault();lastGameTouch=now;
 },{passive:false});
-const canvas=document.getElementById('game'),c=canvas.getContext('2d');c.imageSmoothingEnabled=false;const W=960,H=540,FLOOR=438,WORLD=1720,platforms=[{x:375,y:345,w:235,h:16},{x:1110,y:345,w:235,h:16},{x:175,y:263,w:240,h:13},{x:730,y:267,w:250,h:13},{x:1325,y:263,w:215,h:13}];let camera=0;
+const canvas=document.getElementById('game'),c=canvas.getContext('2d');c.imageSmoothingEnabled=false;const W=960,H=540,FLOOR=438,WORLD=1720,platforms=[{x:375,y:345,w:235,h:16},{x:1110,y:345,w:235,h:16},{x:175,y:263,w:240,h:13},{x:730,y:267,w:250,h:13},{x:1325,y:263,w:215,h:13}];let camera=0;let stageIndex=0;
+const stages=[
+ {name:'OUTPOST RUINS',opponent:'DARK SWORDSMAN',background:'castle_arena.jpg'},
+ {name:'OVERGROWN RUINS',opponent:'RUINS CHALLENGER',background:'DAC21C40-CCCB-4FE6-9A7C-65B771BE4A41.JPEG'},
+ {name:'FOREST CLEARING',opponent:'FOREST CHALLENGER',background:'A6E9E6CB-FFD3-4A64-B420-6A7E2636F8B7.JPEG'},
+ {name:'TRAINING DOJO',opponent:'SHADOW LINK',background:'../links_adventure_dojo_prototype/IMG_2918.png'}
+];
+const stageBackgrounds=stages.map(stage=>{const im=new Image();im.src=stage.background;return im});
+function stagePlatforms(){return stageIndex===0?platforms:[]}
+
 const assets={};let loaded=0;const files=['castle_arena.jpg',...Array.from({length:6},(_,i)=>`swordsman_${i}.png`),...Array.from({length:6},(_,i)=>`dark_${i}.png`)];files.forEach(f=>{let im=new Image;im.onload=()=>loaded++;im.src=f;assets[f]=im});
 const keys={};let just={};const key=k=>!!keys[k];let player,foe,particles,clock,round,notice,shake,aiTick,phaseTick,noticeTick,aiMode,aiModeTick,aiAttackLock,aiCommitDir,aiLastPlayerX;
 let attackHeld=false,attackHoldFrames=0,attackCharged=false,attackQueued=false,heavyQueued=false,normalSlashNext='light';
 let directionMemory='',directionMemoryFrames=0;
-function reset(){player={x:600,y:FLOOR,w:72,h:135,vx:0,vy:0,face:1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,blockAnim:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};foe={x:1060,y:FLOOR,w:72,h:135,vx:0,vy:0,face:-1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,blockAnim:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};particles=[];clock=90*60;round='intro';phaseTick=165;notice='CASTLE DUEL';noticeTick=0;shake=0;aiTick=0;camera=350;aiMode='observe';aiModeTick=85;aiAttackLock=75;aiCommitDir=0;aiLastPlayerX=player.x;attackHeld=false;attackHoldFrames=0;attackCharged=false;attackQueued=false;heavyQueued=false;normalSlashNext='light';directionMemory='';directionMemoryFrames=0;just={}}
+function reset(){stageIndex=0;startStage();}
+function startStage(){player={x:600,y:FLOOR,w:72,h:135,vx:0,vy:0,face:1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,blockAnim:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};foe={x:1060,y:FLOOR,w:72,h:135,vx:0,vy:0,face:-1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,blockAnim:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};particles=[];clock=90*60;round='intro';phaseTick=165;notice=stages[stageIndex].name;noticeTick=0;shake=0;aiTick=0;camera=350;aiMode='observe';aiModeTick=85;aiAttackLock=75;aiCommitDir=0;aiLastPlayerX=player.x;attackHeld=false;attackHoldFrames=0;attackCharged=false;attackQueued=false;heavyQueued=false;normalSlashNext='light';directionMemory='';directionMemoryFrames=0;just={}}
 reset();document.getElementById('restart').onclick=reset;
 document.addEventListener('keydown',e=>{let k=e.key.toLowerCase();if(k.startsWith('arrow'))k={arrowleft:'a',arrowright:'d',arrowup:'w'}[k]||k;if(k===' ')k='w';if(['a','d','w','s','j','k','l'].includes(k))e.preventDefault();if(k==='r')reset();if(!keys[k])just[k]=true;keyboardHolds[k]=true;keys[k]=true});document.addEventListener('keyup',e=>{let k=e.key.toLowerCase();if(k.startsWith('arrow'))k={arrowleft:'a',arrowright:'d',arrowup:'w'}[k]||k;if(k===' ')k='w';keyboardHolds[k]=false;syncTouch(k)});
 const keyboardHolds={},touchPointers=new Map();
@@ -323,7 +333,7 @@ function physics(a){
  const oldY=a.y;
  a.vy+=.72;a.y+=a.vy;
  let surface=FLOOR;
- if(a.vy>=0&&a.drop===0)for(const p of platforms){if(oldY<=p.y+5&&a.y>=p.y&&a.x>p.x-20&&a.x<p.x+p.w+20)surface=Math.min(surface,p.y)}
+ if(a.vy>=0&&a.drop===0)for(const p of stagePlatforms()){if(oldY<=p.y+5&&a.y>=p.y&&a.x>p.x-20&&a.x<p.x+p.w+20)surface=Math.min(surface,p.y)}
  if(a.y>=surface){a.y=surface;a.vy=0;a.ground=surface;a.coyote=7;if(wasAir)a.land=9}
  else{a.ground=-1;a.coyote=Math.max(0,a.coyote-1)}
  a.land=Math.max(0,a.land-1);
@@ -334,7 +344,7 @@ function physics(a){
 }
 function update(){
  if(round==='intro'){phaseTick--;if(phaseTick<=0){round='play';notice='FIGHT';noticeTick=65}just={};return}
- if(round!=='play'){phaseTick++;shake=0;just={};return}
+ if(round!=='play'){phaseTick++;shake=0;if(round==='win'&&phaseTick>125&&stageIndex<stages.length-1){stageIndex++;startStage();}just={};return}
  clock--;if(clock<=0){shake=0;round=player.hp>=foe.hp?'win':'lose';phaseTick=0;notice=round==='win'?'TIME — VICTORY':'TIME — DEFEAT';just={};return}
  noticeTick=Math.max(0,noticeTick-1);directionMemoryFrames=Math.max(0,directionMemoryFrames-1);if(just.s){directionMemory='down';directionMemoryFrames=11}else if(just.w){directionMemory='up';directionMemoryFrames=11}else if(just.a||just.d){directionMemory='forward';directionMemoryFrames=11}
  if(!player.stun){
@@ -485,7 +495,7 @@ function fighter(a,dark){
  c.restore();
 }
 function drawStage(){
- const bg=assets['castle_arena.jpg'];
+ const bg=stageBackgrounds[stageIndex];
  c.fillStyle='#172331';c.fillRect(0,0,W,H);
  if(bg.complete&&bg.naturalWidth){
   // Wide arena uses a softened, mirrored extension of the original static artwork.
@@ -500,7 +510,7 @@ function drawStage(){
  c.fillStyle='#262c32';c.fillRect(0,FLOOR+2,WORLD,H-FLOOR);
  c.fillStyle='#6b6257';c.fillRect(0,FLOOR,WORLD,5);
  c.fillStyle='#4a4540';c.fillRect(0,FLOOR+5,WORLD,15);
- for(const p of platforms){
+ for(const p of stagePlatforms()){
   c.fillStyle='#151b21a0';c.fillRect(p.x+6,p.y+14,p.w,11);
   const timber=p.y<300;
   c.fillStyle=timber?'#473023':'#504c49';c.fillRect(p.x,p.y,p.w,p.h);
@@ -519,7 +529,7 @@ function render(){
  for(let p of particles){c.globalAlpha=p.life/22;c.fillStyle=p.color;c.fillRect(p.x,p.y,5,5)}
  c.globalAlpha=1;c.restore();
  bar(28,20,player.hp,player.stamina);bar(592,20,foe.hp,foe.stamina,true);
- text('SWORDSMAN',28,85,18,'#f8e0ad','left');text('DARK SWORDSMAN',932,85,18,'#e4baff','right');
+ text('SWORDSMAN',28,85,18,'#f8e0ad','left');text(stages[stageIndex].opponent,932,85,18,'#e4baff','right');
  text(String(Math.max(0,Math.ceil(clock/60))),480,48,38);
  if(round==='intro'){c.fillStyle='#0a1020a8';c.fillRect(245,175,470,145);text('CASTLE DUEL',480,226,35,'#f7db9e');text(phaseTick>105?'READY':phaseTick>45?'DRAW YOUR SWORD':'FIGHT!',480,278,27,'#dce9f4')}
  else if(round!=='play'){c.fillStyle='#0a1020cc';c.fillRect(160,155,640,200);text(notice,480,232,33,round==='win'?'#f8d587':'#f1a1a1');text('Press R or RESTART to fight again',480,285,19)}
