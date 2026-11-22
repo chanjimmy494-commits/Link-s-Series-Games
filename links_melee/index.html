@@ -59,7 +59,26 @@ html *,body *{touch-action:none!important;-webkit-touch-callout:none}
  canvas{position:fixed!important;left:0!important;top:0!important;transform:none!important;width:100vw!important;height:100dvh!important;max-width:none!important;max-height:none!important;object-fit:contain!important}
  .controls{position:fixed!important;inset:0!important;width:100vw!important;height:100dvh!important}
 }
-</style></head><body><header>LINK'S MELEE <small>v0.9.4 · Charge Movement Lock</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
+
+/* v0.9.5: portrait layout has a dedicated, non-overlapping control dock. */
+@media (orientation:portrait) and (pointer:coarse){
+ html,body{position:fixed!important;inset:0!important;width:100%!important;height:100dvh!important;overflow:hidden!important}
+ header{position:absolute;top:env(safe-area-inset-top,0px);left:0;right:0;z-index:2;padding:5px 0;font-size:17px}
+ header small{font-size:10px}
+ canvas{position:absolute!important;left:0!important;top:calc(env(safe-area-inset-top,0px) + 38px)!important;width:100vw!important;height:auto!important;aspect-ratio:16/9!important;max-width:none!important;border:0!important;box-shadow:none!important;transform:none!important}
+ .controls{position:fixed!important;left:0!important;right:0!important;bottom:calc(env(safe-area-inset-bottom,0px) + 54px)!important;top:auto!important;width:100%!important;height:clamp(150px,42vw,205px)!important;max-width:none!important;margin:0!important;padding:0 9px!important;display:flex!important;justify-content:space-between!important;align-items:center!important;gap:8px!important;pointer-events:auto!important;z-index:5}
+ .labyrinth-pad{position:relative!important;left:auto!important;bottom:auto!important;flex:0 0 auto!important;width:min(43vw,190px)!important;height:min(43vw,190px)!important;aspect-ratio:1!important}
+ .combat-buttons{position:relative!important;left:auto!important;right:auto!important;bottom:auto!important;display:flex!important;flex:0 1 auto!important;gap:clamp(4px,1.2vw,9px)!important;align-items:center!important;justify-content:flex-end!important}
+ .combat-buttons button{width:clamp(47px,15vw,75px)!important;height:clamp(72px,23vw,105px)!important;font-size:clamp(9px,2.6vw,12px)!important;color:#f4e7cb!important;letter-spacing:0!important;line-height:1.1!important;overflow:hidden!important}
+ .hint,.legend,footer{display:none!important}
+ .restart{position:fixed!important;left:50%!important;right:auto!important;transform:translateX(-50%)!important;bottom:calc(env(safe-area-inset-bottom,0px) + 9px)!important;top:auto!important;z-index:6!important;padding:8px 18px!important}
+}
+@media (orientation:portrait) and (pointer:coarse) and (max-width:360px){
+ .controls{padding:0 5px!important;gap:4px!important}
+ .labyrinth-pad{width:40vw!important;height:40vw!important}
+ .combat-buttons button{width:15vw!important;height:22vw!important}
+}
+</style></head><body><header>LINK'S MELEE <small>v0.9.5 · Portrait Controls</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
 <div class="controls" aria-label="Touch game controls">
  <div class="pad labyrinth-pad" aria-label="Movement controls">
   <button class="up" data-k="w" aria-label="Jump"></button>
