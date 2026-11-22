@@ -59,7 +59,7 @@ html *,body *{touch-action:none!important;-webkit-touch-callout:none}
  canvas{position:fixed!important;left:0!important;top:0!important;transform:none!important;width:100vw!important;height:100dvh!important;max-width:none!important;max-height:none!important;object-fit:contain!important}
  .controls{position:fixed!important;inset:0!important;width:100vw!important;height:100dvh!important}
 }
-</style></head><body><header>LINK'S MELEE <small>v0.9.3 · Correct Running Frames</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
+</style></head><body><header>LINK'S MELEE <small>v0.9.4 · Charge Movement Lock</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
 <div class="controls" aria-label="Touch game controls">
  <div class="pad labyrinth-pad" aria-label="Movement controls">
   <button class="up" data-k="w" aria-label="Jump"></button>
@@ -319,20 +319,21 @@ function update(){
  clock--;if(clock<=0){shake=0;round=player.hp>=foe.hp?'win':'lose';phaseTick=0;notice=round==='win'?'TIME — VICTORY':'TIME — DEFEAT';just={};return}
  noticeTick=Math.max(0,noticeTick-1);directionMemoryFrames=Math.max(0,directionMemoryFrames-1);if(just.s){directionMemory='down';directionMemoryFrames=11}else if(just.w){directionMemory='up';directionMemoryFrames=11}else if(just.a||just.d){directionMemory='forward';directionMemoryFrames=11}
  if(!player.stun){
-  player.crouch=key('s')&&player.ground!==-1;player.block=key('k')&&player.atk===0&&player.stamina>0&&player.guardBreak===0;
+  player.crouch=!attackHeld&&key('s')&&player.ground!==-1;player.block=!attackHeld&&key('k')&&player.atk===0&&player.stamina>0&&player.guardBreak===0;
+  if(attackHeld){player.vx=0;player.jumpBuffer=0;}
   let move=(key('d')?1:0)-(key('a')?1:0);
-  if(move&&!player.block){
+  if(move&&!player.block&&!attackHeld){
    player.vx=move*(player.crouch?1.65:player.atk?2.1:5.2);player.face=move;
   }
-  if(just.w)player.jumpBuffer=9;
-  if(player.jumpBuffer>0&&player.coyote>0&&player.atk===0&&!player.block&&!key('s')){player.vy=-17.4;player.land=0;player.coyote=0;player.jumpBuffer=0;player.ground=-1}
-  if(just.s&&player.ground!==FLOOR&&player.ground!==-1){player.drop=17;player.vy=3;aerialDrop(player)}
+  if(just.w&&!attackHeld)player.jumpBuffer=9;
+  if(!attackHeld&&player.jumpBuffer>0&&player.coyote>0&&player.atk===0&&!player.block&&!key('s')){player.vy=-17.4;player.land=0;player.coyote=0;player.jumpBuffer=0;player.ground=-1}
+  if(!attackHeld&&just.s&&player.ground!==FLOOR&&player.ground!==-1){player.drop=17;player.vy=3;aerialDrop(player)}
   // Both attack types are allowed in the air, subject to cooldown.
   if(attackHeld&&!attackCharged){attackHoldFrames++;if(attackHoldFrames>=23)attackCharged=true}
   if(heavyQueued){if(player.cool===0&&player.atk===0){attack(player,foe,true,'heavy');heavyQueued=false}}
   if(attackQueued){if(player.cool===0&&player.atk===0){const dir=directionAttack(player);const kind=dir==='light'?normalSlashNext:dir;attack(player,foe,false,kind);if(dir==='light'&&player.atk>0)normalSlashNext=normalSlashNext==='light'?'downward':'light';attackQueued=false}}
-  if(just.j&&player.cool===0&&player.atk===0){const dir=directionAttack(player);const kind=dir==='light'?normalSlashNext:dir;attack(player,foe,false,kind);if(dir==='light'&&player.atk>0)normalSlashNext=normalSlashNext==='light'?'downward':'light';}
-  if(just.l)attack(player,foe,true);
+  if(!attackHeld&&just.j&&player.cool===0&&player.atk===0){const dir=directionAttack(player);const kind=dir==='light'?normalSlashNext:dir;attack(player,foe,false,kind);if(dir==='light'&&player.atk>0)normalSlashNext=normalSlashNext==='light'?'downward':'light';}
+  if(just.l&&!attackHeld)attack(player,foe,true);
  }else{player.block=false;player.crouch=false;}
  aiTick++;aiModeTick--;aiAttackLock=Math.max(0,aiAttackLock-1);
  let dx=player.x-foe.x,dist=Math.abs(dx),dir=Math.sign(dx)||foe.face;
