@@ -335,7 +335,7 @@ function drawAtlas(a,dark,action,progress){
  
  c.imageSmoothingEnabled=false;
  // Keep a consistent foot anchor, independent of the source image's empty margins.
- if(dark&&stageIndex===3){
+ if(dark&&stageIndex===4){
   // Recolor the *pixels*, rather than relying on canvas filter (unreliable in iOS WebViews).
   const darkSheet=getShadowAtlas(im);
   c.drawImage(darkSheet,(first+frame-1)*cellW,(row-1)*cellH,cellW,cellH,-76,-166,152,166);
@@ -354,7 +354,7 @@ function attack(a,b,heavy,kind){
  if(a.cool>0||a.stun>0||a.atk>0||round!=='play'||a.block||a.guardBreak>0)return;
  const chosen=kind||(heavy?'heavy':'light');const m=moves[chosen];if(a.stamina<m.cost)return;
  a.heavy=heavy;a.attackKind=chosen;
- a.attackDuration=(a===foe&&stageIndex===3)?Math.max(12,Math.round(m.duration*.36)):m.duration;
+ a.attackDuration=(a===foe&&stageIndex===4)?Math.max(12,Math.round(m.duration*.36)):m.duration;
  a.atk=a.attackDuration;a.attackPhase=0;
  a.cool=a.attackDuration+(heavy?8:3);a.stamina-=m.cost;a.didHit=false;a.block=false;
  a.combo=(a.combo+1)%3;a.vx*=.72;
@@ -431,12 +431,12 @@ function update(){
  // No attacks while the player is outside meaningful reach, and no instant attack loops.
  if(aiModeTick<=0){
   if(aiMode==='windup'){aiMode='strike';aiModeTick=5}
-  else if(aiMode==='strike'){aiMode='recover';aiModeTick=(stageIndex===3?8:42)+Math.floor(Math.random()*(stageIndex===3?12:25));aiAttackLock=Math.max(aiAttackLock,aiModeTick)}
-  else if(aiMode==='recover'){aiMode='observe';aiModeTick=(stageIndex===3?5:25)+Math.floor(Math.random()*(stageIndex===3?9:23))}
+  else if(aiMode==='strike'){aiMode='recover';aiModeTick=(stageIndex===4?8:42)+Math.floor(Math.random()*(stageIndex===4?12:25));aiAttackLock=Math.max(aiAttackLock,aiModeTick)}
+  else if(aiMode==='recover'){aiMode='observe';aiModeTick=(stageIndex===4?5:25)+Math.floor(Math.random()*(stageIndex===4?9:23))}
   else if(aiMode==='guard'){aiMode='observe';aiModeTick=22+Math.floor(Math.random()*20)}
   else if(dist>215){aiMode='approach';aiModeTick=45+Math.floor(Math.random()*24);aiCommitDir=dir}
   else if(aiAttackLock===0&&dist<155&&Math.abs(player.y-foe.y)<90&&Math.random()<.55){
-   aiMode='windup';aiModeTick=(stageIndex===3?5:24)+Math.floor(Math.random()*(stageIndex===3?7:13));aiCommitDir=dir;
+   aiMode='windup';aiModeTick=(stageIndex===4?5:24)+Math.floor(Math.random()*(stageIndex===4?7:13));aiCommitDir=dir;
   }else if(player.atk>0&&dist<165&&Math.random()<.65){aiMode='guard';aiModeTick=24;aiCommitDir=dir}
   else{aiMode=Math.random()<.3?'reposition':'observe';aiModeTick=30+Math.floor(Math.random()*35);aiCommitDir=Math.random()<.5?1:-1}
  }
@@ -452,9 +452,9 @@ function update(){
   else if(aiMode==='strike'){
    foe.face=aiCommitDir;foe.vx=aiCommitDir*1.05;
    if(aiModeTick===4&&aiAttackLock===0){
-    if(stageIndex===3){const kind=['light','downward','lunge','heavy'][Math.floor(Math.random()*4)];attack(foe,player,kind==='heavy',kind)}
+    if(stageIndex===4){const kind=['light','downward','lunge','heavy'][Math.floor(Math.random()*4)];attack(foe,player,kind==='heavy',kind)}
     else attack(foe,player,Math.random()<.35);
-    aiAttackLock=stageIndex===3?17:100;
+    aiAttackLock=stageIndex===4?17:100;
    }
   }else if(aiMode==='recover'){foe.vx*=.65;if(player.atk>0&&dist<120&&foe.atk===0&&foe.stamina>22&&aiModeTick<20)foe.block=true}
   // Do not pursue a jumping player in lockstep; allow crossovers and repositioning.
@@ -521,8 +521,8 @@ function fighter(a,dark){
   if(drawAtlas(a,false,'heavy',0))return;
  }
  const atlasAction=attacking?a.attackKind:action==='run'?'walk':action;
- if((!dark||stageIndex===3)&&attacking&&['light','downward','lunge','heavy'].includes(a.attackKind)&&drawSlashFrames(a,dark&&stageIndex===3))return;
- const atlasProgress=attacking?Math.min(1,a.attackPhase/(a.attackDuration||moves[a.attackKind].duration)):((a.step*(dark&&stageIndex===3?.25:.11))%1);
+ if((!dark||stageIndex===4)&&attacking&&['light','downward','lunge','heavy'].includes(a.attackKind)&&drawSlashFrames(a,dark&&stageIndex===4))return;
+ const atlasProgress=attacking?Math.min(1,a.attackPhase/(a.attackDuration||moves[a.attackKind].duration)):((a.step*(dark&&stageIndex===4?.25:.11))%1);
  if(drawAtlas(a,dark,atlasAction,atlasProgress))return;
  const frames=animationFrames[action];
  const attackProgress=attacking?Math.max(0,Math.min(1,a.attackPhase/moves[a.attackKind].duration)):0;
