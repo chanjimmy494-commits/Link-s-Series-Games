@@ -59,7 +59,7 @@ html *,body *{touch-action:none!important;-webkit-touch-callout:none}
  canvas{position:fixed!important;left:0!important;top:0!important;transform:none!important;width:100vw!important;height:100dvh!important;max-width:none!important;max-height:none!important;object-fit:contain!important}
  .controls{position:fixed!important;inset:0!important;width:100vw!important;height:100dvh!important}
 }
-</style></head><body><header>LINK'S MELEE <small>v0.7.2 · Facing Fix</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
+</style></head><body><header>LINK'S MELEE <small>v0.7.3 · Attack Facing Fix</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
 <div class="controls" aria-label="Touch game controls">
  <div class="pad labyrinth-pad" aria-label="Movement controls">
   <button class="up" data-k="w" aria-label="Jump"></button>
@@ -194,7 +194,11 @@ function drawAtlas(a,dark,action,progress){
  const map=atlasMap[role][action]||atlasMap[role].idle,[row,first,last]=map;
  const n=last-first+1,frame=action==='block'||action==='crouch'?0:Math.min(n-1,Math.floor(Math.max(0,progress)*n));
  const cellW=im.naturalWidth/9,cellH=im.naturalHeight/6;
- c.save();c.translate(Math.round(a.x),Math.round(a.y));if(a.face>0)c.scale(-1,1);
+ c.save();c.translate(Math.round(a.x),Math.round(a.y));
+ // The attack rows in the supplied atlases face opposite the neutral/guard rows.
+ // Mirror attack poses independently so the fighter keeps facing the opponent.
+ const attackPose=['light','lunge','rising','low','aerial','heavy'].includes(action);
+ if(attackPose ? a.face<0 : a.face>0)c.scale(-1,1);
  if(a.inv>0&&a.inv%4<2)c.globalAlpha=.6;
  c.imageSmoothingEnabled=false;
  // Keep a consistent foot anchor, independent of the source image's empty margins.
