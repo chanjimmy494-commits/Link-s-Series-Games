@@ -59,7 +59,7 @@ html *,body *{touch-action:none!important;-webkit-touch-callout:none}
  canvas{position:fixed!important;left:0!important;top:0!important;transform:none!important;width:100vw!important;height:100dvh!important;max-width:none!important;max-height:none!important;object-fit:contain!important}
  .controls{position:fixed!important;inset:0!important;width:100vw!important;height:100dvh!important}
 }
-</style></head><body><header>LINK'S MELEE <small>v0.9.1 · Held Charge Windup</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
+</style></head><body><header>LINK'S MELEE <small>v0.9.2 · Charged Thrust Follow-through</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
 <div class="controls" aria-label="Touch game controls">
  <div class="pad labyrinth-pad" aria-label="Movement controls">
   <button class="up" data-k="w" aria-label="Jump"></button>
@@ -225,7 +225,7 @@ loadApprovedSlash();
 function drawSlashFrames(a){
  if(slashFrames.length!==17)return false;
  const progress=Math.min(1,a.attackPhase/moves[a.attackKind].duration);
- const ranges={light:[0,4],downward:[5,9],lunge:[10,16],heavy:[5,9]};
+ const ranges={light:[0,4],downward:[5,9],lunge:[10,16],heavy:[10,16]};
  const [first,last]=ranges[a.attackKind]||[0,4];
  const elapsed=progress*slashFrameMs.slice(first,last+1).reduce((sum,ms)=>sum+ms,0);
  let frame=first,at=0;
