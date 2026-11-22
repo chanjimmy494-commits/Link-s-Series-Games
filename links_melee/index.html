@@ -78,7 +78,7 @@ html *,body *{touch-action:none!important;-webkit-touch-callout:none}
  .labyrinth-pad{width:40vw!important;height:40vw!important}
  .combat-buttons button{width:15vw!important;height:22vw!important}
 }
-</style></head><body><header>LINK'S MELEE <small>v1.0.9 · Five Stage Sword Campaign</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
+</style></head><body><header>LINK'S MELEE <small>v1.1.0 · Highlighted Sword Motion</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
 <div class="controls" aria-label="Touch game controls">
  <div class="pad labyrinth-pad" aria-label="Movement controls">
   <button class="up" data-k="w" aria-label="Jump"></button>
@@ -227,6 +227,29 @@ const challengerMaps={
  dualist:{idle:[1,1,3],walk:[1,7,9],light:[4,1,3],downward:[5,1,3],lunge:[2,7,9],heavy:[5,1,3],rising:[3,1,3],low:[4,7,9],aerial:[1,7,9],block:[3,1,3],crouch:[5,1,3],jump:[1,7,9],defeat:[6,7,9]}
 };
 Object.assign(atlasMap,challengerMaps);
+// Explicit motion phases from the highlighted central attack columns.
+// Each attack crosses different poses instead of repeating one three-frame row.
+const challengerAttackFrames={
+ challenger2:{
+  light:[[2,4],[3,4],[3,5],[3,6],[4,4],[4,5]],
+  downward:[[4,4],[4,5],[5,4],[5,5],[5,6],[4,6]],
+  lunge:[[1,4],[1,5],[2,4],[2,5],[2,6],[3,6]],
+  heavy:[[4,4],[4,5],[5,4],[5,5],[5,6],[4,6]]
+ },
+ challenger3:{
+  light:[[2,4],[3,4],[3,5],[3,6],[4,4],[4,5]],
+  downward:[[4,4],[4,5],[5,4],[5,5],[5,6],[4,6]],
+  lunge:[[1,4],[1,5],[2,4],[2,5],[2,6],[3,6]],
+  heavy:[[4,4],[4,5],[5,4],[5,5],[5,6],[4,6]]
+ },
+ dualist:{
+  light:[[2,4],[3,4],[3,5],[3,6],[4,4],[4,5]],
+  downward:[[4,4],[4,5],[5,4],[5,5],[5,6],[4,6]],
+  lunge:[[1,4],[1,5],[2,4],[2,5],[2,6],[3,6]],
+  heavy:[[4,4],[4,5],[5,4],[5,5],[5,6],[4,6]]
+ }
+};
+
 function directionAttack(a){const toward=a.face>0?'d':'a';const dir=key('s')?'down':key('w')?'up':key(toward)?'forward':directionMemoryFrames>0?directionMemory:'';return a.ground===-1?'aerial':dir==='down'?'low':dir==='up'?'rising':dir==='forward'?'lunge':'light'}
 
 // Decode the approved transparent GIF into independent canvas frames once.
@@ -318,8 +341,12 @@ function getFrameBounds(im,row,col,cw,ch){
 function drawAtlas(a,dark,action,progress){
  const role=dark?(stageIndex===4?'hero':stageIndex===3?'dualist':stageIndex===2?'challenger3':stageIndex===1?'challenger2':'foe'):'hero',im=atlasImages[role];if(!im.complete||!im.naturalWidth)return false;
  const mapping=atlasMap[role]||atlasMap.foe;
- const map=mapping[action]||mapping.idle,[row,first,last]=map;
- const n=last-first+1,frame=action==='block'||action==='crouch'?0:Math.min(n-1,Math.floor(Math.max(0,progress)*n));
+ const map=mapping[action]||mapping.idle;
+ const sequence=challengerAttackFrames[role]?.[action];
+ const n=map[2]-map[1]+1,frame=action==='block'||action==='crouch'?0:Math.min(n-1,Math.floor(Math.max(0,progress)*n));
+ const [row,first,last]=map;
+ const selected=sequence?sequence[Math.min(sequence.length-1,Math.floor(Math.max(0,progress)*sequence.length))]:[row,first+frame];
+ const drawRow=selected[0],drawCol=selected[1];
  const cellW=im.naturalWidth/9,cellH=im.naturalHeight/6;
  c.save();c.translate(Math.round(a.x),Math.round(a.y));
  // Source sprite rows are NOT all facing the same way. Normalize each
@@ -338,16 +365,16 @@ function drawAtlas(a,dark,action,progress){
  if(dark&&stageIndex===4){
   // Recolor the *pixels*, rather than relying on canvas filter (unreliable in iOS WebViews).
   const darkSheet=getShadowAtlas(im);
-  c.drawImage(darkSheet,(first+frame-1)*cellW,(row-1)*cellH,cellW,cellH,-76,-166,152,166);
+  c.drawImage(darkSheet,(drawCol-1)*cellW,(drawRow-1)*cellH,cellW,cellH,-76,-166,152,166);
  }else if(dark&&(stageIndex===1||stageIndex===2||stageIndex===3)){
   // Normalize the challenger to a stable visible height, not the varying
   // padding / zoom of individual atlas cells.
-  const bounds=getFrameBounds(im,row,first+frame,cellW,cellH);
+  const bounds=getFrameBounds(im,drawRow,drawCol,cellW,cellH);
   if(bounds){
    const dh=105,dw=Math.min(125,dh*bounds.w/bounds.h);
    c.drawImage(im,bounds.x,bounds.y,bounds.w,bounds.h,-dw/2,-dh,dw,dh);
-  }else c.drawImage(im,(first+frame-1)*cellW,(row-1)*cellH,cellW,cellH,-76,-166,152,166);
- }else c.drawImage(im,(first+frame-1)*cellW,(row-1)*cellH,cellW,cellH,-76,-166,152,166);
+  }else c.drawImage(im,(drawCol-1)*cellW,(drawRow-1)*cellH,cellW,cellH,-76,-166,152,166);
+ }else c.drawImage(im,(drawCol-1)*cellW,(drawRow-1)*cellH,cellW,cellH,-76,-166,152,166);
  c.restore();return true;
 }
 function attack(a,b,heavy,kind){
@@ -453,7 +480,10 @@ function update(){
    foe.face=aiCommitDir;foe.vx=aiCommitDir*1.05;
    if(aiModeTick===4&&aiAttackLock===0){
     if(stageIndex===4){const kind=['light','downward','lunge','heavy'][Math.floor(Math.random()*4)];attack(foe,player,kind==='heavy',kind)}
-    else attack(foe,player,Math.random()<.35);
+    else if(stageIndex>=1&&stageIndex<=3){
+     const kind=['light','lunge','downward','heavy'][foe.combo%4];
+     attack(foe,player,kind==='heavy',kind);
+    }else attack(foe,player,Math.random()<.35);
     aiAttackLock=stageIndex===4?17:100;
    }
   }else if(aiMode==='recover'){foe.vx*=.65;if(player.atk>0&&dist<120&&foe.atk===0&&foe.stamina>22&&aiModeTick<20)foe.block=true}
