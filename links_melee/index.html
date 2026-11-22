@@ -78,7 +78,7 @@ html *,body *{touch-action:none!important;-webkit-touch-callout:none}
  .labyrinth-pad{width:40vw!important;height:40vw!important}
  .combat-buttons button{width:15vw!important;height:22vw!important}
 }
-</style></head><body><header>LINK'S MELEE <small>v1.0.4 · Updated Outdoor Backgrounds</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
+</style></head><body><header>LINK'S MELEE <small>v1.0.5 · Shadow Link Animation Speed</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
 <div class="controls" aria-label="Touch game controls">
  <div class="pad labyrinth-pad" aria-label="Movement controls">
   <button class="up" data-k="w" aria-label="Jump"></button>
@@ -253,7 +253,7 @@ async function loadApprovedSlash(){
 loadApprovedSlash();
 function drawSlashFrames(a,shadow=false){
  if(slashFrames.length!==17)return false;
- const progress=Math.min(1,a.attackPhase/moves[a.attackKind].duration);
+ const progress=Math.min(1,(a.attackPhase/moves[a.attackKind].duration)*(shadow?1.6:1));
  const ranges={light:[0,4],downward:[5,9],lunge:[10,16],heavy:[10,16]};
  const [first,last]=ranges[a.attackKind]||[0,4];
  const elapsed=progress*slashFrameMs.slice(first,last+1).reduce((sum,ms)=>sum+ms,0);
@@ -484,7 +484,8 @@ function fighter(a,dark){
  }
  const atlasAction=attacking?a.attackKind:action==='run'?'walk':action;
  if((!dark||stageIndex===3)&&attacking&&['light','downward','lunge','heavy'].includes(a.attackKind)&&drawSlashFrames(a,dark&&stageIndex===3))return;
- const atlasProgress=attacking?a.attackPhase/moves[a.attackKind].duration:((a.step*.11)%1);
+ const shadowSpeed=dark&&stageIndex===3?1.6:1;
+ const atlasProgress=attacking?Math.min(1,a.attackPhase/moves[a.attackKind].duration*shadowSpeed):((a.step*.11*shadowSpeed)%1);
  if(drawAtlas(a,dark,atlasAction,atlasProgress))return;
  const frames=animationFrames[action];
  const attackProgress=attacking?Math.max(0,Math.min(1,a.attackPhase/moves[a.attackKind].duration)):0;
