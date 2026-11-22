@@ -78,7 +78,7 @@ html *,body *{touch-action:none!important;-webkit-touch-callout:none}
  .labyrinth-pad{width:40vw!important;height:40vw!important}
  .combat-buttons button{width:15vw!important;height:22vw!important}
 }
-</style></head><body><header>LINK'S MELEE <small>v1.0.2 · Shadow Link & Forest Challenger</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
+</style></head><body><header>LINK'S MELEE <small>v1.0.3 · Shadow Link Crash Fix</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
 <div class="controls" aria-label="Touch game controls">
  <div class="pad labyrinth-pad" aria-label="Movement controls">
   <button class="up" data-k="w" aria-label="Jump"></button>
@@ -276,7 +276,7 @@ function drawSlashFrames(a,shadow=false){
 const shadowAtlases=new WeakMap();
 function getShadowAtlas(im){
  if(shadowAtlases.has(im))return shadowAtlases.get(im);
- const out=document.createElement('canvas');out.width=im.naturalWidth;out.height=im.naturalHeight;
+ const out=document.createElement('canvas');out.width=im.naturalWidth||im.width;out.height=im.naturalHeight||im.height;
  const cx=out.getContext('2d',{willReadFrequently:true});cx.drawImage(im,0,0);
  const px=cx.getImageData(0,0,out.width,out.height),p=px.data;
  for(let i=0;i<p.length;i+=4){if(p[i+3]<10)continue;
