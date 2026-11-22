@@ -59,7 +59,7 @@ html *,body *{touch-action:none!important;-webkit-touch-callout:none}
  canvas{position:fixed!important;left:0!important;top:0!important;transform:none!important;width:100vw!important;height:100dvh!important;max-width:none!important;max-height:none!important;object-fit:contain!important}
  .controls{position:fixed!important;inset:0!important;width:100vw!important;height:100dvh!important}
 }
-</style></head><body><header>LINK'S MELEE <small>v0.8.3 · Consistent Slash Timing</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
+</style></head><body><header>LINK'S MELEE <small>v0.9.0 · Three Distinct Sword Attacks</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
 <div class="controls" aria-label="Touch game controls">
  <div class="pad labyrinth-pad" aria-label="Movement controls">
   <button class="up" data-k="w" aria-label="Jump"></button>
@@ -103,9 +103,9 @@ document.addEventListener('touchstart',e=>{
 const canvas=document.getElementById('game'),c=canvas.getContext('2d');c.imageSmoothingEnabled=false;const W=960,H=540,FLOOR=438,WORLD=1720,platforms=[{x:375,y:345,w:235,h:16},{x:1110,y:345,w:235,h:16},{x:175,y:263,w:240,h:13},{x:730,y:267,w:250,h:13},{x:1325,y:263,w:215,h:13}];let camera=0;
 const assets={};let loaded=0;const files=['castle_arena.jpg',...Array.from({length:6},(_,i)=>`swordsman_${i}.png`),...Array.from({length:6},(_,i)=>`dark_${i}.png`)];files.forEach(f=>{let im=new Image;im.onload=()=>loaded++;im.src=f;assets[f]=im});
 const keys={};let just={};const key=k=>!!keys[k];let player,foe,particles,clock,round,notice,shake,aiTick,phaseTick,noticeTick,aiMode,aiModeTick,aiAttackLock,aiCommitDir,aiLastPlayerX;
-let attackHeld=false,attackHoldFrames=0,attackCharged=false,attackQueued=false;
+let attackHeld=false,attackHoldFrames=0,attackCharged=false,attackQueued=false,heavyQueued=false,normalSlashNext='light';
 let directionMemory='',directionMemoryFrames=0;
-function reset(){player={x:600,y:FLOOR,w:72,h:135,vx:0,vy:0,face:1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,blockAnim:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};foe={x:1060,y:FLOOR,w:72,h:135,vx:0,vy:0,face:-1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,blockAnim:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};particles=[];clock=90*60;round='intro';phaseTick=165;notice='CASTLE DUEL';noticeTick=0;shake=0;aiTick=0;camera=350;aiMode='observe';aiModeTick=85;aiAttackLock=75;aiCommitDir=0;aiLastPlayerX=player.x;attackHeld=false;attackHoldFrames=0;attackCharged=false;attackQueued=false;directionMemory='';directionMemoryFrames=0;just={}}
+function reset(){player={x:600,y:FLOOR,w:72,h:135,vx:0,vy:0,face:1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,blockAnim:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};foe={x:1060,y:FLOOR,w:72,h:135,vx:0,vy:0,face:-1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,blockAnim:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};particles=[];clock=90*60;round='intro';phaseTick=165;notice='CASTLE DUEL';noticeTick=0;shake=0;aiTick=0;camera=350;aiMode='observe';aiModeTick=85;aiAttackLock=75;aiCommitDir=0;aiLastPlayerX=player.x;attackHeld=false;attackHoldFrames=0;attackCharged=false;attackQueued=false;heavyQueued=false;normalSlashNext='light';directionMemory='';directionMemoryFrames=0;just={}}
 reset();document.getElementById('restart').onclick=reset;
 document.addEventListener('keydown',e=>{let k=e.key.toLowerCase();if(k.startsWith('arrow'))k={arrowleft:'a',arrowright:'d',arrowup:'w'}[k]||k;if(k===' ')k='w';if(['a','d','w','s','j','k','l'].includes(k))e.preventDefault();if(k==='r')reset();if(!keys[k])just[k]=true;keyboardHolds[k]=true;keys[k]=true});document.addEventListener('keyup',e=>{let k=e.key.toLowerCase();if(k.startsWith('arrow'))k={arrowleft:'a',arrowright:'d',arrowup:'w'}[k]||k;if(k===' ')k='w';keyboardHolds[k]=false;syncTouch(k)});
 const keyboardHolds={},touchPointers=new Map();
@@ -149,7 +149,7 @@ function startCombatPointer(b,down,up){
  b.addEventListener('contextmenu',e=>e.preventDefault());
 }
 startCombatPointer(attackButton,()=>{attackHeld=true;attackHoldFrames=0;attackCharged=false},()=>{
- if(attackHeld&&!attackCharged)attackQueued=true;
+ if(attackHeld){if(attackCharged)heavyQueued=true;else attackQueued=true;}
  attackHeld=false;attackHoldFrames=0;
 });
 startCombatPointer(blockButton,()=>{keyboardHolds.k=true;keys.k=true},()=>{keyboardHolds.k=false;syncTouch('k')});
@@ -176,12 +176,13 @@ pads.forEach(pad=>{
 document.addEventListener('visibilitychange',()=>{if(document.hidden){touchPointers.clear();for(const k in keyboardHolds)keyboardHolds[k]=false;recalc()}});
 // v0.7: directional attacks, shared three-button combat, and frame-mapped atlas poses.
 const moves={
- light:{duration:85,activeStart:35,activeEnd:49,cost:6,range:122,damage:10,knock:5,stun:12},
- lunge:{duration:85,activeStart:35,activeEnd:49,cost:11,range:154,damage:12,knock:8,stun:14},
+ light:{duration:30,activeStart:10,activeEnd:20,cost:6,range:122,damage:10,knock:5,stun:12},
+ downward:{duration:35,activeStart:14,activeEnd:25,cost:7,range:128,damage:12,knock:6,stun:14},
+ lunge:{duration:39,activeStart:12,activeEnd:28,cost:11,range:154,damage:12,knock:8,stun:14},
  rising:{duration:25,activeStart:10,activeEnd:16,cost:12,range:115,damage:13,knock:6,stun:16},
  low:{duration:21,activeStart:7,activeEnd:12,cost:8,range:110,damage:8,knock:4,stun:10},
  aerial:{duration:24,activeStart:8,activeEnd:15,cost:11,range:125,damage:12,knock:6,stun:12},
- heavy:{duration:34,activeStart:13,activeEnd:21,cost:24,range:143,damage:19,knock:9,stun:18}
+ heavy:{duration:48,activeStart:19,activeEnd:34,cost:24,range:143,damage:19,knock:9,stun:18}
 };
 const atlasImages={};for(const [name,file] of Object.entries({hero:'IMG_3200.PNG',foe:'IMG_3204.PNG'})){const im=new Image();im.src=file;atlasImages[name]=im}
 const atlasMap={
@@ -224,9 +225,11 @@ loadApprovedSlash();
 function drawSlashFrames(a){
  if(slashFrames.length!==17)return false;
  const progress=Math.min(1,a.attackPhase/moves[a.attackKind].duration);
- const elapsed=progress*slashTotalMs;
- let frame=0,at=0;
- while(frame<slashFrames.length-1&&at+slashFrameMs[frame]<=elapsed){at+=slashFrameMs[frame];frame++}
+ const ranges={light:[0,4],downward:[5,9],lunge:[10,16],heavy:[5,9]};
+ const [first,last]=ranges[a.attackKind]||[0,4];
+ const elapsed=progress*slashFrameMs.slice(first,last+1).reduce((sum,ms)=>sum+ms,0);
+ let frame=first,at=0;
+ while(frame<last&&at+slashFrameMs[frame]<=elapsed){at+=slashFrameMs[frame];frame++}
  const im=slashFrames[frame];
  c.save();c.translate(Math.round(a.x),Math.round(a.y));
  // Original GIF faces right.
@@ -325,9 +328,10 @@ function update(){
   if(player.jumpBuffer>0&&player.coyote>0&&player.atk===0&&!player.block&&!key('s')){player.vy=-17.4;player.land=0;player.coyote=0;player.jumpBuffer=0;player.ground=-1}
   if(just.s&&player.ground!==FLOOR&&player.ground!==-1){player.drop=17;player.vy=3;aerialDrop(player)}
   // Both attack types are allowed in the air, subject to cooldown.
-  if(attackHeld&&!attackCharged){attackHoldFrames++;if(attackHoldFrames>=23){attackCharged=true;attack(player,foe,true,'heavy')}}
-  if(attackQueued){attack(player,foe,false,directionAttack(player));attackQueued=false}
-  if(just.j)attack(player,foe,false,directionAttack(player));
+  if(attackHeld&&!attackCharged){attackHoldFrames++;if(attackHoldFrames>=23)attackCharged=true}
+  if(heavyQueued){if(player.cool===0&&player.atk===0){attack(player,foe,true,'heavy');heavyQueued=false}}
+  if(attackQueued){if(player.cool===0&&player.atk===0){const dir=directionAttack(player);const kind=dir==='light'?normalSlashNext:dir;attack(player,foe,false,kind);if(dir==='light'&&player.atk>0)normalSlashNext=normalSlashNext==='light'?'downward':'light';attackQueued=false}}
+  if(just.j&&player.cool===0&&player.atk===0){const dir=directionAttack(player);const kind=dir==='light'?normalSlashNext:dir;attack(player,foe,false,kind);if(dir==='light'&&player.atk>0)normalSlashNext=normalSlashNext==='light'?'downward':'light';}
   if(just.l)attack(player,foe,true);
  }else{player.block=false;player.crouch=false;}
  aiTick++;aiModeTick--;aiAttackLock=Math.max(0,aiAttackLock-1);
@@ -422,7 +426,7 @@ function fighter(a,dark){
  const moving=Math.abs(a.vx)>1.1,crouching=a.crouch&&!airborne;
  const action=guarding?'block':attacking?'attack':airborne?'jump':crouching?'crouch':moving?(Math.abs(a.vx)>3.7?'run':'walk'):'idle';
  const atlasAction=attacking?a.attackKind:action==='run'?'walk':action;
- if(!dark&&attacking&&(a.attackKind==='lunge'||a.attackKind==='light')&&drawSlashFrames(a))return;
+ if(!dark&&attacking&&['light','downward','lunge','heavy'].includes(a.attackKind)&&drawSlashFrames(a))return;
  const atlasProgress=attacking?a.attackPhase/moves[a.attackKind].duration:((a.step*.11)%1);
  if(drawAtlas(a,dark,atlasAction,atlasProgress))return;
  const frames=animationFrames[action];
