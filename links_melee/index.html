@@ -78,7 +78,7 @@ html *,body *{touch-action:none!important;-webkit-touch-callout:none}
  .labyrinth-pad{width:40vw!important;height:40vw!important}
  .combat-buttons button{width:15vw!important;height:22vw!important}
 }
-</style></head><body><header>LINK'S MELEE <small>v1.0.3 · Shadow Link Crash Fix</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
+</style></head><body><header>LINK'S MELEE <small>v1.0.4 · Updated Outdoor Backgrounds</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
 <div class="controls" aria-label="Touch game controls">
  <div class="pad labyrinth-pad" aria-label="Movement controls">
   <button class="up" data-k="w" aria-label="Jump"></button>
@@ -122,8 +122,8 @@ document.addEventListener('touchstart',e=>{
 const canvas=document.getElementById('game'),c=canvas.getContext('2d');c.imageSmoothingEnabled=false;const W=960,H=540,FLOOR=438,WORLD=1720,platforms=[{x:375,y:345,w:235,h:16},{x:1110,y:345,w:235,h:16},{x:175,y:263,w:240,h:13},{x:730,y:267,w:250,h:13},{x:1325,y:263,w:215,h:13}];let camera=0;let stageIndex=0;
 const stages=[
  {name:'OUTPOST RUINS',opponent:'DARK SWORDSMAN',background:'castle_arena.jpg'},
- {name:'OVERGROWN RUINS',opponent:'RUINS CHALLENGER',background:'DAC21C40-CCCB-4FE6-9A7C-65B771BE4A41.JPEG'},
- {name:'FOREST CLEARING',opponent:'FOREST CHALLENGER',background:'A6E9E6CB-FFD3-4A64-B420-6A7E2636F8B7.JPEG'},
+ {name:'OVERGROWN RUINS',opponent:'RUINS CHALLENGER',background:'2EB80A3E-3DFF-4440-8CCA-30EA71D1CEC4.png'},
+ {name:'FOREST CLEARING',opponent:'FOREST CHALLENGER',background:'62490EA1-5C4C-4938-95E4-35F25811C90F.png'},
  {name:'TRAINING DOJO',opponent:'SHADOW LINK',background:'../links_adventure_dojo_prototype/IMG_2918.png'}
 ];
 const stageBackgrounds=stages.map(stage=>{const im=new Image();im.src=stage.background;return im});
