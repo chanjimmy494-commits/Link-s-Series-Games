@@ -78,7 +78,7 @@ html *,body *{touch-action:none!important;-webkit-touch-callout:none}
  .labyrinth-pad{width:40vw!important;height:40vw!important}
  .combat-buttons button{width:15vw!important;height:22vw!important}
 }
-</style></head><body><header>LINK'S MELEE <small>v1.0.6 · Challenger Scale & Shadow Timing</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
+</style></head><body><header>LINK'S MELEE <small>v1.0.7 · Balanced Rivals & Shadow Combat</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
 <div class="controls" aria-label="Touch game controls">
  <div class="pad labyrinth-pad" aria-label="Movement controls">
   <button class="up" data-k="w" aria-label="Jump"></button>
@@ -330,12 +330,12 @@ function drawAtlas(a,dark,action,progress){
   // Recolor the *pixels*, rather than relying on canvas filter (unreliable in iOS WebViews).
   const darkSheet=getShadowAtlas(im);
   c.drawImage(darkSheet,(first+frame-1)*cellW,(row-1)*cellH,cellW,cellH,-76,-166,152,166);
- }else if(dark&&stageIndex===1){
+ }else if(dark&&(stageIndex===1||stageIndex===2)){
   // Normalize the challenger to a stable visible height, not the varying
   // padding / zoom of individual atlas cells.
   const bounds=getFrameBounds(im,row,first+frame,cellW,cellH);
   if(bounds){
-   const dh=154,dw=Math.min(165,dh*bounds.w/bounds.h);
+   const dh=105,dw=Math.min(125,dh*bounds.w/bounds.h);
    c.drawImage(im,bounds.x,bounds.y,bounds.w,bounds.h,-dw/2,-dh,dw,dh);
   }else c.drawImage(im,(first+frame-1)*cellW,(row-1)*cellH,cellW,cellH,-76,-166,152,166);
  }else c.drawImage(im,(first+frame-1)*cellW,(row-1)*cellH,cellW,cellH,-76,-166,152,166);
@@ -345,7 +345,7 @@ function attack(a,b,heavy,kind){
  if(a.cool>0||a.stun>0||a.atk>0||round!=='play'||a.block||a.guardBreak>0)return;
  const chosen=kind||(heavy?'heavy':'light');const m=moves[chosen];if(a.stamina<m.cost)return;
  a.heavy=heavy;a.attackKind=chosen;
- a.attackDuration=(a===foe&&stageIndex===3)?Math.max(12,Math.round(m.duration*.65)):m.duration;
+ a.attackDuration=(a===foe&&stageIndex===3)?Math.max(12,Math.round(m.duration*.48)):m.duration;
  a.atk=a.attackDuration;a.attackPhase=0;
  a.cool=a.attackDuration+(heavy?8:3);a.stamina-=m.cost;a.didHit=false;a.block=false;
  a.combo=(a.combo+1)%3;a.vx*=.72;
@@ -422,12 +422,12 @@ function update(){
  // No attacks while the player is outside meaningful reach, and no instant attack loops.
  if(aiModeTick<=0){
   if(aiMode==='windup'){aiMode='strike';aiModeTick=5}
-  else if(aiMode==='strike'){aiMode='recover';aiModeTick=42+Math.floor(Math.random()*25);aiAttackLock=Math.max(aiAttackLock,aiModeTick)}
-  else if(aiMode==='recover'){aiMode='observe';aiModeTick=25+Math.floor(Math.random()*23)}
+  else if(aiMode==='strike'){aiMode='recover';aiModeTick=(stageIndex===3?16:42)+Math.floor(Math.random()*(stageIndex===3?12:25));aiAttackLock=Math.max(aiAttackLock,aiModeTick)}
+  else if(aiMode==='recover'){aiMode='observe';aiModeTick=(stageIndex===3?9:25)+Math.floor(Math.random()*(stageIndex===3?9:23))}
   else if(aiMode==='guard'){aiMode='observe';aiModeTick=22+Math.floor(Math.random()*20)}
   else if(dist>215){aiMode='approach';aiModeTick=45+Math.floor(Math.random()*24);aiCommitDir=dir}
   else if(aiAttackLock===0&&dist<155&&Math.abs(player.y-foe.y)<90&&Math.random()<.55){
-   aiMode='windup';aiModeTick=24+Math.floor(Math.random()*13);aiCommitDir=dir;
+   aiMode='windup';aiModeTick=(stageIndex===3?9:24)+Math.floor(Math.random()*(stageIndex===3?7:13));aiCommitDir=dir;
   }else if(player.atk>0&&dist<165&&Math.random()<.65){aiMode='guard';aiModeTick=24;aiCommitDir=dir}
   else{aiMode=Math.random()<.3?'reposition':'observe';aiModeTick=30+Math.floor(Math.random()*35);aiCommitDir=Math.random()<.5?1:-1}
  }
@@ -443,8 +443,9 @@ function update(){
   else if(aiMode==='strike'){
    foe.face=aiCommitDir;foe.vx=aiCommitDir*1.05;
    if(aiModeTick===4&&aiAttackLock===0){
-    attack(foe,player,Math.random()<.35);
-    aiAttackLock=100;
+    if(stageIndex===3){const kind=['light','downward','lunge','heavy'][Math.floor(Math.random()*4)];attack(foe,player,kind==='heavy',kind)}
+    else attack(foe,player,Math.random()<.35);
+    aiAttackLock=stageIndex===3?32:100;
    }
   }else if(aiMode==='recover'){foe.vx*=.65;if(player.atk>0&&dist<120&&foe.atk===0&&foe.stamina>22&&aiModeTick<20)foe.block=true}
   // Do not pursue a jumping player in lockstep; allow crossovers and repositioning.
