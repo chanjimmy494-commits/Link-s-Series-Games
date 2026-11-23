@@ -78,7 +78,7 @@ html *,body *{touch-action:none!important;-webkit-touch-callout:none}
  .labyrinth-pad{width:40vw!important;height:40vw!important}
  .combat-buttons button{width:15vw!important;height:22vw!important}
 }
-</style></head><body><header>LINK'S MELEE <small>v1.1.0 · Highlighted Sword Motion</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
+</style></head><body><header>LINK'S MELEE <small>v1.2.0 · Approved Swordsmen</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
 <div class="controls" aria-label="Touch game controls">
  <div class="pad labyrinth-pad" aria-label="Movement controls">
   <button class="up" data-k="w" aria-label="Jump"></button>
@@ -125,8 +125,8 @@ try{const saved=Number(sessionStorage.getItem(progressKey));if(Number.isInteger(
 const stages=[
  {name:'OUTPOST RUINS',opponent:'DARK SWORDSMAN',background:'castle_arena.jpg'},
  {name:'TRAINING DOJO',opponent:'RUINS CHALLENGER',background:'../links_adventure_dojo_prototype/IMG_2918.png'},
- {name:'FOREST CLEARING',opponent:'FOREST CHALLENGER',background:'62490EA1-5C4C-4938-95E4-35F25811C90F.png'},
- {name:'OUTPOST DUEL',opponent:'DUAL SWORDSMAN',background:'castle_arena.jpg'},
+ {name:'FOREST CLEARING',opponent:'RED SWORDSMAN',background:'62490EA1-5C4C-4938-95E4-35F25811C90F.png'},
+ {name:'OUTPOST DUEL',opponent:'HOODED DARK SWORDSMAN',background:'castle_arena.jpg'},
  {name:'OVERGROWN RUINS',opponent:'SHADOW LINK',background:'2EB80A3E-3DFF-4440-8CCA-30EA71D1CEC4.png'}
 ];
 const stageBackgrounds=stages.map(stage=>{const im=new Image();im.src=stage.background;return im});
@@ -338,8 +338,69 @@ function getFrameBounds(im,row,col,cw,ch){
  const result=x1<0?null:{x:(col-1)*cw+x0,y:(row-1)*ch+y0,w:x1-x0+1,h:y1-y0+1};
  cache.set(id,result);return result;
 }
+
+const approvedSheet=new Image();approvedSheet.src='unnamed.png?rev=20261122';
+const approvedFrames={red:{},dark:{}};
+const approvedSpecs={
+ idle:{xs:[428,500,572,644,716],y:37,w:54,h:68},
+ walk:{xs:[1006,1075,1136,1196,1256,1316,1376,1437],y:37,w:58,h:68},
+ run:{xs:[420,486,551,616,681,745,806],y:108,w:68,h:68},
+ light:{xs:[417,483,551,625,695,763],y:258,w:78,h:70},
+ heavy:{xs:[1002,1071,1139,1206,1274,1343,1412,1480],y:257,w:88,h:72},
+ block:{xs:[420,487,554],y:333,w:66,h:65},
+ jump:{xs:[1005,1074,1140,1205,1272,1340,1408],y:187,w:76,h:73},
+ running:{xs:[417,486,552,621,689],y:406,w:80,h:72},
+ aerial:{xs:[804,869,934,998,1063],y:406,w:80,h:72},
+ hit:{xs:[792,858,927],y:334,w:75,h:65}
+};
+function approvedSequence(action){
+ return ({downward:'heavy',lunge:'light',rising:'heavy',low:'light',crouch:'block',defeat:'hit',aerial:'aerial',heavy:'heavy',light:'light',walk:'walk',idle:'idle',block:'block',jump:'jump',run:'run',running:'running'})[action]||'idle';
+}
+function buildApprovedFrames(){
+ if(!approvedSheet.naturalWidth)return;
+ const sx=approvedSheet.naturalWidth/1536,sy=approvedSheet.naturalHeight/1024;
+ for(const role of ['red','dark']){
+  for(const [name,spec] of Object.entries(approvedSpecs)){
+   approvedFrames[role][name]=spec.xs.map(center=>{
+    const left=Math.max(0,Math.round((center-spec.w/2)*sx)),top=Math.round((spec.y+(role==='dark'?480:0)-spec.h/2)*sy);
+    const w=Math.min(Math.round(spec.w*sx),approvedSheet.naturalWidth-left),h=Math.min(Math.round(spec.h*sy),approvedSheet.naturalHeight-top);
+    const raw=document.createElement('canvas');raw.width=w;raw.height=h;
+    const rc=raw.getContext('2d',{willReadFrequently:true});rc.drawImage(approvedSheet,left,top,w,h,0,0,w,h);
+    const image=rc.getImageData(0,0,w,h),d=image.data;
+    let minX=w,minY=h,maxX=-1,maxY=-1;
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+     const p=(y*w+x)*4,r=d[p],g=d[p+1],b=d[p+2];
+     // Remove the white sheet background, preserving dark outlines and colored sword trails.
+     if(r>235&&g>235&&b>235){d[p+3]=0;continue}
+     if(r>219&&g>219&&b>219){d[p+3]=Math.min(255,Math.round((255-Math.min(r,g,b))*7))}
+     if(d[p+3]>90){minX=Math.min(minX,x);maxX=Math.max(maxX,x);minY=Math.min(minY,y);maxY=Math.max(maxY,y)}
+    }
+    rc.putImageData(image,0,0);
+    if(maxX<minX)return raw;
+    const cut=document.createElement('canvas');cut.width=maxX-minX+1;cut.height=maxY-minY+1;
+    cut.getContext('2d').drawImage(raw,minX,minY,cut.width,cut.height,0,0,cut.width,cut.height);
+    return cut;
+   });
+  }
+ }
+}
+approvedSheet.onload=buildApprovedFrames;
+function drawApproved(a,role,action,progress){
+ const sequence=approvedFrames[role]?.[approvedSequence(action)];
+ if(!sequence?.length)return false;
+ const index=Math.min(sequence.length-1,Math.floor(Math.max(0,Math.min(.999,progress))*sequence.length));
+ const im=sequence[index];
+ const dh=112,dw=Math.min(150,dh*im.width/im.height);
+ c.save();c.translate(Math.round(a.x),Math.round(a.y));
+ if(a.face<0)c.scale(-1,1);
+ if(a.inv>0&&a.inv%4<2)c.globalAlpha=.6;
+ c.imageSmoothingEnabled=false;c.drawImage(im,-dw/2,-dh,dw,dh);c.restore();return true;
+}
+
 function drawAtlas(a,dark,action,progress){
  const role=dark?(stageIndex===4?'hero':stageIndex===3?'dualist':stageIndex===2?'challenger3':stageIndex===1?'challenger2':'foe'):'hero',im=atlasImages[role];if(!im.complete||!im.naturalWidth)return false;
+ if(role==='challenger3'&&drawApproved(a,'red',action,progress))return true;
+ if(role==='dualist'&&drawApproved(a,'dark',action,progress))return true;
  const mapping=atlasMap[role]||atlasMap.foe;
  const map=mapping[action]||mapping.idle;
  const sequence=challengerAttackFrames[role]?.[action];
