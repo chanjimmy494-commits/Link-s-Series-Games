@@ -1,5 +1,53 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Link's Melee - Swordsmen Review</title><style>*{box-sizing:border-box}body{background:#0c1422;color:#f7e5c3;font:16px system-ui;margin:0;padding:16px;max-width:850px;margin:auto}h1{font-size:23px}p{color:#bac6d5;line-height:1.4}.controls{display:grid;grid-template-columns:1fr 1fr;gap:10px}select,button{font:inherit;color:#fff;background:#24344d;border:1px solid #b99a62;border-radius:9px;padding:12px;min-width:0}.arena{height:300px;background:linear-gradient(#243a4e 0%,#172536 78%,#4d453b 78%,#302a26 100%);border:2px solid #b99a62;border-radius:12px;margin:16px 0;display:flex;align-items:center;justify-content:center}.arena img{max-width:90%;max-height:250px;object-fit:contain;image-rendering:pixelated}#status{color:#d6c6a7;min-height:44px}small{color:#b7c2d2}a{color:#f5d18c}</style></head><body><h1>Link's Melee — Animation Review</h1><p>Browser-based character reviewer. This page loads sprite frames from the existing GitHub repository. The main campaign is unchanged.</p><div class="controls"><select id="character" aria-label="Character"><option value="swordsman">Swordsman</option><option value="dark">Dark swordsman</option></select><select id="animation" aria-label="Animation"><option value="0">Sequence 1</option><option value="1">Sequence 2</option><option value="2">Sequence 3</option><option value="3">Sequence 4</option><option value="4">Sequence 5</option><option value="5">Sequence 6</option></select><button id="prev">Previous sequence</button><button id="next">Next sequence</button><button id="play">Pause</button><button id="speed">Speed: Normal</button></div><div class="arena"><img id="sprite" alt="Character sprite animation frame"></div><div id="status" role="status">Loading character sprite...</div><small>These are six existing sprite files per character. This reviewer cycles through available files, not yet verified frame-by-frame attacks. Use it to verify asset visibility before animation extraction.</small><script>
-const $=id=>document.getElementById(id);let frame=0,playing=true,delay=180,loaded=false;const sprite=$('sprite');const files={swordsman:Array.from({length:6},(_,i)=>'../links_melee/swordsman_'+i+'.png'),dark:Array.from({length:6},(_,i)=>'../links_melee/dark_'+i+'.png')};const preload=[];for(const arr of Object.values(files))for(const url of arr){const im=new Image();im.src=url;preload.push(im)}
-function render(){const url=files[$('character').value][frame];$('animation').value=String(frame);sprite.src=url;$('status').textContent=$('character').selectedOptions[0].text+' — Sequence '+(frame+1)+' / 6'}
-sprite.onerror=()=>{$('status').textContent='Could not load '+sprite.src+'. Verify the image is present on GitHub Pages.'};
-$('character').onchange=()=>{frame=0;render()};$('animation').onchange=()=>{frame=Number($('animation').value);render()};$('prev').onclick=()=>{frame=(frame+5)%6;render()};$('next').onclick=()=>{frame=(frame+1)%6;render()};$('play').onclick=()=>{playing=!playing;$('play').textContent=playing?'Pause':'Play'};$('speed').onclick=()=>{delay=delay===180?360:180;$('speed').textContent=delay===180?'Speed: Normal':'Speed: Slow'};render();function cycle(){if(playing){frame=(frame+1)%6;render()}setTimeout(cycle,delay)}setTimeout(cycle,delay);</script></body></html>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Link's Melee — Approved Swordsmen Animation Review</title><style>
+*{box-sizing:border-box}body{margin:0;background:#0c1420;color:#f4e5c9;font:15px system-ui,-apple-system,sans-serif;padding:16px;max-width:850px;margin:auto}h1{font-size:22px;margin:5px 0 9px}p{color:#b9c9d7;line-height:1.45}select,button{background:#24354d;border:1px solid #c09b5d;border-radius:9px;color:#fff;font:inherit;padding:11px;min-width:0}select{width:100%}.controls{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:14px 0}.arena{border:2px solid #c09b5d;border-radius:13px;background:linear-gradient(#263b50 0 80%,#50473c 80% 86%,#282724 86%);height:290px;display:flex;justify-content:center;align-items:center}canvas{image-rendering:pixelated;width:260px;height:250px;max-width:100%}#status{min-height:48px;color:#e9ce9e;padding-top:9px}.strip{display:flex;gap:4px;overflow-x:auto;padding:12px 0}.strip canvas{height:100px;width:95px;flex:none;border:1px solid #526275;border-radius:5px;background:#1c2836}.note{font-size:12px;color:#b7c6d3}details{margin-top:15px}details img{width:100%;background:#fff}
+</style></head><body><h1>Link's Melee — Correct Swordsmen Reviewer</h1><p>Source: <b>links_melee/unnamed.png</b> (the newly uploaded combined swordsman sheet). Red Swordsman and hooded Dark Swordsman are extracted directly from this image. The main game is unchanged.</p>
+<div class="controls"><select id="character" aria-label="Character"><option value="red">Red Swordsman</option><option value="dark">Hooded Dark Swordsman</option></select><select id="move" aria-label="Animation"><option value="idle">Idle</option><option value="walk">Walk</option><option value="run">Run</option><option value="light">Light sword attack</option><option value="heavy">Heavy sword attack</option><option value="block">Block</option><option value="jump">Jump</option><option value="running">Running attack</option><option value="aerial">Jump attack</option><option value="hit">Hit reaction</option></select><button id="toggle">Pause</button><button id="slower">Speed: Normal</button><button id="previous">Previous frame</button><button id="next">Next frame</button></div>
+<div class="arena"><canvas id="preview" width="260" height="250"></canvas></div><div id="status">Loading uploaded sprite sheet…</div><div class="strip" id="strip"></div>
+<p class="note">Frames are extracted from the labeled composite reference. Because the sheet is not a transparent production atlas, cropping and white-background removal are provisional. Review the poses and sequence before approving integration.</p><details><summary>View original uploaded sheet</summary><img id="sourceView" alt="Uploaded source sprite sheet"></details>
+<script>
+'use strict';
+const source=new Image();source.src='../links_melee/unnamed.png';document.getElementById('sourceView').src=source.src;
+const $=id=>document.getElementById(id),preview=$('preview'),ctx=preview.getContext('2d'),strip=$('strip');
+const layouts={
+ red:{idle:[405,7,73,6,72],walk:[989,7,62,8,72],run:[405,83,61,7,71],light:[405,231,73,6,68],heavy:[989,231,64,8,68],block:[405,303,73,4,68],jump:[989,153,70,7,70],running:[405,373,72,6,70],aerial:[794,373,74,5,70],hit:[710,303,70,3,68]},
+ dark:{idle:[405,486,73,6,70],walk:[989,486,62,8,70],run:[405,560,61,7,72],light:[405,711,73,6,69],heavy:[989,711,64,8,70],block:[405,782,73,4,70],jump:[989,633,70,7,70],running:[405,856,72,6,70],aerial:[794,856,74,5,70],hit:[710,782,70,3,68]}
+};
+let frame=0,playing=true,speed=145,ready=false,frames=[];
+function extract(x,y,step,n,h){
+ const out=[];
+ for(let j=0;j<n;j++){
+  const w=Math.min(step,source.naturalWidth-x-j*step);
+  if(w<=0)break;
+  const cv=document.createElement('canvas');cv.width=Math.round(w);cv.height=h;
+  const c=cv.getContext('2d',{willReadFrequently:true});c.drawImage(source,x+j*step,y,w,h,0,0,cv.width,h);
+  const pixels=c.getImageData(0,0,cv.width,h),d=pixels.data;
+  for(let k=0;k<d.length;k+=4){const r=d[k],g=d[k+1],b=d[k+2];if(r>231&&g>231&&b>231){d[k+3]=0}else if(r>210&&g>210&&b>210){d[k+3]=Math.min(d[k+3],Math.round((255-Math.min(r,g,b))*5.5))}}
+  c.putImageData(pixels,0,0);out.push(cv);
+ }return out;
+}
+function rebuild(){
+ if(!ready)return;
+ const spec=layouts[$('character').value][$('move').value];
+ frames=extract(...spec);frame=0;strip.replaceChildren();
+ for(let i=0;i<frames.length;i++){const tile=document.createElement('canvas');tile.width=95;tile.height=100;const c=tile.getContext('2d');c.imageSmoothingEnabled=false;c.drawImage(frames[i],5,8,85,85);tile.onclick=()=>{playing=false;$('toggle').textContent='Play';frame=i;render()};strip.appendChild(tile)}
+ render();
+}
+function render(){
+ ctx.clearRect(0,0,260,250);
+ if(!frames.length){$('status').textContent='No frames extracted. Check crop coordinates against source sheet.';return}
+ ctx.imageSmoothingEnabled=false;
+ const cv=frames[frame%frames.length];
+ const scale=Math.min(3,195/Math.max(cv.width,cv.height));
+ const dw=cv.width*scale,dh=cv.height*scale;
+ ctx.drawImage(cv,(260-dw)/2,212-dh,dw,dh);
+ $('status').textContent=$('character').selectedOptions[0].text+' · '+$('move').selectedOptions[0].text+' · Frame '+(frame%frames.length+1)+' / '+frames.length+' · Source: unnamed.png';
+}
+source.onload=()=>{ready=true;const ratio=source.naturalWidth/1536;if(Math.abs(ratio-1)>.03){for(const group of Object.values(layouts))for(const k of Object.keys(group)){const a=group[k];a[0]=Math.round(a[0]*ratio);a[1]=Math.round(a[1]*source.naturalHeight/1024);a[2]=Math.round(a[2]*ratio);a[4]=Math.round(a[4]*source.naturalHeight/1024)}}rebuild()};
+source.onerror=()=>{$('status').textContent='ERROR: Could not load ../links_melee/unnamed.png. Confirm GitHub Pages has published the uploaded file.'};
+$('character').onchange=rebuild;$('move').onchange=rebuild;
+$('toggle').onclick=()=>{playing=!playing;$('toggle').textContent=playing?'Pause':'Play'};
+$('slower').onclick=()=>{speed=speed===145?290:145;$('slower').textContent=speed===145?'Speed: Normal':'Speed: Slow'};
+$('previous').onclick=()=>{playing=false;$('toggle').textContent='Play';frame=(frame-1+frames.length)%frames.length;render()};
+$('next').onclick=()=>{playing=false;$('toggle').textContent='Play';frame=(frame+1)%frames.length;render()};
+function tick(){if(playing&&frames.length){frame=(frame+1)%frames.length;render()}setTimeout(tick,speed)}setTimeout(tick,speed);
+</script></body></html>
