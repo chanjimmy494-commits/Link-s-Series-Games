@@ -409,7 +409,7 @@ function buildApprovedFrames(){
     }
     cleanApprovedPixels(image,w,h);
     minX=w;minY=h;maxX=-1;maxY=-1;
-    for(let py=0;py<h;py++)for(let px=0;px<w;px++)if(image.data[(py*w+px)*4+3]>90){minX=Math.min(minX,px);maxX=Math.max(maxX,px);minY=Math.min(minY,py);maxY=Math.max(maxY,px===px?py:py)}
+    for(let py=0;py<h;py++)for(let px=0;px<w;px++)if(image.data[(py*w+px)*4+3]>90){minX=Math.min(minX,px);maxX=Math.max(maxX,px);minY=Math.min(minY,py);maxY=Math.max(maxY,py)}
     rc.putImageData(image,0,0);
     if(maxX<minX)return raw;
     const cut=document.createElement('canvas');cut.width=maxX-minX+1;cut.height=maxY-minY+1;
