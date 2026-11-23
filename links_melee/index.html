@@ -78,7 +78,7 @@ html *,body *{touch-action:none!important;-webkit-touch-callout:none}
  .labyrinth-pad{width:40vw!important;height:40vw!important}
  .combat-buttons button{width:15vw!important;height:22vw!important}
 }
-</style></head><body><header>LINK'S MELEE <small>v1.2.1 · Sprite Cleanup</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
+</style></head><body><header>LINK'S MELEE <small>v1.2.2 · Animation Pixel Cleanup</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
 <div class="controls" aria-label="Touch game controls">
  <div class="pad labyrinth-pad" aria-label="Movement controls">
   <button class="up" data-k="w" aria-label="Jump"></button>
@@ -359,34 +359,70 @@ function approvedSequence(action){
 // Remove disconnected sheet labels, neighboring sprites and isolated pixel debris.
 // Preserve the largest connected fighter silhouette and sword pixels attached to it.
 function cleanApprovedPixels(image,w,h){
- const d=image.data,visited=new Uint8Array(w*h),parts=[];
+ const d=image.data,size=w*h,visited=new Uint8Array(size),parts=[];
+ const opaque=p=>d[p*4+3]>=112;
+ // Segment the actual colored silhouette instead of trusting near-white
+ // anti-alias pixels or the bounding boxes of neighboring sheet frames.
  for(let y=0;y<h;y++)for(let x=0;x<w;x++){
-  const start=y*w+x;if(visited[start]||d[start*4+3]<105)continue;
-  const queue=[start];visited[start]=1;let count=0,minX=w,minY=h,maxX=0,maxY=0,central=0;
-  for(let head=0;head<queue.length;head++){
-   const p=queue[head],px=p%w,py=(p/w)|0;count++;
-   minX=Math.min(minX,px);maxX=Math.max(maxX,px);minY=Math.min(minY,py);maxY=Math.max(maxY,py);
-   if(px>w*.23&&px<w*.77&&py>h*.12&&py<h*.91)central++;
+  const start=y*w+x;
+  if(visited[start]||!opaque(start))continue;
+  const pixels=[start];visited[start]=1;
+  let minX=x,maxX=x,minY=y,maxY=y,center=0,lower=0;
+  for(let head=0;head<pixels.length;head++){
+   const p=pixels[head],px=p%w,py=(p/w)|0;
+   minX=Math.min(minX,px);maxX=Math.max(maxX,px);
+   minY=Math.min(minY,py);maxY=Math.max(maxY,py);
+   if(px>=w*.23&&px<=w*.77&&py>=h*.12&&py<=h*.94)center++;
+   if(py>h*.52)lower++;
    for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
-    if(!dx&&!dy)continue;const nx=px+dx,ny=py+dy;
+    if(!dx&&!dy)continue;
+    const nx=px+dx,ny=py+dy;
     if(nx<0||ny<0||nx>=w||ny>=h)continue;
-    const np=ny*w+nx;if(!visited[np]&&d[np*4+3]>=105){visited[np]=1;queue.push(np)}
+    const np=ny*w+nx;
+    if(!visited[np]&&opaque(np)){visited[np]=1;pixels.push(np)}
    }
   }
-  parts.push({queue,count,minX,maxX,minY,maxY,central});
+  parts.push({pixels,count:pixels.length,minX,maxX,minY,maxY,center,lower});
  }
- if(!parts.length)return;
- parts.sort((a,b)=>(b.count+b.central*.4)-(a.count+a.central*.4));
- const main=parts[0],keep=new Uint8Array(w*h);
- for(const part of parts){
-  // Tiny disconnected flecks are never animation frames. Preserve nearby
-  // detached sword glints only when immediately adjacent to the silhouette.
-  const near=part.minX<=main.maxX+3&&part.maxX>=main.minX-3&&part.minY<=main.maxY+3&&part.maxY>=main.minY-3;
-  if(part===main||(near&&part.count>=Math.max(5,main.count*.018)&&part.count<main.count*.35)){
-   for(const p of part.queue)keep[p]=1;
+ if(!parts.length){d.fill(0);return}
+ // The subject has both mass and a central body. A bright sword trail,
+ // annotation or cropped neighbor must not become the dominant sprite.
+ parts.sort((a,b)=>(b.count+b.center*.65+b.lower*.12)-(a.count+a.center*.65+a.lower*.12));
+ const main=parts[0],keep=new Uint8Array(size);
+ for(const p of main.pixels)keep[p]=1;
+ // Distance from the silhouette (8-connected steps). Only sufficiently
+ // substantial pieces immediately adjacent to the fighter can survive;
+ // remote sparks, labels, and neighboring-frame fragments are discarded.
+ const dist=new Uint8Array(size);dist.fill(255);
+ const queue=main.pixels.slice();
+ for(const p of queue)dist[p]=0;
+ for(let i=0;i<queue.length;i++){
+  const p=queue[i],step=dist[p];
+  if(step>=3)continue;
+  const px=p%w,py=(p/w)|0;
+  for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
+   if(!dx&&!dy)continue;
+   const nx=px+dx,ny=py+dy;
+   if(nx<0||ny<0||nx>=w||ny>=h)continue;
+   const np=ny*w+nx;
+   if(dist[np]>step+1){dist[np]=step+1;queue.push(np)}
   }
  }
- for(let p=0;p<w*h;p++)if(!keep[p])d[p*4+3]=0;
+ for(let i=1;i<parts.length;i++){
+  const part=parts[i],edge=part.minX<=1||part.maxX>=w-2||part.minY<=1||part.maxY>=h-2;
+  if(edge||part.count<9||part.count>main.count*.38)continue;
+  let nearby=0;
+  for(const p of part.pixels)if(dist[p]<=3)nearby++;
+  if(nearby>=Math.max(3,Math.ceil(part.count*.16)))
+   for(const p of part.pixels)keep[p]=1;
+ }
+ // Never leave a translucent halo, unselected fleck, or near-white sheet
+ // remnant after masking. Preserve the original color of approved pixels.
+ for(let p=0;p<size;p++){
+  const a=p*4+3;
+  if(!keep[p])d[a]=0;
+  else if(d[a]>225)d[a]=255;
+ }
 }
 function buildApprovedFrames(){
  if(!approvedSheet.naturalWidth)return;
@@ -399,22 +435,19 @@ function buildApprovedFrames(){
     const raw=document.createElement('canvas');raw.width=w;raw.height=h;
     const rc=raw.getContext('2d',{willReadFrequently:true});rc.drawImage(approvedSheet,left,top,w,h,0,0,w,h);
     const image=rc.getImageData(0,0,w,h),d=image.data;
-    let minX=w,minY=h,maxX=-1,maxY=-1;
     for(let y=0;y<h;y++)for(let x=0;x<w;x++){
      const p=(y*w+x)*4,r=d[p],g=d[p+1],b=d[p+2];
-     // Remove the white sheet background, preserving dark outlines and colored sword trails.
+     // Remove the composite sheet's white backing before component cleanup.
      if(r>235&&g>235&&b>235){d[p+3]=0;continue}
-     if(r>219&&g>219&&b>219){d[p+3]=Math.min(255,Math.round((255-Math.min(r,g,b))*7))}
-     if(d[p+3]>90){minX=Math.min(minX,x);maxX=Math.max(maxX,x);minY=Math.min(minY,y);maxY=Math.max(maxY,y)}
+     if(r>219&&g>219&&b>219)
+      d[p+3]=Math.min(255,Math.round((255-Math.min(r,g,b))*7));
     }
     cleanApprovedPixels(image,w,h);
-    minX=w;minY=h;maxX=-1;maxY=-1;
-    for(let py=0;py<h;py++)for(let px=0;px<w;px++)if(image.data[(py*w+px)*4+3]>90){minX=Math.min(minX,px);maxX=Math.max(maxX,px);minY=Math.min(minY,py);maxY=Math.max(maxY,py)}
     rc.putImageData(image,0,0);
-    if(maxX<minX)return raw;
-    const cut=document.createElement('canvas');cut.width=maxX-minX+1;cut.height=maxY-minY+1;
-    cut.getContext('2d').drawImage(raw,minX,minY,cut.width,cut.height,0,0,cut.width,cut.height);
-    return cut;
+    // Keep each frame's original, equally sized crop window. Tight
+    // per-frame bounding-box crops made body size and horizontal anchoring
+    // shift during animation even when the sprite art had not moved.
+    return raw;
    });
   }
  }
