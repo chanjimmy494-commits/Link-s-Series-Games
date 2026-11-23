@@ -8,28 +8,46 @@
 'use strict';
 const source=new Image();source.src='../links_melee/unnamed.png?asset=20261122';document.getElementById('sourceView').src=source.src;
 const $=id=>document.getElementById(id),preview=$('preview'),ctx=preview.getContext('2d'),strip=$('strip');
-const layouts={
- red:{idle:[405,7,73,6,72],walk:[989,7,62,8,72],run:[405,83,61,7,71],light:[405,231,73,6,68],heavy:[989,231,64,8,68],block:[405,303,73,4,68],jump:[989,153,70,7,70],running:[405,373,72,6,70],aerial:[794,373,74,5,70],hit:[710,303,70,3,68]},
- dark:{idle:[405,486,73,6,70],walk:[989,486,62,8,70],run:[405,560,61,7,72],light:[405,711,73,6,69],heavy:[989,711,64,8,70],block:[405,782,73,4,70],jump:[989,633,70,7,70],running:[405,856,72,6,70],aerial:[794,856,74,5,70],hit:[710,782,70,3,68]}
+const approvedSpecs={
+ idle:{xs:[428,500,572,644,716],y:37,w:54,h:68},
+ walk:{xs:[1006,1075,1136,1196,1256,1316,1376,1437],y:37,w:58,h:68},
+ run:{xs:[420,486,551,616,681,745,806],y:108,w:68,h:68},
+ light:{xs:[417,483,551,625,695,763],y:258,w:78,h:70},
+ heavy:{xs:[1002,1071,1139,1206,1274,1343,1412,1480],y:257,w:88,h:72},
+ block:{xs:[420,487,554],y:333,w:66,h:65},
+ jump:{xs:[1005,1074,1140,1205,1272,1340,1408],y:187,w:76,h:73},
+ running:{xs:[417,486,552,621,689],y:406,w:80,h:72},
+ aerial:{xs:[804,869,934,998,1063],y:406,w:80,h:72},
+ hit:{xs:[792,858,927],y:334,w:75,h:65}
 };
+
 let frame=0,playing=true,speed=145,ready=false,frames=[];
-function extract(x,y,step,n,h){
- const out=[];
- for(let j=0;j<n;j++){
-  const w=Math.min(step,source.naturalWidth-x-j*step);
-  if(w<=0)break;
-  const cv=document.createElement('canvas');cv.width=Math.round(w);cv.height=h;
-  const c=cv.getContext('2d',{willReadFrequently:true});c.drawImage(source,x+j*step,y,w,h,0,0,cv.width,h);
-  const pixels=c.getImageData(0,0,cv.width,h),d=pixels.data;
-  for(let k=0;k<d.length;k+=4){const r=d[k],g=d[k+1],b=d[k+2];if(r>231&&g>231&&b>231){d[k+3]=0}else if(r>210&&g>210&&b>210){d[k+3]=Math.min(d[k+3],Math.round((255-Math.min(r,g,b))*5.5))}}
-  c.putImageData(pixels,0,0);out.push(cv);
- }return out;
+function extract(role,name){
+ const spec=approvedSpecs[name],sx=source.naturalWidth/1536,sy=source.naturalHeight/1024;
+ return spec.xs.map(center=>{
+  const x=Math.max(0,Math.round((center-spec.w/2)*sx)),y=Math.max(0,Math.round((spec.y+(role==='dark'?480:0)-spec.h/2)*sy));
+  const w=Math.min(Math.round(spec.w*sx),source.naturalWidth-x),h=Math.min(Math.round(spec.h*sy),source.naturalHeight-y);
+  const raw=document.createElement('canvas');raw.width=w;raw.height=h;
+  const c=raw.getContext('2d',{willReadFrequently:true});c.drawImage(source,x,y,w,h,0,0,w,h);
+  const image=c.getImageData(0,0,w,h),d=image.data;
+  let minX=w,minY=h,maxX=-1,maxY=-1;
+  for(let py=0;py<h;py++)for(let px=0;px<w;px++){
+   const p=(py*w+px)*4,r=d[p],g=d[p+1],b=d[p+2];
+   if(r>235&&g>235&&b>235){d[p+3]=0;continue}
+   if(r>219&&g>219&&b>219)d[p+3]=Math.min(255,Math.round((255-Math.min(r,g,b))*7));
+   if(d[p+3]>90){minX=Math.min(minX,px);maxX=Math.max(maxX,px);minY=Math.min(minY,py);maxY=Math.max(maxY,py)}
+  }
+  c.putImageData(image,0,0);
+  if(maxX<minX)return raw;
+  const cut=document.createElement('canvas');cut.width=maxX-minX+1;cut.height=maxY-minY+1;
+  cut.getContext('2d').drawImage(raw,minX,minY,cut.width,cut.height,0,0,cut.width,cut.height);
+  return cut;
+ });
 }
 function rebuild(){
  if(!ready)return;
- const spec=layouts[$('character').value][$('move').value];
- frames=extract(...spec);frame=0;strip.replaceChildren();
- for(let i=0;i<frames.length;i++){const tile=document.createElement('canvas');tile.width=95;tile.height=100;const c=tile.getContext('2d');c.imageSmoothingEnabled=false;c.drawImage(frames[i],5,8,85,85);tile.onclick=()=>{playing=false;$('toggle').textContent='Play';frame=i;render()};strip.appendChild(tile)}
+ frames=extract($('character').value,$('move').value);frame=0;strip.replaceChildren();
+ for(let i=0;i<frames.length;i++){const tile=document.createElement('canvas');tile.width=95;tile.height=100;const c=tile.getContext('2d');c.imageSmoothingEnabled=false;const im=frames[i],scale=Math.min(85/im.width,85/im.height);c.drawImage(im,(95-im.width*scale)/2,95-im.height*scale,im.width*scale,im.height*scale);tile.onclick=()=>{playing=false;$('toggle').textContent='Play';frame=i;render()};strip.appendChild(tile)}
  render();
 }
 function render(){
@@ -42,7 +60,7 @@ function render(){
  ctx.drawImage(cv,(260-dw)/2,212-dh,dw,dh);
  $('status').textContent=$('character').selectedOptions[0].text+' · '+$('move').selectedOptions[0].text+' · Frame '+(frame%frames.length+1)+' / '+frames.length+' · Source: unnamed.png';
 }
-source.onload=()=>{ready=true;const ratio=source.naturalWidth/1536;if(Math.abs(ratio-1)>.03){for(const group of Object.values(layouts))for(const k of Object.keys(group)){const a=group[k];a[0]=Math.round(a[0]*ratio);a[1]=Math.round(a[1]*source.naturalHeight/1024);a[2]=Math.round(a[2]*ratio);a[4]=Math.round(a[4]*source.naturalHeight/1024)}}rebuild()};
+source.onload=()=>{ready=true;rebuild()};
 source.onerror=()=>{$('status').textContent='ERROR: Could not load ../links_melee/unnamed.png. Confirm GitHub Pages has published the uploaded file.'};
 $('character').onchange=rebuild;$('move').onchange=rebuild;
 $('toggle').onclick=()=>{playing=!playing;$('toggle').textContent=playing?'Pause':'Play'};
