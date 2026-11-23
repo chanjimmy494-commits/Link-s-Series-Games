@@ -78,7 +78,7 @@ html *,body *{touch-action:none!important;-webkit-touch-callout:none}
  .labyrinth-pad{width:40vw!important;height:40vw!important}
  .combat-buttons button{width:15vw!important;height:22vw!important}
 }
-</style></head><body><header>LINK'S MELEE <small>v1.2.0 · Approved Swordsmen</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
+</style></head><body><header>LINK'S MELEE <small>v1.2.1 · Sprite Cleanup</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
 <div class="controls" aria-label="Touch game controls">
  <div class="pad labyrinth-pad" aria-label="Movement controls">
   <button class="up" data-k="w" aria-label="Jump"></button>
@@ -356,6 +356,38 @@ const approvedSpecs={
 function approvedSequence(action){
  return ({downward:'heavy',lunge:'light',rising:'heavy',low:'light',crouch:'block',defeat:'hit',aerial:'aerial',heavy:'heavy',light:'light',walk:'walk',idle:'idle',block:'block',jump:'jump',run:'run',running:'running'})[action]||'idle';
 }
+// Remove disconnected sheet labels, neighboring sprites and isolated pixel debris.
+// Preserve the largest connected fighter silhouette and sword pixels attached to it.
+function cleanApprovedPixels(image,w,h){
+ const d=image.data,visited=new Uint8Array(w*h),parts=[];
+ for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+  const start=y*w+x;if(visited[start]||d[start*4+3]<105)continue;
+  const queue=[start];visited[start]=1;let count=0,minX=w,minY=h,maxX=0,maxY=0,central=0;
+  for(let head=0;head<queue.length;head++){
+   const p=queue[head],px=p%w,py=(p/w)|0;count++;
+   minX=Math.min(minX,px);maxX=Math.max(maxX,px);minY=Math.min(minY,py);maxY=Math.max(maxY,py);
+   if(px>w*.23&&px<w*.77&&py>h*.12&&py<h*.91)central++;
+   for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
+    if(!dx&&!dy)continue;const nx=px+dx,ny=py+dy;
+    if(nx<0||ny<0||nx>=w||ny>=h)continue;
+    const np=ny*w+nx;if(!visited[np]&&d[np*4+3]>=105){visited[np]=1;queue.push(np)}
+   }
+  }
+  parts.push({queue,count,minX,maxX,minY,maxY,central});
+ }
+ if(!parts.length)return;
+ parts.sort((a,b)=>(b.count+b.central*.4)-(a.count+a.central*.4));
+ const main=parts[0],keep=new Uint8Array(w*h);
+ for(const part of parts){
+  // Tiny disconnected flecks are never animation frames. Preserve nearby
+  // detached sword glints only when immediately adjacent to the silhouette.
+  const near=part.minX<=main.maxX+3&&part.maxX>=main.minX-3&&part.minY<=main.maxY+3&&part.maxY>=main.minY-3;
+  if(part===main||(near&&part.count>=Math.max(5,main.count*.018)&&part.count<main.count*.35)){
+   for(const p of part.queue)keep[p]=1;
+  }
+ }
+ for(let p=0;p<w*h;p++)if(!keep[p])d[p*4+3]=0;
+}
 function buildApprovedFrames(){
  if(!approvedSheet.naturalWidth)return;
  const sx=approvedSheet.naturalWidth/1536,sy=approvedSheet.naturalHeight/1024;
@@ -375,6 +407,9 @@ function buildApprovedFrames(){
      if(r>219&&g>219&&b>219){d[p+3]=Math.min(255,Math.round((255-Math.min(r,g,b))*7))}
      if(d[p+3]>90){minX=Math.min(minX,x);maxX=Math.max(maxX,x);minY=Math.min(minY,y);maxY=Math.max(maxY,y)}
     }
+    cleanApprovedPixels(image,w,h);
+    minX=w;minY=h;maxX=-1;maxY=-1;
+    for(let py=0;py<h;py++)for(let px=0;px<w;px++)if(image.data[(py*w+px)*4+3]>90){minX=Math.min(minX,px);maxX=Math.max(maxX,px);minY=Math.min(minY,py);maxY=Math.max(maxY,px===px?py:py)}
     rc.putImageData(image,0,0);
     if(maxX<minX)return raw;
     const cut=document.createElement('canvas');cut.width=maxX-minX+1;cut.height=maxY-minY+1;
@@ -390,7 +425,7 @@ function drawApproved(a,role,action,progress){
  if(!sequence?.length)return false;
  const index=Math.min(sequence.length-1,Math.floor(Math.max(0,Math.min(.999,progress))*sequence.length));
  const im=sequence[index];
- const dh=112,dw=Math.min(150,dh*im.width/im.height);
+ const scale=1.55,dh=im.height*scale,dw=im.width*scale;
  c.save();c.translate(Math.round(a.x),Math.round(a.y));
  if(a.face<0)c.scale(-1,1);
  if(a.inv>0&&a.inv%4<2)c.globalAlpha=.6;
