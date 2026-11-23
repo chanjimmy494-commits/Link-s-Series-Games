@@ -358,97 +358,112 @@ function approvedSequence(action){
 }
 // Remove disconnected sheet labels, neighboring sprites and isolated pixel debris.
 // Preserve the largest connected fighter silhouette and sword pixels attached to it.
+// Clean the actual source sprites used by the game, not replacement artwork.
+// Opaque white and light grey are paper/label pixels, not character pixels.
+// Use connected components to reject floating fragments and neighboring poses.
 function cleanApprovedPixels(image,w,h){
- const d=image.data,size=w*h,visited=new Uint8Array(size),parts=[];
- const opaque=p=>d[p*4+3]>=112;
- // Segment the actual colored silhouette instead of trusting near-white
- // anti-alias pixels or the bounding boxes of neighboring sheet frames.
+ const d=image.data,n=w*h,seen=new Uint8Array(n),parts=[];
+ const solid=p=>d[p*4+3]>=110;
  for(let y=0;y<h;y++)for(let x=0;x<w;x++){
-  const start=y*w+x;
-  if(visited[start]||!opaque(start))continue;
-  const pixels=[start];visited[start]=1;
-  let minX=x,maxX=x,minY=y,maxY=y,center=0,lower=0;
-  for(let head=0;head<pixels.length;head++){
-   const p=pixels[head],px=p%w,py=(p/w)|0;
+  const start=y*w+x;if(seen[start]||!solid(start))continue;
+  const pixels=[start];seen[start]=1;
+  let minX=x,maxX=x,minY=y,maxY=y,mid=0;
+  for(let at=0;at<pixels.length;at++){
+   const p=pixels[at],px=p%w,py=(p/w)|0;
    minX=Math.min(minX,px);maxX=Math.max(maxX,px);
    minY=Math.min(minY,py);maxY=Math.max(maxY,py);
-   if(px>=w*.23&&px<=w*.77&&py>=h*.12&&py<=h*.94)center++;
-   if(py>h*.52)lower++;
+   if(px>=w*.28&&px<=w*.72&&py>=h*.12&&py<=h*.9)mid++;
    for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
     if(!dx&&!dy)continue;
-    const nx=px+dx,ny=py+dy;
-    if(nx<0||ny<0||nx>=w||ny>=h)continue;
-    const np=ny*w+nx;
-    if(!visited[np]&&opaque(np)){visited[np]=1;pixels.push(np)}
+    const xx=px+dx,yy=py+dy;
+    if(xx<0||xx>=w||yy<0||yy>=h)continue;
+    const next=yy*w+xx;
+    if(!seen[next]&&solid(next)){seen[next]=1;pixels.push(next)}
    }
   }
-  parts.push({pixels,count:pixels.length,minX,maxX,minY,maxY,center,lower});
+  parts.push({pixels,minX,maxX,minY,maxY,count:pixels.length,mid});
  }
- if(!parts.length){d.fill(0);return}
- // The subject has both mass and a central body. A bright sword trail,
- // annotation or cropped neighbor must not become the dominant sprite.
- parts.sort((a,b)=>(b.count+b.center*.65+b.lower*.12)-(a.count+a.center*.65+a.lower*.12));
- const main=parts[0],keep=new Uint8Array(size);
+ if(!parts.length){d.fill(0);return false}
+ // Prioritize a substantial body in the middle of the frame; text and
+ // slivers from neighboring frames often touch crop boundaries.
+ parts.sort((a,b)=>(b.count+1.2*b.mid)-(a.count+1.2*a.mid));
+ const main=parts[0];
+ if(main.count<14){d.fill(0);return false}
+ const keep=new Uint8Array(n);
  for(const p of main.pixels)keep[p]=1;
- // Distance from the silhouette (8-connected steps). Only sufficiently
- // substantial pieces immediately adjacent to the fighter can survive;
- // remote sparks, labels, and neighboring-frame fragments are discarded.
- const dist=new Uint8Array(size);dist.fill(255);
+ // Distance transform extending from the main silhouette, used only to
+ // retain actual nearby sword/cloth effects, never distant pixels.
+ const dist=new Uint8Array(n);dist.fill(255);
  const queue=main.pixels.slice();
  for(const p of queue)dist[p]=0;
  for(let i=0;i<queue.length;i++){
-  const p=queue[i],step=dist[p];
-  if(step>=3)continue;
-  const px=p%w,py=(p/w)|0;
+  const p=queue[i],cost=dist[p];
+  if(cost>=8)continue;
+  const x=p%w,y=(p/w)|0;
   for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
    if(!dx&&!dy)continue;
-   const nx=px+dx,ny=py+dy;
-   if(nx<0||ny<0||nx>=w||ny>=h)continue;
-   const np=ny*w+nx;
-   if(dist[np]>step+1){dist[np]=step+1;queue.push(np)}
+   const xx=x+dx,yy=y+dy;if(xx<0||xx>=w||yy<0||yy>=h)continue;
+   const k=yy*w+xx;
+   if(dist[k]>cost+1){dist[k]=cost+1;queue.push(k)}
   }
  }
- for(let i=1;i<parts.length;i++){
-  const part=parts[i],edge=part.minX<=1||part.maxX>=w-2||part.minY<=1||part.maxY>=h-2;
-  if(edge||part.count<9||part.count>main.count*.38)continue;
-  let nearby=0;
-  for(const p of part.pixels)if(dist[p]<=3)nearby++;
-  if(nearby>=Math.max(3,Math.ceil(part.count*.16)))
+ for(const part of parts.slice(1)){
+  // Discard all clipped neighboring sprites, label segments, and tiny flecks.
+  const border=part.minX<=1||part.maxX>=w-2||part.minY<=1||part.maxY>=h-2;
+  if(border||part.count<9||part.count>main.count*.48)continue;
+  let near=0;for(const p of part.pixels)if(dist[p]<=6)near++;
+  if(near>=Math.max(3,Math.ceil(part.count*.16)))
    for(const p of part.pixels)keep[p]=1;
  }
- // Never leave a translucent halo, unselected fleck, or near-white sheet
- // remnant after masking. Preserve the original color of approved pixels.
- for(let p=0;p<size;p++){
-  const a=p*4+3;
-  if(!keep[p])d[a]=0;
-  else if(d[a]>225)d[a]=255;
+ // Restore the original source pixels only where they belong to the
+ // surviving sprite; anti-aliased pixels can remain within one pixel.
+ for(let p=0;p<n;p++){
+  const alpha=p*4+3;
+  if(keep[p])d[alpha]=255;
+  else if(d[alpha]>0&&dist[p]<=1&&d[alpha]<110)d[alpha]=Math.min(d[alpha],135);
+  else d[alpha]=0;
  }
+ return true;
 }
 function buildApprovedFrames(){
  if(!approvedSheet.naturalWidth)return;
  const sx=approvedSheet.naturalWidth/1536,sy=approvedSheet.naturalHeight/1024;
  for(const role of ['red','dark']){
   for(const [name,spec] of Object.entries(approvedSpecs)){
-   approvedFrames[role][name]=spec.xs.map(center=>{
-    const left=Math.max(0,Math.round((center-spec.w/2)*sx)),top=Math.round((spec.y+(role==='dark'?480:0)-spec.h/2)*sy);
-    const w=Math.min(Math.round(spec.w*sx),approvedSheet.naturalWidth-left),h=Math.min(Math.round(spec.h*sy),approvedSheet.naturalHeight-top);
-    const raw=document.createElement('canvas');raw.width=w;raw.height=h;
-    const rc=raw.getContext('2d',{willReadFrequently:true});rc.drawImage(approvedSheet,left,top,w,h,0,0,w,h);
-    const image=rc.getImageData(0,0,w,h),d=image.data;
-    for(let y=0;y<h;y++)for(let x=0;x<w;x++){
-     const p=(y*w+x)*4,r=d[p],g=d[p+1],b=d[p+2];
-     // Remove the composite sheet's white backing before component cleanup.
-     if(r>235&&g>235&&b>235){d[p+3]=0;continue}
-     if(r>219&&g>219&&b>219)
-      d[p+3]=Math.min(255,Math.round((255-Math.min(r,g,b))*7));
+   const candidates=[];
+   for(let j=0;j<spec.xs.length;j++){
+    const center=spec.xs[j],left=center-spec.w/2;
+    const top=Math.round((spec.y+(role==='dark'?480:0)-spec.h/2)*sy);
+    const canvasW=Math.round(spec.w*sx),canvasH=Math.round(spec.h*sy);
+    const raw=document.createElement('canvas');
+    raw.width=canvasW;raw.height=canvasH;
+    const rc=raw.getContext('2d',{willReadFrequently:true});
+    // Source positions for adjacent illustrated poses are NOT evenly
+    // spaced atlas cells. Never borrow pixels beyond their midpoint.
+    const previous=j?((spec.xs[j-1]+center)/2+1):left;
+    const following=j<spec.xs.length-1?((center+spec.xs[j+1])/2-1):(left+spec.w);
+    const cropL=Math.round(Math.max(0,left,previous)*sx);
+    const cropR=Math.round(Math.min(1536,left+spec.w,following)*sx);
+    const cropTop=Math.max(0,top);
+    const srcW=Math.max(0,Math.min(cropR-cropL,approvedSheet.naturalWidth-cropL));
+    const srcH=Math.max(0,Math.min(canvasH,approvedSheet.naturalHeight-cropTop));
+    if(srcW>0&&srcH>0){
+     rc.drawImage(approvedSheet,cropL,cropTop,srcW,srcH,cropL-Math.round(left*sx),0,srcW,srcH);
     }
-    cleanApprovedPixels(image,w,h);
+    const image=rc.getImageData(0,0,raw.width,raw.height),d=image.data;
+    for(let p=0;p<d.length;p+=4){
+     const r=d[p],g=d[p+1],b=d[p+2];
+     if(r>=236&&g>=236&&b>=236)d[p+3]=0;
+     else if(r>216&&g>216&&b>216)
+      d[p+3]=Math.min(255,Math.round((255-Math.min(r,g,b))*6.3));
+    }
+    const valid=cleanApprovedPixels(image,raw.width,raw.height);
     rc.putImageData(image,0,0);
-    // Keep each frame's original, equally sized crop window. Tight
-    // per-frame bounding-box crops made body size and horizontal anchoring
-    // shift during animation even when the sprite art had not moved.
-    return raw;
-   });
+    if(valid)candidates.push(raw);
+   }
+   // Some labeled reference frames were incomplete or contaminated.
+   // Drop invalid crops rather than displaying disembodied fragments.
+   approvedFrames[role][name]=candidates;
   }
  }
 }
