@@ -78,7 +78,7 @@ html *,body *{touch-action:none!important;-webkit-touch-callout:none}
  .labyrinth-pad{width:40vw!important;height:40vw!important}
  .combat-buttons button{width:15vw!important;height:22vw!important}
 }
-</style></head><body><header>LINK'S MELEE <small>v1.2.5 · Dark Swordsman Outline and Grounding</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
+</style></head><body><header>LINK'S MELEE <small>v1.2.6 · Opponent Height Adjustment</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
 <div class="controls" aria-label="Touch game controls">
  <div class="pad labyrinth-pad" aria-label="Movement controls">
   <button class="up" data-k="w" aria-label="Jump"></button>
@@ -547,8 +547,9 @@ function drawApproved(a,role,action,progress){
  if(!sequence?.length)return false;
  const index=Math.min(sequence.length-1,Math.floor(Math.max(0,Math.min(.999,progress))*sequence.length));
  const frame=sequence[index],im=frame.canvas||frame;
- // Identical scale for both approved fighters, regardless of frame dimensions.
- const scale=1.88,dh=im.height*scale,dw=im.width*scale;
+ // Fine-tune each approved opponent's height while retaining the fixed foot anchor.
+ const scale=role==='red'?1.82:role==='dark'?1.96:1.88;
+ const dh=im.height*scale,dw=im.width*scale;
  const foot=frame.foot??im.height;
  c.save();c.translate(Math.round(a.x),Math.round(a.y));
  if(a.face<0)c.scale(-1,1);
