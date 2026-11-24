@@ -174,7 +174,7 @@ canvas#game{position:relative;z-index:1;display:block;width:min(100%,1100px);asp
 .seg button{min-width:48px;min-height:42px;padding:0 10px;border-radius:9px;border:2px solid #3a3f4a;background:#2b2e36;color:#e9e2cf;font:700 13px 'Silkscreen',ui-monospace,monospace;cursor:pointer}
 .seg button[aria-pressed=true]{background:#f9c250;border-color:#7a5212;color:#1a1206}
 .seg output{min-width:28px;text-align:center;font-size:16px;color:#f9c250}
-</style></head><body><header>LINK'S MELEE <small>v1.10.1 · Larger Fighters</small></header><div id="arenaClip" class="arena-clip" aria-hidden="true"><img id="animatedArenaGif" class="animated-arena-gif" alt="" hidden></div><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
+</style></head><body><header>LINK'S MELEE <small>v1.11.0 · Combos, Meter &amp; Sword Rush</small></header><div id="arenaClip" class="arena-clip" aria-hidden="true"><img id="animatedArenaGif" class="animated-arena-gif" alt="" hidden></div><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
 <div class="dock">
  <div class="dock-top">
   <button class="pill restart" id="restart" type="button" aria-label="Restart"><span class="cap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4a8 8 0 1 0 7.75 10h-2.1A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35A7.96 7.96 0 0 0 12 4z"/></svg></span>RESTART</button>
@@ -336,6 +336,7 @@ const sfx=(()=>{
    noiseBurst({t,dur:.6,type:'lowpass',f0:3000,f1:90,q:.6,peak:.8,attack:.002,dest:echo});noiseBurst({t,dur:.35,type:'lowpass',f0:3000,f1:150,q:.6,peak:.7,attack:.001})},
   gong(){const t=T();for(const [f,a] of [[196,1],[293.7,.55],[392,.4],[523,.22]])tone({t,f0:f,f1:f*.995,dur:1.4,peak:.44*a,attack:.004,dest:echo});tone({t,f0:f,f1:f*.995,dur:1.2,peak:.18*a,attack:.004});
    metal({t,base:620,dur:.9,peak:.08})},
+  special(){const t=T();noiseBurst({t,dur:.5,f0:300,f1:4200,q:1.6,peak:.35,attack:.05});[523,784,1047,1568].forEach((f,i)=>tone({t:t+.08+i*.05,f0:f,f1:f,dur:.5,peak:.1,attack:.003,dest:echo}));tone({t,f0:70,f1:140,dur:.4,peak:.4})},
   bell(){const t=T();for(const [f,a] of [[880,1],[1320,.4],[2200,.2]])tone({t,f0:f,f1:f,dur:.5,peak:.12*a,attack:.002})},
   select(){tone({type:'square',f0:660,f1:660,dur:.05,peak:.08,attack:.001});tone({t:T()+.05,type:'square',f0:990,f1:990,dur:.07,peak:.07,attack:.001})},
   victory(){const t=T();[523,659,784,1047].forEach((f,i)=>tone({t:t+i*.11,type:'square',f0:f,f1:f,dur:i===3?.45:.1,peak:.07,attack:.002}))},
@@ -346,7 +347,7 @@ const sfx=(()=>{
   play(name,...args){
    if(!ready())return;
    // Mix: impacts loudest, clangs next, swings and footfalls quieter.
-   const trim={swing:args[0]?6.5:11,hit:args[0]?3.9:3.7,block:args[0]?4.3:3.5,guardBreak:2.5,jump:20,land:5.5,bodyFall:3.3,ko:1.5,gong:2,bell:4.9,select:4.7,victory:4.2,defeat:2.5}[name]||1;
+   const trim={swing:args[0]?6.5:11,hit:args[0]?3.9:3.7,block:args[0]?4.3:3.5,guardBreak:2.5,jump:20,land:5.5,bodyFall:3.3,ko:1.5,gong:2,bell:4.9,select:4.7,victory:4.2,defeat:2.5,special:2.2}[name]||1;
    try{bus=ac.createGain();bus.gain.value=trim;bus.connect(master);play[name](...args)}catch(e){}finally{bus=master}
   },
   setVolume(v){settings.volume=v;if(master)master.gain.value=v}
@@ -502,6 +503,7 @@ const keys={};let just={};const key=k=>!!keys[k];let player,foe,particles,clock,
 let hitstop=0;
 // v1.9.0 match structure
 let tourneyFrames=0,clearInfo=null;
+let blockRecent=0,keepMeter={p:0,f:0},superFlash=0,specialName='';
 let roundsToWin=2,matchWins={p:0,f:0},roundNum=1,matchOver=false,slowmo=0,koFlash=0,paused=false;
 let attackHeld=false,attackHoldFrames=0,attackCharged=false,attackQueued=false,heavyQueued=false,normalSlashNext='light';
 let directionMemory='',directionMemoryFrames=0;
@@ -517,7 +519,7 @@ function reset(){
 }
 function newMatch(){
  roundsToWin=gameMode==='tournament'?2:(+settings.exhibitionRounds===3?2:1);
- matchWins={p:0,f:0};roundNum=1;matchOver=false;slowmo=0;koFlash=0;
+ matchWins={p:0,f:0};roundNum=1;matchOver=false;slowmo=0;koFlash=0;keepMeter={p:0,f:0};
  startStage();
  // v1.10.0: versus screen before every tournament match.
  if(gameMode==='tournament'){round='vs';phaseTick=190;sfx.play('gong')}
@@ -541,7 +543,7 @@ function startStage(){
  const singleScreenArena=!!singleImageArena(),arenaW=arenaWorldWidth();
  // Original stages retain their existing balanced spawn locations. The GIF
  // stages use the same 280px/680px *screen* placement with camera fixed at 0.
- player={x:singleScreenArena?arenaW/2-200:650,y:FLOOR,w:72,h:135,vx:0,vy:0,face:1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,blockAnim:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};foe={x:singleScreenArena?arenaW/2+200:1050,y:FLOOR,w:72,h:135,vx:0,vy:0,face:-1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,blockAnim:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};for(const f of [player,foe])Object.assign(f,{hurt:0,flash:0,down:0,ko:false,idleT:0,crouchT:0,blockT:0,victory:false});hitstop=0;particles=[];clock=90*60;round='intro';phaseTick=165;notice=currentArena().name;noticeTick=0;shake=0;aiTick=0;// Spawn at fixed 280px/680px screen positions, symmetric about 480px.
+ player={x:singleScreenArena?arenaW/2-200:650,y:FLOOR,w:72,h:135,vx:0,vy:0,face:1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,blockAnim:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};foe={x:singleScreenArena?arenaW/2+200:1050,y:FLOOR,w:72,h:135,vx:0,vy:0,face:-1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,blockAnim:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};for(const f of [player,foe])Object.assign(f,{hurt:0,flash:0,down:0,ko:false,idleT:0,crouchT:0,blockT:0,victory:false,meter:f===player?keepMeter.p:keepMeter.f,comboHits:0,comboTimer:0,comboShow:0,armor:false});hitstop=0;particles=[];clock=90*60;round='intro';phaseTick=165;notice=currentArena().name;noticeTick=0;shake=0;aiTick=0;// Spawn at fixed 280px/680px screen positions, symmetric about 480px.
 camera=Math.max(0,Math.min(arenaW-W,(player.x+foe.x)*.5-W*.5));aiMode='observe';aiModeTick=85;aiAttackLock=75;aiCommitDir=0;aiLastPlayerX=player.x;attackHeld=false;attackHoldFrames=0;attackCharged=false;attackQueued=false;heavyQueued=false;normalSlashNext='light';directionMemory='';directionMemoryFrames=0;just={}}
 
 startStage();
@@ -731,7 +733,9 @@ const moves={
  rising:{duration:25,activeStart:10,activeEnd:16,cost:12,range:Math.round(115*CS),damage:13,knock:6,stun:16},
  low:{duration:21,activeStart:7,activeEnd:12,cost:8,range:Math.round(110*CS),damage:8,knock:4,stun:10},
  aerial:{duration:24,activeStart:8,activeEnd:15,cost:11,range:Math.round(125*CS),damage:12,knock:6,stun:12},
- heavy:{duration:48,activeStart:19,activeEnd:34,cost:24,range:Math.round(143*CS),damage:19,knock:9,stun:18}
+ heavy:{duration:48,activeStart:19,activeEnd:34,cost:24,range:Math.round(143*CS),damage:19,knock:9,stun:18},
+ // v1.11.0 Sword Rush: meter special. Dash with four cuts, then a launching finisher.
+ special:{duration:62,activeStart:10,activeEnd:52,cost:0,range:Math.round(150*CS),damage:7,knock:2.5,stun:24}
 };
 const atlasImages={};for(const [name,file] of Object.entries({hero:'IMG_3200.PNG',foe:'IMG_3204.PNG',challenger2:'IMG_3209.PNG',challenger3:'IMG_3205.PNG',dualist:'IMG_3208.PNG'})){const im=new Image();im.src=file;atlasImages[name]=im}
 const atlasMap={
@@ -746,6 +750,13 @@ const challengerMaps={
 Object.assign(atlasMap,challengerMaps);
 // Explicit motion phases from the highlighted central attack columns.
 // Each attack crosses different poses instead of repeating one three-frame row.
+// Sword Rush poses from each 9x6 atlas: the dash row, then a rising finish.
+// Third value is the source facing for that cell (+1 right, -1 left).
+const specialFrames={
+ hero:[[1,7,1],[1,8,1],[1,9,1],[1,7,1],[1,8,1],[1,9,1],[1,8,1],[3,4,-1],[3,5,-1],[1,5,-1],[1,6,-1]],
+ foe:[[1,7,1],[1,8,1],[1,9,1],[1,7,1],[1,8,1],[1,9,1],[1,4,-1],[1,5,-1],[1,6,-1]],
+ challenger2:[[1,7,-1],[1,8,-1],[1,9,-1],[1,7,-1],[1,8,-1],[1,9,-1],[1,4,-1],[1,5,-1],[1,6,-1]]
+};
 const challengerAttackFrames={
  challenger2:{
   light:[[2,4],[3,4],[3,5],[3,6],[4,4],[4,5]],
@@ -889,7 +900,7 @@ const approvedSpecs={
  knockback:{xs:[1200,1261,1328,1398,1470],y:338,w:76,h:80}
 };
 function approvedSequence(action){
- return ({downward:'heavy',lunge:'light',rising:'heavy',low:'light',crouch:'crouch',defeat:'knockback',knock:'knockback',hit:'hit',aerial:'aerial',heavy:'heavy',light:'light',walk:'walk',idle:'idle',block:'block',jump:'jump',run:'run',running:'running'})[action]||'idle';
+ return ({special:'running',downward:'heavy',lunge:'light',rising:'heavy',low:'light',crouch:'crouch',defeat:'knockback',knock:'knockback',hit:'hit',aerial:'aerial',heavy:'heavy',light:'light',walk:'walk',idle:'idle',block:'block',jump:'jump',run:'run',running:'running'})[action]||'idle';
 }
 // Remove disconnected sheet labels, neighboring sprites and isolated pixel debris.
 // Preserve the largest connected fighter silhouette and sword pixels attached to it.
@@ -1076,7 +1087,10 @@ function buildApprovedFrames(){
    }
    // Some labeled reference frames were incomplete or contaminated.
    // Drop invalid crops rather than displaying disembodied fragments.
-   approvedFrames[role][name]=candidates;
+   // Drop fragmentary crops (much shorter than the row's tallest frame).
+   const hOf=f=>{const b=approvedAlphaBounds((f.canvas||f).getContext('2d').getImageData(0,0,(f.canvas||f).width,(f.canvas||f).height),(f.canvas||f).width,(f.canvas||f).height);return b?b.maxY-b.minY+1:0};
+   const tallest=Math.max(0,...candidates.map(hOf));
+   approvedFrames[role][name]=candidates.filter(f=>hOf(f)>=tallest*.5);
   }
  }
 }
@@ -1106,7 +1120,7 @@ function drawAtlas(a,dark,action,progress){
  if(role==='dualist'&&drawApproved(a,'dark',action,progress))return true;
  const mapping=atlasMap[role]||atlasMap.foe;
  const map=mapping[action]||mapping.idle;
- const sequence=challengerAttackFrames[role]?.[action];
+ const sequence=action==='special'&&specialFrames[role]?specialFrames[role]:challengerAttackFrames[role]?.[action];
  const n=map[2]-map[1]+1,frame=action==='block'||action==='crouch'?0:Math.min(n-1,Math.floor(Math.max(0,progress)*n));
  const [row,first,last]=map;
  const selected=sequence?sequence[Math.min(sequence.length-1,Math.floor(Math.max(0,progress)*sequence.length))]:[row,first+frame];
@@ -1120,7 +1134,7 @@ function drawAtlas(a,dark,action,progress){
   hero:{idle:-1,walk:1,jump:-1,crouch:-1,block:-1,light:-1,lunge:-1,rising:-1,low:-1,aerial:-1,heavy:-1,knock:-1,defeat:-1,victory:-1},
   foe:{idle:-1,walk:1,jump:1,crouch:-1,block:-1,light:1,lunge:1,rising:-1,low:1,aerial:-1,heavy:-1,defeat:-1}
  };
- const sourceDir=(sourceFacing[role]||sourceFacing.foe)[action]??-1;
+ const sourceDir=selected[2]??(sourceFacing[role]||sourceFacing.foe)[action]??-1;
  if(sourceDir!==a.face)c.scale(-1,1);
  if(a.inv>0&&a.inv%4<2)c.globalAlpha=.6;
  
@@ -1163,6 +1177,16 @@ function attack(a,b,heavy,kind){
  a.cool=a.attackDuration+(heavy?8:3);a.stamina-=m.cost;a.didHit=false;a.swung=false;a.block=false;
  a.combo=(a.combo+1)%3;a.vx*=.72;
 }
+function startSpecial(a){
+ if(a.meter<100||a.stun>0||a.atk>0||a.down>0||round!=='play')return false;
+ a.meter=0;a.block=false;a.crouch=false;a.heavy=false;a.attackKind='special';
+ a.attackDuration=moves.special.duration;a.atk=a.attackDuration;a.attackPhase=0;a.cool=a.attackDuration+10;
+ a.didHit=false;a.swung=false;a.armor=true;a.specialHits=0;
+ // Super flash: everything freezes for a moment while the move is announced.
+ hitstop=Math.max(hitstop,26);superFlash=34;specialName=a===player?'SWORD RUSH':stages[opponentIndex].opponent+' RUSH';
+ sfx.play('special');if(a===player)haptic(35);
+ return true;
+}
 function spawnHit(x,y,blocked,dark){
  for(let i=0;i<12;i++)particles.push({x,y,vx:(Math.random()-.5)*8,vy:(Math.random()-.5)*9,life:16,color:blocked?'#9fd5f6':dark?'#c09cff':'#f4d394'});
 }
@@ -1174,7 +1198,7 @@ function knockDown(b,dir,final){
  b.stun=final?99999:64;b.inv=final?99999:86;
 }
 function hit(a,b){
- const m=moves[a.attackKind];if(!m||a.didHit||b.inv>0)return;
+ const m=moves[a.attackKind];if(!m||a.didHit||b.inv>0||b.armor)return;
  const delta=b.x-a.x;
  if(Math.abs(delta)>m.range||Math.sign(delta)!==a.face||Math.abs(b.y-a.y)>110*CS||(b.crouch&&!a.heavy&&a.y<FLOOR-25))return;
  a.didHit=true;
@@ -1182,8 +1206,16 @@ function hit(a,b){
  const damage=guarded?Math.max(1,Math.round(m.damage*.15)):m.damage;
  b.hp=Math.max(0,b.hp-damage);
  b.stamina=Math.max(0,b.stamina-(guarded?(a.heavy?32:17):3));
- b.inv=guarded?10:24;b.stun=guarded?5:m.stun;b.vx=a.face*(guarded?2.4:m.knock);
+ b.inv=guarded?10:(a.attackKind==='special'?(a.heavy?40:5):24);b.stun=guarded?5:m.stun;b.vx=a.face*(guarded?2.4:m.knock);
  const playerInvolved=a===player||b===player;
+ // Meter: landing hits builds most, blocking some, being hit a little.
+ if(a.attackKind!=='special')a.meter=Math.min(100,a.meter+(guarded?5:a.heavy?16:11));
+ b.meter=Math.min(100,b.meter+(guarded?8:4));
+ if(!guarded){
+  // A hit on an opponent who is still reeling extends the combo.
+  a.comboHits=(b.hurt>0||b.down>0||a.comboTimer>0)?a.comboHits+1:1;a.comboTimer=48;
+  if(a.comboHits>=2)a.comboShow=60;
+ }
  if(guarded){hitstop=Math.max(hitstop,3);sfx.play('block',a.heavy);if(playerInvolved)haptic(8)}
  else{
   sfx.play(b.hp<=0?'ko':'hit',a.heavy);if(playerInvolved)haptic(b.hp<=0?60:b===player?30:14);
@@ -1198,7 +1230,7 @@ function hit(a,b){
 function aerialDrop(a){a.y+=9;a.ground=-1;a.coyote=0}
 function physics(a){
  a.cool=Math.max(0,a.cool-1);a.inv=Math.max(0,a.inv-1);a.stun=Math.max(0,a.stun-1);
- a.idleT++;a.hurt=Math.max(0,a.hurt-1);a.flash=Math.max(0,a.flash-1);
+ a.idleT++;a.hurt=Math.max(0,a.hurt-1);a.comboTimer=Math.max(0,a.comboTimer-1);a.comboShow=Math.max(0,a.comboShow-1);a.flash=Math.max(0,a.flash-1);
  a.crouchT=a.crouch?a.crouchT+1:0;a.blockT=a.block?a.blockT+1:0;
  if(a.down>0){a.down++;if(!a.ko&&a.stun===0)a.down=0}
  a.guardBreak=Math.max(0,a.guardBreak-1);
@@ -1206,6 +1238,13 @@ function physics(a){
  if(a.atk>0){
   let m=moves[a.attackKind];a.atk--;a.attackPhase=a.attackDuration-a.atk;
   if(!a.swung&&a.attackPhase>=Math.round(a.attackDuration*m.activeStart/m.duration)-2){a.swung=true;sfx.play('swing',a.heavy)}
+  if(a.attackKind==='special'){
+   // Rush forward through the first two thirds, rearming a cut every 10 frames.
+   if(a.attackPhase>=6&&a.attackPhase<=40)a.vx=a.face*8.5;
+   if(a.attackPhase>10&&a.attackPhase%10===0&&a.attackPhase<=50){a.didHit=false;if(a.attackPhase>10)sfx.play('swing',a.attackPhase>=50)}
+   a.heavy=a.attackPhase>=46;
+   if(a.atk===0)a.armor=false;
+  }
   const phase=a.attackPhase/a.attackDuration;
   if(phase>=m.activeStart/m.duration&&phase<=m.activeEnd/m.duration)hit(a,a===player?foe:player);
  }
@@ -1266,7 +1305,7 @@ function update(){
  }
  if(round!=='play'){
   phaseTick++;shake=0;
-  if(!matchOver&&phaseTick>170){roundNum++;startStage();}
+  if(!matchOver&&phaseTick>170){keepMeter={p:player.meter,f:foe.meter};roundNum++;startStage();}
   else if(matchOver&&gameMode==='tournament'&&round==='win'&&phaseTick>190&&stageIndex<stages.length-1){stageIndex++;opponentIndex=stageIndex;try{sessionStorage.setItem(progressKey,String(stageIndex))}catch(e){}newMatch();syncAnimatedBackdrop();}
   just={};return}
  // Impact freeze: inputs stay buffered and resume afterwards.
@@ -1286,6 +1325,11 @@ function update(){
   if(!attackHeld&&just.s&&player.ground!==FLOOR&&player.ground!==-1){player.drop=17;player.vy=3;aerialDrop(player)}
   // Both attack types are allowed in the air, subject to cooldown.
   if(attackHeld&&!attackCharged){attackHoldFrames++;if(attackHoldFrames>=23)attackCharged=true}
+  // BLOCK held + ATTACK with a full meter: special.
+  // Block counts as held for 8 frames after release, so pressing both and
+  // letting go together still triggers the special.
+  blockRecent=key('k')?8:Math.max(0,blockRecent-1);
+  if(player.meter>=100&&blockRecent>0&&(attackQueued||heavyQueued||just.j||just.l)){if(startSpecial(player)){attackQueued=heavyQueued=false;just.j=just.l=false}}
   if(heavyQueued){if(player.cool===0&&player.atk===0){
    // Up + held Attack: a rising heavy launcher (knocks down) instead of the overhead.
    attack(player,foe,true,(key('u')||key('w'))&&player.ground!==-1?'rising':'heavy');heavyQueued=false}}
@@ -1328,6 +1372,7 @@ function update(){
      attack(foe,player,kind==='heavy',kind);
     }else attack(foe,player,Math.random()<.35);
     aiAttackLock=opponentIndex===4?17:100;
+    if(foe.meter>=100&&dist<190*CS&&Math.random()<.7){foe.atk=0;foe.cool=0;startSpecial(foe)}
    }
   }else if(aiMode==='recover'){foe.vx*=.65;if(player.atk>0&&dist<120*CS&&foe.atk===0&&foe.stamina>22&&aiModeTick<20)foe.block=true}
   // Do not pursue a jumping player in lockstep; allow crossovers and repositioning.
@@ -1354,7 +1399,7 @@ function update(){
  shake=Math.max(0,shake-1);just={};
 }
 function text(t,x,y,size=20,color='#fff2cd',align='center'){c.font=`bold ${size}px system-ui`;c.textAlign=align;c.fillStyle='#111b27';c.fillText(t,x+2,y+2);c.fillStyle=color;c.fillText(t,x,y)}
-function bar(x,y,hp,stam,reverse=false){c.fillStyle='#0b1220d9';c.fillRect(x-5,y-5,355,49);c.fillStyle='#293341';c.fillRect(x,y,340,19);c.fillStyle=hp>30?'#cb5c5a':'#ec925e';let w=340*Math.max(0,hp)/100;c.fillRect(reverse?x+340-w:x,y,w,19);c.fillStyle='#34404d';c.fillRect(x,y+25,340,7);c.fillStyle='#6ec5d7';let sw=340*stam/100;c.fillRect(reverse?x+340-sw:x,y+25,sw,7);c.strokeStyle='#d8c59b';c.lineWidth=2;c.strokeRect(x,y,340,19)}
+function bar(x,y,hp,stam,reverse=false){c.fillStyle='#0b1220d9';c.fillRect(x-5,y-5,350,52);c.fillStyle='#293341';c.fillRect(x,y,340,19);c.fillStyle=hp>30?'#cb5c5a':'#ec925e';let w=340*Math.max(0,hp)/100;c.fillRect(reverse?x+340-w:x,y,w,19);c.fillStyle='#34404d';c.fillRect(x,y+25,340,7);c.fillStyle='#6ec5d7';let sw=340*stam/100;c.fillRect(reverse?x+340-sw:x,y+25,sw,7);c.strokeStyle='#d8c59b';c.lineWidth=2;c.strokeRect(x,y,340,19)}
 
 
 /* Animated articulated fighter renderer: independent leg, arm, cloak, head and blade
@@ -1532,6 +1577,7 @@ function render(){
  if(shake&&round==='play')c.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);
  c.translate(-Math.round(camera),0);
  drawStage();
+ if(superFlash>0){c.fillStyle='rgba(5,6,14,'+Math.min(.62,superFlash/20*.62).toFixed(3)+')';c.fillRect(camera-20,0,W+40,H)}
  for(const a of [player,foe]){
   const lift=Math.max(0,FLOOR-a.y),k=Math.max(.35,1-lift/220);
   c.fillStyle='rgba(10,12,20,'+(0.42*k).toFixed(3)+')';c.beginPath();
@@ -1543,6 +1589,16 @@ function render(){
  for(let p of particles){c.globalAlpha=p.life/22;c.fillStyle=p.color;c.fillRect(p.x,p.y,5,5)}
  c.globalAlpha=1;c.restore();
  bar(28,20,player.hp,player.stamina);bar(592,20,foe.hp,foe.stamina,true);
+ // Special meters under the stamina bars; pulse when full.
+ for(const [a,x,rev] of [[player,28,false],[foe,592,true]]){
+  c.fillStyle='#1a1c24';c.fillRect(x,56,340,6);
+  const full=a.meter>=100,w=340*a.meter/100;
+  c.fillStyle=full?(Math.floor(performance.now()/120)%2?'#ffe08a':'#f9c250'):'#c98a1e';c.fillRect(rev?x+340-w:x,56,w,6);
+ }
+ if(player.meter>=100&&round==='play')text('SPECIAL READY · BLOCK + ATTACK',28,108,13,'#f9c250','left');
+ for(const [a,x,al] of [[player,28,'left'],[foe,932,'right']])if(a.comboShow>0&&a.comboHits>=2){
+  c.globalAlpha=Math.min(1,a.comboShow/15);text(a.comboHits+' HITS',x,a===player&&player.meter>=100?134:118,24+Math.min(10,a.comboHits*2),'#ffd877',al);c.globalAlpha=1;
+ }
  text('SWORDSMAN',28,85,18,'#f8e0ad','left');text(stages[opponentIndex].opponent,932,85,18,'#e4baff','right');
  text(String(Math.max(0,Math.ceil(clock/60))),480,48,38);
  // Round markers either side of the clock (best-of-3 shows two per side).
@@ -1563,6 +1619,7 @@ function render(){
    if(champ&&clearInfo)text('CLEAR TIME '+fmtTime(clearInfo.time)+(clearInfo.record?'  ·  NEW RECORD!':'  ·  BEST '+fmtTime(clearInfo.best)),480,256,20,clearInfo.record?'#f9c250':'#dce9f4');
    text(gameMode==='exhibition'?'Match complete · MENU to choose another arena':'Press R / RESTART or return to MENU',480,285,19)}}
  else if(noticeTick>0)text(notice,480,120,21,'#ffe4a8');
+ if(superFlash>0){superFlash--;c.globalAlpha=Math.min(1,superFlash/10);text(specialName+'!',480,200,40,'#f9c250');c.globalAlpha=1}
  if(round==='vs')drawVS();
 }
 openTitleScreen();
