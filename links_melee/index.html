@@ -120,6 +120,11 @@ html *,body *{touch-action:none!important;-webkit-touch-callout:none}
  .front-stage-panel{padding:8px 0 20px}
 }
 
+/* A native DOM image must carry GIF motion: canvas.drawImage uses the first
+   poster frame for GIFs under the HTML canvas standard. */
+canvas#game{position:relative;z-index:1}
+.animated-arena-gif{position:fixed;z-index:0;display:block;object-fit:cover;image-rendering:auto;pointer-events:none;user-select:none;-webkit-user-select:none}
+.animated-arena-gif[hidden]{display:none!important}
 /* Exhibition gallery: stage previews retain their original GIF animation. */
 .front-screen,.front-screen *{touch-action:pan-y!important}
 .front-stage-panel{align-self:flex-start;margin:auto;min-height:min-content}
@@ -143,7 +148,7 @@ html *,body *{touch-action:none!important;-webkit-touch-callout:none}
  .stage-choice small{font-size:9px}
  .stage-group-heading{font-size:15px}
 }
-</style></head><body><header>LINK'S MELEE <small>v1.3.1 · Animated Exhibition Arenas</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
+</style></head><body><header>LINK'S MELEE <small>v1.3.2 · Native Animated Arenas</small></header><img id="animatedArenaGif" class="animated-arena-gif" alt="" aria-hidden="true" hidden><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
 <div class="controls" aria-label="Touch game controls">
  <div class="pad labyrinth-pad" aria-label="Movement controls">
   <button class="up" data-k="w" aria-label="Jump"></button>
@@ -221,7 +226,7 @@ document.addEventListener('touchstart',e=>{
  if(e.touches.length>1){e.preventDefault();return}
  const now=Date.now();if(now-lastGameTouch<350)e.preventDefault();lastGameTouch=now;
 },{passive:false});
-const canvas=document.getElementById('game'),c=canvas.getContext('2d');c.imageSmoothingEnabled=false;const W=960,H=540,FLOOR=438,WORLD=1720,platforms=[{x:375,y:345,w:235,h:16},{x:1110,y:345,w:235,h:16},{x:175,y:263,w:240,h:13},{x:730,y:267,w:250,h:13},{x:1325,y:263,w:215,h:13}];let camera=0;let stageIndex=0;let opponentIndex=0;let gameMode='tournament';let menuState='title';
+const canvas=document.getElementById('game'),c=canvas.getContext('2d');const animatedArenaGif=document.getElementById('animatedArenaGif');c.imageSmoothingEnabled=false;const W=960,H=540,FLOOR=438,WORLD=1720,platforms=[{x:375,y:345,w:235,h:16},{x:1110,y:345,w:235,h:16},{x:175,y:263,w:240,h:13},{x:730,y:267,w:250,h:13},{x:1325,y:263,w:215,h:13}];let camera=0;let stageIndex=0;let opponentIndex=0;let gameMode='tournament';let menuState='title';
 const progressKey='links-melee-campaign-v109';
 // Tournament begins at stage one; the title screen is always the entry point.
 const stages=[
@@ -253,6 +258,31 @@ let exhibitionArena=null,exhibitionBackground=null;
 function currentArena(){
  return gameMode==='exhibition'&&exhibitionArena?exhibitionArena:stages[stageIndex];
 }
+function animatedArenaActive(){
+ return gameMode==='exhibition'&&!!exhibitionArena?.animated;
+}
+function positionAnimatedBackdrop(){
+ if(animatedArenaGif.hidden)return;
+ const r=canvas.getBoundingClientRect();
+ animatedArenaGif.style.left=r.left+'px';
+ animatedArenaGif.style.top=r.top+'px';
+ animatedArenaGif.style.width=r.width+'px';
+ animatedArenaGif.style.height=r.height+'px';
+}
+function syncAnimatedBackdrop(){
+ if(animatedArenaActive()){
+  if(animatedArenaGif.getAttribute('src')!==exhibitionArena.background)
+   animatedArenaGif.src=exhibitionArena.background;
+  animatedArenaGif.hidden=false;
+  positionAnimatedBackdrop();
+ }else{
+  animatedArenaGif.hidden=true;
+  animatedArenaGif.removeAttribute('src');
+ }
+}
+window.addEventListener('resize',positionAnimatedBackdrop);
+window.addEventListener('orientationchange',positionAnimatedBackdrop);
+if(window.visualViewport)window.visualViewport.addEventListener('resize',positionAnimatedBackdrop);
 function stagePlatforms(){
  const arenaIndex=gameMode==='exhibition'?exhibitionArena?.tournamentIndex:stageIndex;
  return (arenaIndex===0||arenaIndex===3)?platforms:[];
@@ -288,11 +318,13 @@ function clearGameplayInput(){
 }
 function openTitleScreen(){
  menuState='title';round='menu';clearGameplayInput();
+ animatedArenaGif.hidden=true;
  frontScreen.hidden=false;titlePanel.hidden=false;stagePanel.hidden=true;
  frontScreen.setAttribute('aria-label',"Link's Melee main menu");
 }
 function openStagePicker(){
  menuState='stages';round='menu';clearGameplayInput();
+ animatedArenaGif.hidden=true;
  frontScreen.hidden=false;titlePanel.hidden=true;stagePanel.hidden=false;
  frontScreen.setAttribute('aria-label','Exhibition stage selection');
 }
@@ -307,16 +339,16 @@ function startMatch(mode,selectedArena=null){
   exhibitionArena=selectedArena;
   stageIndex=selectedArena.tournamentIndex??0;
   opponentIndex=Math.floor(Math.random()*stages.length);
-  // Keep an HTMLImageElement pointing at the original animated GIF. Canvas
-  // redraws that image on every requestAnimationFrame; no GIF frames are
-  // converted to PNGs or cached as a static first-frame snapshot.
-  exhibitionBackground=selectedArena.tournamentIndex!=null?
-   stageBackgrounds[selectedArena.tournamentIndex]:new Image();
-  if(selectedArena.tournamentIndex==null)
+  // Static originals continue through the existing canvas renderer.
+  // Animated arenas use the native DOM GIF layer behind the game canvas.
+  exhibitionBackground=selectedArena.animated?null:
+   (selectedArena.tournamentIndex!=null?stageBackgrounds[selectedArena.tournamentIndex]:new Image());
+  if(!selectedArena.animated&&selectedArena.tournamentIndex==null)
    exhibitionBackground.src=selectedArena.background;
  }
  clearGameplayInput();
  startStage();menuState='game';frontScreen.hidden=true;
+ syncAnimatedBackdrop();
 }
 document.getElementById('restart').onclick=reset;
 document.getElementById('home').onclick=openTitleScreen;
@@ -1020,16 +1052,23 @@ function fighter(a,dark){
  c.restore();
 }
 function drawStage(){
- const bg=gameMode==='exhibition'?exhibitionBackground:stageBackgrounds[stageIndex];
- c.fillStyle='#172331';c.fillRect(0,0,W,H);
- if(bg.complete&&bg.naturalWidth){
-  // Wide arena uses a softened, mirrored extension of the original static artwork.
-  const scale=1.08,tw=W*scale;
-  for(let i=0;i<3;i++){
-   c.save();c.translate(i*tw,0);
-   if(i%2){c.translate(tw,0);c.scale(-1,1)}
-   c.drawImage(bg,0,0,tw,H);c.restore();
+ // DOM-backed GIF stays in motion underneath this transparent canvas.
+ // Only draw canvas backgrounds for the tournament and still-image arenas.
+ if(!animatedArenaActive()){
+  const bg=gameMode==='exhibition'?exhibitionBackground:stageBackgrounds[stageIndex];
+  c.fillStyle='#172331';c.fillRect(0,0,W,H);
+  if(bg&&bg.complete&&bg.naturalWidth){
+   // Existing arena artwork retains its original mirrored canvas tiling.
+   const scale=1.08,tw=W*scale;
+   for(let i=0;i<3;i++){
+    c.save();c.translate(i*tw,0);
+    if(i%2){c.translate(tw,0);c.scale(-1,1)}
+    c.drawImage(bg,0,0,tw,H);c.restore();
+   }
   }
+ }else if(!animatedArenaGif.complete||!animatedArenaGif.naturalWidth){
+  // No full-canvas background if the animated image has loaded.
+  c.fillStyle='#172331';c.fillRect(0,0,W,H);
  }
  // Ground and raised masonry are integrated into the castle palette.
  c.fillStyle='#262c32';c.fillRect(0,FLOOR+2,WORLD,H-FLOOR);
@@ -1047,6 +1086,9 @@ function drawStage(){
  }
 }
 function render(){
+ // Without a full-screen canvas background, erase the preceding combat
+ // frame so characters, particles and the HUD never leave ghost images.
+ if(animatedArenaActive())c.clearRect(0,0,W,H);
  c.save();
  if(shake&&round==='play')c.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);
  c.translate(-Math.round(camera),0);
