@@ -160,7 +160,7 @@ canvas#game{position:relative;z-index:1;display:block;width:min(100%,1100px);asp
  .stage-group-heading{font-size:15px}
 }
 
-</style></head><body><header>LINK'S MELEE <small>v1.6.0 · Fighter Animation States</small></header><div id="arenaClip" class="arena-clip" aria-hidden="true"><img id="animatedArenaGif" class="animated-arena-gif" alt="" hidden></div><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
+</style></head><body><header>LINK'S MELEE <small>v1.6.1 · D-pad Up Aims</small></header><div id="arenaClip" class="arena-clip" aria-hidden="true"><img id="animatedArenaGif" class="animated-arena-gif" alt="" hidden></div><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
 <div class="dock">
  <div class="dock-top">
   <button class="pill restart" id="restart" type="button" aria-label="Restart"><span class="cap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4a8 8 0 1 0 7.75 10h-2.1A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35A7.96 7.96 0 0 0 12 4z"/></svg></span>RESTART</button>
@@ -168,7 +168,7 @@ canvas#game{position:relative;z-index:1;display:block;width:min(100%,1100px);asp
  </div>
  <div class="controls" aria-label="Touch game controls">
   <div class="pad labyrinth-pad" aria-label="Movement controls">
-   <button class="up" data-k="w" aria-label="Jump"></button>
+   <button class="up" data-k="u" aria-label="Aim up: with Attack for a rising slash"></button>
    <button class="left" data-k="a" aria-label="Move left"></button>
    <span class="blank" aria-hidden="true"></span>
    <button class="right" data-k="d" aria-label="Move right"></button>
@@ -471,7 +471,7 @@ function syncTouch(k){
  keys[k]=held||!!keyboardHolds[k];
 }
 function recalc(){
- for(const k of ['w','a','d','s','j','k','l'])syncTouch(k);
+ for(const k of ['w','u','a','d','s','j','k','l'])syncTouch(k);
  for(let i=0;i<pads.length;i++)pads[i].querySelectorAll('button[data-k]').forEach(b=>b.classList.toggle('pressed',!!keys[b.dataset.k]));
 }
 function padHit(pad,x,y,previous=new Set()){
@@ -479,10 +479,11 @@ function padHit(pad,x,y,previous=new Set()){
   // Exact Labyrinth 9.0.9 dominant-axis thumbstick behavior and 0.16 dead zone.
   const r=pad.getBoundingClientRect(),dx=(x-(r.left+r.width/2))/(r.width/2),dy=(y-(r.top+r.height/2))/(r.height/2);
   if(Math.hypot(dx,dy)<.16)return new Set(previous);
-  const k=Math.abs(dx)>Math.abs(dy)?(dx>0?'d':'a'):(dy>0?'s':'w');
+  const k=Math.abs(dx)>Math.abs(dy)?(dx>0?'d':'a'):(dy>0?'s':'u');
   const out=new Set([k]);
-  // Melee-only diagonal support: hold jump while steering laterally through the upper corners.
-  if(dy<-.38&&Math.abs(dx)>.38){out.add('w');out.add(dx>0?'d':'a')}
+  // v1.6.1: D-pad Up aims (key 'u'), it no longer jumps; the JUMP button owns
+  // jumping. Upper diagonals move while aiming up.
+  if(dy<-.38&&Math.abs(dx)>.38){out.add('u');out.add(dx>0?'d':'a')}
   return out;
  }
  const r=pad.getBoundingClientRect(),rx=(x-r.left)/r.width*3,ry=(y-r.top)/r.height*3;
@@ -573,7 +574,7 @@ const challengerAttackFrames={
  }
 };
 
-function directionAttack(a){const toward=a.face>0?'d':'a';const dir=key('s')?'down':key('w')?'up':key(toward)?'forward':directionMemoryFrames>0?directionMemory:'';return a.ground===-1?'aerial':dir==='down'?'low':dir==='up'?'rising':dir==='forward'?'lunge':'light'}
+function directionAttack(a){const toward=a.face>0?'d':'a';const dir=key('s')?'down':(key('u')||key('w'))?'up':key(toward)?'forward':directionMemoryFrames>0?directionMemory:'';return a.ground===-1?'aerial':dir==='down'?'low':dir==='up'?'rising':dir==='forward'?'lunge':'light'}
 
 // Decode the approved transparent GIF into independent canvas frames once.
 // Frame selection is controlled by the combat clock, not the GIF's own clock.
@@ -1068,7 +1069,7 @@ function update(){
  // Impact freeze: inputs stay buffered and resume afterwards.
  if(hitstop>0){hitstop--;return}
  clock--;if(clock<=0){shake=0;player.inv=foe.inv=99999;round=player.hp>=foe.hp?'win':'lose';phaseTick=0;notice=round==='win'?'TIME — VICTORY':'TIME — DEFEAT';just={};return}
- noticeTick=Math.max(0,noticeTick-1);directionMemoryFrames=Math.max(0,directionMemoryFrames-1);if(just.s){directionMemory='down';directionMemoryFrames=11}else if(just.w){directionMemory='up';directionMemoryFrames=11}else if(just.a||just.d){directionMemory='forward';directionMemoryFrames=11}
+ noticeTick=Math.max(0,noticeTick-1);directionMemoryFrames=Math.max(0,directionMemoryFrames-1);if(just.s){directionMemory='down';directionMemoryFrames=11}else if(just.w||just.u){directionMemory='up';directionMemoryFrames=11}else if(just.a||just.d){directionMemory='forward';directionMemoryFrames=11}
  if(!player.stun){
   player.crouch=!attackHeld&&key('s')&&player.ground!==-1;player.block=!attackHeld&&key('k')&&player.atk===0&&player.stamina>0&&player.guardBreak===0;
   if(attackHeld){player.vx=0;player.jumpBuffer=0;}
@@ -1081,7 +1082,9 @@ function update(){
   if(!attackHeld&&just.s&&player.ground!==FLOOR&&player.ground!==-1){player.drop=17;player.vy=3;aerialDrop(player)}
   // Both attack types are allowed in the air, subject to cooldown.
   if(attackHeld&&!attackCharged){attackHoldFrames++;if(attackHoldFrames>=23)attackCharged=true}
-  if(heavyQueued){if(player.cool===0&&player.atk===0){attack(player,foe,true,'heavy');heavyQueued=false}}
+  if(heavyQueued){if(player.cool===0&&player.atk===0){
+   // Up + held Attack: a rising heavy launcher (knocks down) instead of the overhead.
+   attack(player,foe,true,(key('u')||key('w'))&&player.ground!==-1?'rising':'heavy');heavyQueued=false}}
   if(attackQueued){if(player.cool===0&&player.atk===0){const dir=directionAttack(player);const kind=dir==='light'?normalSlashNext:dir;attack(player,foe,false,kind);if(dir==='light'&&player.atk>0)normalSlashNext=normalSlashNext==='light'?'downward':'light';attackQueued=false}}
   if(!attackHeld&&just.j&&player.cool===0&&player.atk===0){const dir=directionAttack(player);const kind=dir==='light'?normalSlashNext:dir;attack(player,foe,false,kind);if(dir==='light'&&player.atk>0)normalSlashNext=normalSlashNext==='light'?'downward':'light';}
   if(just.l&&!attackHeld)attack(player,foe,true);
