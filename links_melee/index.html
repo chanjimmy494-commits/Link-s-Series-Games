@@ -69,8 +69,8 @@ canvas#game{position:relative;z-index:1;display:block;width:min(100%,1100px);asp
 @media (orientation:portrait) and (pointer:coarse) and (max-height:700px){
  .dock{--d:min(15vw,62px);--pad:min(40vw,170px);padding-top:8px;padding-bottom:12px}
  .dock-top{padding-bottom:8px}
- .pill{flex-direction:row;gap:8px;font-size:11px}
- .pill .cap{width:58px;height:28px}
+ .pill{gap:4px;font-size:10px}
+ .pill .cap{width:66px;height:28px}
 }
 
 /* Phone landscape: full-screen arena; controls float in the corners, the
@@ -160,10 +160,25 @@ canvas#game{position:relative;z-index:1;display:block;width:min(100%,1100px);asp
  .stage-group-heading{font-size:15px}
 }
 
-</style></head><body><header>LINK'S MELEE <small>v1.8.0 · Sound &amp; Haptics</small></header><div id="arenaClip" class="arena-clip" aria-hidden="true"><img id="animatedArenaGif" class="animated-arena-gif" alt="" hidden></div><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
+
+/* v1.9.0 pause and options overlays, in the Labyrinth panel style */
+.overlay{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;overflow-y:auto;padding:max(12px,env(safe-area-inset-top)) 12px max(12px,env(safe-area-inset-bottom));background:#070a10d9}
+.overlay[hidden]{display:none!important}
+.overlay,.overlay *{touch-action:pan-y!important}
+.overlay-panel{width:min(92vw,400px);margin:auto;display:flex;flex-direction:column;gap:10px;padding:18px 18px 20px;background:#1a1c24;border:3px solid #3a3f4a;border-radius:16px;color:#e9e2cf;font:700 13px/1.3 'Silkscreen',ui-monospace,monospace}
+.overlay-panel h2{margin:0 0 6px;color:#f9c250;font:700 26px/1 'Silkscreen',ui-monospace,monospace;letter-spacing:.04em}
+.overlay-panel .front-action{width:100%}
+.opt-row{display:flex;justify-content:space-between;align-items:center;gap:10px;text-align:left}
+.opt-note{margin:-4px 0 4px;color:#9d978a;font-size:11px;text-align:left}
+.seg{display:flex;gap:6px;align-items:center}
+.seg button{min-width:48px;min-height:42px;padding:0 10px;border-radius:9px;border:2px solid #3a3f4a;background:#2b2e36;color:#e9e2cf;font:700 13px 'Silkscreen',ui-monospace,monospace;cursor:pointer}
+.seg button[aria-pressed=true]{background:#f9c250;border-color:#7a5212;color:#1a1206}
+.seg output{min-width:28px;text-align:center;font-size:16px;color:#f9c250}
+</style></head><body><header>LINK'S MELEE <small>v1.9.0 · Rounds, Pause &amp; Options</small></header><div id="arenaClip" class="arena-clip" aria-hidden="true"><img id="animatedArenaGif" class="animated-arena-gif" alt="" hidden></div><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
 <div class="dock">
  <div class="dock-top">
   <button class="pill restart" id="restart" type="button" aria-label="Restart"><span class="cap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4a8 8 0 1 0 7.75 10h-2.1A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35A7.96 7.96 0 0 0 12 4z"/></svg></span>RESTART</button>
+  <button class="pill pause" id="pauseBtn" type="button" aria-label="Pause"><span class="cap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg></span>PAUSE</button>
   <button class="pill game-home" id="home" type="button" aria-label="Return to Link's Melee menu"><span class="cap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 12h3v8h5v-5h4v5h5v-8h3z"/></svg></span>MENU</button>
  </div>
  <div class="controls" aria-label="Touch game controls">
@@ -179,6 +194,26 @@ canvas#game{position:relative;z-index:1;display:block;width:min(100%,1100px);asp
    <button class="combat-attack" data-action="attack" aria-label="Attack; hold for strong attack">ATTACK</button>
    <button class="combat-jump" data-action="jump" aria-label="Jump">JUMP</button>
   </div>
+ </div>
+</div>
+<div id="pauseMenu" class="overlay" role="dialog" aria-label="Paused" hidden>
+ <div class="overlay-panel">
+  <h2>PAUSED</h2>
+  <button class="front-action menu-btn" id="pauseResume" type="button">RESUME</button>
+  <button class="front-action menu-btn" id="pauseRestart" type="button">RESTART MATCH</button>
+  <button class="front-action menu-btn" id="pauseOptions" type="button">OPTIONS</button>
+  <button class="front-action menu-btn" id="pauseQuit" type="button">MAIN MENU</button>
+ </div>
+</div>
+<div id="optionsMenu" class="overlay" role="dialog" aria-label="Options" hidden>
+ <div class="overlay-panel">
+  <h2>OPTIONS</h2>
+  <div class="opt-row"><span>Exhibition rounds</span><div class="seg" data-opt="exhibitionRounds"><button type="button" data-v="1">1</button><button type="button" data-v="3">BEST OF 3</button></div></div>
+  <p class="opt-note">Tournament matches are always best of 3.</p>
+  <div class="opt-row"><span>Sound</span><div class="seg" data-opt="sound"><button type="button" data-v="true">ON</button><button type="button" data-v="false">OFF</button></div></div>
+  <div class="opt-row"><span>Volume</span><div class="seg stepper"><button type="button" id="volDown" aria-label="Volume down">-</button><output id="volValue">8</output><button type="button" id="volUp" aria-label="Volume up">+</button></div></div>
+  <div class="opt-row"><span>Vibration</span><div class="seg" data-opt="haptics"><button type="button" data-v="true">ON</button><button type="button" data-v="false">OFF</button></div></div>
+  <button class="front-action menu-btn" id="optionsDone" type="button">DONE</button>
  </div>
 </div>
 <div id="frontScreen" class="front-screen" role="dialog" aria-label="Link's Melee main menu">
@@ -206,6 +241,7 @@ canvas#game{position:relative;z-index:1;display:block;width:min(100%,1100px);asp
   <nav class="front-actions" aria-label="Choose game mode">
    <button id="startTournament" class="front-action">START TOURNAMENT</button>
    <button id="openExhibition" class="front-action">EXHIBITION MODE</button>
+   <button id="openOptions" class="front-action">OPTIONS</button>
   </nav>
  </section>
  <section id="stagePanel" class="front-panel front-stage-panel" aria-label="Exhibition stage selection" hidden>
@@ -459,6 +495,8 @@ function arenaWorldWidth(){return singleImageArena()?Math.max(W,arenaImageGeomet
 const assets={};let loaded=0;const files=[...Array.from({length:6},(_,i)=>`swordsman_${i}.png`),...Array.from({length:6},(_,i)=>`dark_${i}.png`)];files.forEach(f=>{let im=new Image;im.onload=()=>loaded++;im.src=f;assets[f]=im});
 const keys={};let just={};const key=k=>!!keys[k];let player,foe,particles,clock,round,notice,shake,aiTick,phaseTick,noticeTick,aiMode,aiModeTick,aiAttackLock,aiCommitDir,aiLastPlayerX;
 let hitstop=0;
+// v1.9.0 match structure
+let roundsToWin=2,matchWins={p:0,f:0},roundNum=1,matchOver=false,slowmo=0,koFlash=0,paused=false;
 let attackHeld=false,attackHoldFrames=0,attackCharged=false,attackQueued=false,heavyQueued=false,normalSlashNext='light';
 let directionMemory='',directionMemoryFrames=0;
 function reset(){
@@ -468,8 +506,21 @@ function reset(){
   try{sessionStorage.removeItem(progressKey)}catch(e){}
  }else opponentIndex=Math.floor(Math.random()*stages.length);
  clearGameplayInput();
- startStage();
+ newMatch();
  syncAnimatedBackdrop();
+}
+function newMatch(){
+ roundsToWin=gameMode==='tournament'?2:(+settings.exhibitionRounds===3?2:1);
+ matchWins={p:0,f:0};roundNum=1;matchOver=false;slowmo=0;koFlash=0;
+ startStage();
+}
+// A round ends by KO or time. The match ends when a side reaches roundsToWin.
+function endRound(result,byTime){
+ round=result;phaseTick=0;
+ matchWins[result==='win'?'p':'f']++;
+ matchOver=matchWins.p>=roundsToWin||matchWins.f>=roundsToWin;
+ if(matchOver)notice=(byTime?'TIME — ':'')+(result==='win'?'VICTORY':'DEFEAT');
+ else notice=(byTime?'TIME — ':'')+(result==='win'?'SWORDSMAN':stages[opponentIndex].opponent)+' TAKES ROUND '+roundNum;
 }
 function startStage(){
  FLOOR=arenaFloor();
@@ -525,10 +576,38 @@ function startMatch(mode,selectedArena=null){
   }
  }
  clearGameplayInput();
- startStage();menuState='game';frontScreen.hidden=true;
+ newMatch();menuState='game';frontScreen.hidden=true;
  syncAnimatedBackdrop();
 }
 document.addEventListener('click',e=>{if(e.target.closest('.front-action,.stage-choice,.stage-back,.pill,.menu-btn'))sfx.play('select')},true);
+const pauseMenu=document.getElementById('pauseMenu'),optionsMenu=document.getElementById('optionsMenu');
+function setPaused(v){
+ if(v&&menuState!=='game')return;
+ paused=v;pauseMenu.hidden=!v;if(v)clearGameplayInput();
+}
+let optionsReturn=null;
+function renderOptions(){
+ optionsMenu.querySelectorAll('.seg[data-opt]').forEach(seg=>{const key=seg.dataset.opt;
+  seg.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(String(settings[key])===b.dataset.v)))});
+ document.getElementById('volValue').textContent=Math.round(settings.volume*10);
+}
+function openOptions(from){optionsReturn=from;pauseMenu.hidden=true;renderOptions();optionsMenu.hidden=false}
+optionsMenu.querySelectorAll('.seg[data-opt]').forEach(seg=>seg.addEventListener('click',e=>{
+ const b=e.target.closest('button[data-v]');if(!b)return;const key=seg.dataset.opt;
+ settings[key]=b.dataset.v==='true'?true:b.dataset.v==='false'?false:+b.dataset.v;saveSettings();renderOptions();
+ if(key==='haptics'&&settings.haptics)haptic(20);
+}));
+const stepVolume=d=>{sfx.setVolume(Math.max(0,Math.min(1,Math.round(settings.volume*10+d)/10)));saveSettings();renderOptions();sfx.play('hit',false)};
+document.getElementById('volDown').onclick=()=>stepVolume(-1);
+document.getElementById('volUp').onclick=()=>stepVolume(1);
+document.getElementById('optionsDone').onclick=()=>{optionsMenu.hidden=true;if(optionsReturn==='pause')pauseMenu.hidden=false};
+document.getElementById('openOptions').onclick=()=>openOptions('title');
+document.getElementById('pauseBtn').onclick=()=>setPaused(!paused);
+document.getElementById('pauseResume').onclick=()=>setPaused(false);
+document.getElementById('pauseRestart').onclick=()=>{setPaused(false);reset()};
+document.getElementById('pauseOptions').onclick=()=>openOptions('pause');
+document.getElementById('pauseQuit').onclick=()=>{setPaused(false);optionsMenu.hidden=true;openTitleScreen()};
+document.addEventListener('keydown',e=>{const k=e.key.toLowerCase();if((k==='p'||k==='escape')&&menuState==='game'){e.preventDefault();if(!optionsMenu.hidden)return;setPaused(!paused)}});
 document.getElementById('restart').onclick=reset;
 document.getElementById('home').onclick=openTitleScreen;
 document.getElementById('startTournament').onclick=()=>startMatch('tournament',0);
@@ -627,7 +706,7 @@ pads.forEach(pad=>{
  pad.addEventListener('pointerup',release);pad.addEventListener('pointercancel',release);
  pad.addEventListener('lostpointercapture',release);
 });
-document.addEventListener('visibilitychange',()=>{if(document.hidden){touchPointers.clear();for(const k in keyboardHolds)keyboardHolds[k]=false;recalc()}});
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&menuState==='game'&&(round==='play'||round==='intro'))setPaused(true);if(document.hidden){touchPointers.clear();for(const k in keyboardHolds)keyboardHolds[k]=false;recalc()}});
 // v0.7: directional attacks, shared three-button combat, and frame-mapped atlas poses.
 const moves={
  light:{duration:30,activeStart:10,activeEnd:20,cost:6,range:122,damage:10,knock:5,stun:12},
@@ -1098,7 +1177,7 @@ function hit(a,b){
  if(guarded&&b.stamina<=0){b.guardBreak=62;b.block=false;b.stun=62;notice='GUARD BROKEN';sfx.play('guardBreak');if(playerInvolved)haptic(40)}
  else notice=guarded?'BLOCKED':a.heavy?'HEAVY STRIKE':'STRIKE';
  noticeTick=38;shake=guarded?1:4;spawnHit(b.x,b.y-83,guarded,a===foe);
- if(b.hp<=0){shake=0;round=a===player?'win':'lose';phaseTick=0;notice=round==='win'?'VICTORY':'DEFEAT'}
+ if(b.hp<=0){shake=0;endRound(a===player?'win':'lose',false);slowmo=75;koFlash=10}
 }
 function aerialDrop(a){a.y+=9;a.ground=-1;a.coyote=0}
 function physics(a){
@@ -1158,19 +1237,23 @@ function separateFighters(previousPlayerX,previousFoeX){
  if(foeAdvance>0&&!foe.stun)foe.vx=0;
 }
 function update(){
- if(menuState!=='game'){just={};return}
+ if(menuState!=='game'||paused){just={};return}
   if(round==='intro'){phaseTick--;if(phaseTick===150)sfx.play('bell');if(phaseTick<=0){round='play';notice='FIGHT';noticeTick=65;sfx.play('gong')}just={};return}
  if(round!=='play'){
   // Keep simulating after the round ends so the loser falls and lands.
   physics(player);physics(foe);
   const winner=round==='win'?player:round==='lose'?foe:null;
-  if(phaseTick===55)sfx.play(round==='win'?'victory':'defeat');
+  if(phaseTick===55)sfx.play(matchOver?(round==='win'?'victory':'defeat'):'bell');
   if(winner&&phaseTick>45&&winner.ground!==-1&&winner.atk===0&&winner.down===0)winner.victory=true;
  }
- if(round!=='play'){phaseTick++;shake=0;if(gameMode==='tournament'&&round==='win'&&phaseTick>170&&stageIndex<stages.length-1){stageIndex++;opponentIndex=stageIndex;try{sessionStorage.setItem(progressKey,String(stageIndex))}catch(e){}startStage();syncAnimatedBackdrop();}just={};return}
+ if(round!=='play'){
+  phaseTick++;shake=0;
+  if(!matchOver&&phaseTick>170){roundNum++;startStage();}
+  else if(matchOver&&gameMode==='tournament'&&round==='win'&&phaseTick>190&&stageIndex<stages.length-1){stageIndex++;opponentIndex=stageIndex;try{sessionStorage.setItem(progressKey,String(stageIndex))}catch(e){}newMatch();syncAnimatedBackdrop();}
+  just={};return}
  // Impact freeze: inputs stay buffered and resume afterwards.
  if(hitstop>0){hitstop--;return}
- clock--;if(clock<=0){shake=0;player.inv=foe.inv=99999;round=player.hp>=foe.hp?'win':'lose';phaseTick=0;notice=round==='win'?'TIME — VICTORY':'TIME — DEFEAT';just={};return}
+ clock--;if(clock<=0){shake=0;player.inv=foe.inv=99999;endRound(player.hp>=foe.hp?'win':'lose',true);just={};return}
  noticeTick=Math.max(0,noticeTick-1);directionMemoryFrames=Math.max(0,directionMemoryFrames-1);if(just.s){directionMemory='down';directionMemoryFrames=11}else if(just.w||just.u){directionMemory='up';directionMemoryFrames=11}else if(just.a||just.d){directionMemory='forward';directionMemoryFrames=11}
  if(!player.stun){
   player.crouch=!attackHeld&&key('s')&&player.ground!==-1;player.block=!attackHeld&&key('k')&&player.atk===0&&player.stamina>0&&player.guardBreak===0;
@@ -1412,11 +1495,28 @@ function render(){
  bar(28,20,player.hp,player.stamina);bar(592,20,foe.hp,foe.stamina,true);
  text('SWORDSMAN',28,85,18,'#f8e0ad','left');text(stages[opponentIndex].opponent,932,85,18,'#e4baff','right');
  text(String(Math.max(0,Math.ceil(clock/60))),480,48,38);
- if(round==='intro'){c.fillStyle='#0a1020a8';c.fillRect(245,175,470,145);text(gameMode==='tournament'?'MATCH '+(stageIndex+1)+' OF '+stages.length:'EXHIBITION',480,226,35,'#f7db9e');text(phaseTick>105?'READY':phaseTick>45?'DRAW YOUR SWORD':'FIGHT!',480,278,27,'#dce9f4')}
- else if(round!=='play'){c.fillStyle='#0a1020cc';c.fillRect(160,155,640,200);text(gameMode==='tournament'&&round==='win'&&stageIndex===stages.length-1?'TOURNAMENT CHAMPION':notice,480,232,33,round==='win'?'#f8d587':'#f1a1a1');text(gameMode==='exhibition'?'Single match complete · MENU to choose another arena':'Press R / RESTART or return to MENU',480,285,19)}
+ // Round markers either side of the clock (best-of-3 shows two per side).
+ if(roundsToWin>1)for(let i=0;i<roundsToWin;i++){
+  for(const [won,x] of [[matchWins.p>i,436-i*22],[matchWins.f>i,524+i*22]]){
+   c.beginPath();c.arc(x,40,7,0,Math.PI*2);c.fillStyle=won?'#f9c250':'#1a1c24cc';c.fill();c.lineWidth=2;c.strokeStyle=won?'#7a5212':'#9d978a';c.stroke();
+  }
+ }
+ if(koFlash>0){c.fillStyle='rgba(255,255,255,'+(koFlash/10*.55).toFixed(3)+')';c.fillRect(0,0,W,H);koFlash--}
+ const finalRound=roundsToWin>1&&matchWins.p===roundsToWin-1&&matchWins.f===roundsToWin-1;
+ if(round==='intro'){c.fillStyle='#0a1020a8';c.fillRect(245,165,470,165);
+  text(gameMode==='tournament'?'MATCH '+(stageIndex+1)+' OF '+stages.length:'EXHIBITION',480,200,20,'#cfc8b6');
+  text(roundsToWin>1?(finalRound?'FINAL ROUND':'ROUND '+roundNum):'ONE ROUND',480,246,35,'#f7db9e');
+  text(phaseTick>105?'READY':phaseTick>45?'DRAW YOUR SWORD':'FIGHT!',480,296,27,'#dce9f4')}
+ else if(round!=='play'){c.fillStyle='#0a1020cc';c.fillRect(140,155,680,200);
+  if(!matchOver){text(notice,480,232,27,round==='win'?'#f8d587':'#f1a1a1');text('Next round…',480,285,19)}
+  else{text(gameMode==='tournament'&&round==='win'&&stageIndex===stages.length-1?'TOURNAMENT CHAMPION':notice,480,232,33,round==='win'?'#f8d587':'#f1a1a1');
+   text(gameMode==='exhibition'?'Match complete · MENU to choose another arena':'Press R / RESTART or return to MENU',480,285,19)}}
  else if(noticeTick>0)text(notice,480,120,21,'#ffe4a8');
 }
 openTitleScreen();
-let last=0,acc=0;function loop(now){let dt=Math.min(50,now-last||16.7);last=now;acc+=dt;while(acc>=16.667){update();acc-=16.667}render();requestAnimationFrame(loop)}requestAnimationFrame(loop);
+let last=0,acc=0;function loop(now){let dt=Math.min(50,now-last||16.7);last=now;
+ // Slow-motion KO: the simulation runs at 30% speed for ~1.25 s.
+ if(slowmo>0){slowmo--;dt*=.3}
+ acc+=dt;while(acc>=16.667){update();acc-=16.667}render();requestAnimationFrame(loop)}requestAnimationFrame(loop);
 })();
 </script></body></html>
