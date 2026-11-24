@@ -148,7 +148,7 @@ canvas#game{position:relative;z-index:1}
  .stage-choice small{font-size:9px}
  .stage-group-heading{font-size:15px}
 }
-</style></head><body><header>LINK'S MELEE <small>v1.3.4 · Tournament Stage 4 and Arena Physics</small></header><img id="animatedArenaGif" class="animated-arena-gif" alt="" aria-hidden="true" hidden><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
+</style></head><body><header>LINK'S MELEE <small>v1.3.5 · Fighter Collision and Stage Cleanup</small></header><img id="animatedArenaGif" class="animated-arena-gif" alt="" aria-hidden="true" hidden><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
 <div class="controls" aria-label="Touch game controls">
  <div class="pad labyrinth-pad" aria-label="Movement controls">
   <button class="up" data-k="w" aria-label="Jump"></button>
@@ -288,7 +288,9 @@ window.addEventListener('orientationchange',positionAnimatedBackdrop);
 if(window.visualViewport)window.visualViewport.addEventListener('resize',positionAnimatedBackdrop);
 function stagePlatforms(){
  const arenaIndex=gameMode==='exhibition'?exhibitionArena?.tournamentIndex:stageIndex;
- return (arenaIndex===0||arenaIndex===3)?platforms:[];
+ // Stage 4 uses a forest GIF with no masonry platforms. Retain platforms
+ // only in the original Stage 1 castle environment.
+ return arenaIndex===0&&!animatedArenaActive()?platforms:[];
 }
 
 const assets={};let loaded=0;const files=['castle_arena.jpg',...Array.from({length:6},(_,i)=>`swordsman_${i}.png`),...Array.from({length:6},(_,i)=>`dark_${i}.png`)];files.forEach(f=>{let im=new Image;im.onload=()=>loaded++;im.src=f;assets[f]=im});
@@ -305,7 +307,8 @@ function reset(){
  startStage();
  syncAnimatedBackdrop();
 }
-function startStage(){player={x:600,y:FLOOR,w:72,h:135,vx:0,vy:0,face:1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,blockAnim:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};foe={x:1060,y:FLOOR,w:72,h:135,vx:0,vy:0,face:-1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,blockAnim:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};particles=[];clock=90*60;round='intro';phaseTick=165;notice=currentArena().name;noticeTick=0;shake=0;aiTick=0;camera=Math.max(0,Math.min(WORLD-W,player.x-W*.40));aiMode='observe';aiModeTick=85;aiAttackLock=75;aiCommitDir=0;aiLastPlayerX=player.x;attackHeld=false;attackHoldFrames=0;attackCharged=false;attackQueued=false;heavyQueued=false;normalSlashNext='light';directionMemory='';directionMemoryFrames=0;just={}}
+function startStage(){player={x:650,y:FLOOR,w:72,h:135,vx:0,vy:0,face:1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,blockAnim:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};foe={x:1050,y:FLOOR,w:72,h:135,vx:0,vy:0,face:-1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,blockAnim:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};particles=[];clock=90*60;round='intro';phaseTick=165;notice=currentArena().name;noticeTick=0;shake=0;aiTick=0;// Spawn at fixed 280px/680px screen positions, symmetric about 480px.
+camera=Math.max(0,Math.min(WORLD-W,(player.x+foe.x)*.5-W*.5));aiMode='observe';aiModeTick=85;aiAttackLock=75;aiCommitDir=0;aiLastPlayerX=player.x;attackHeld=false;attackHoldFrames=0;attackCharged=false;attackQueued=false;heavyQueued=false;normalSlashNext='light';directionMemory='';directionMemoryFrames=0;just={}}
 
 startStage();
 const frontScreen=document.getElementById('frontScreen');
@@ -898,21 +901,28 @@ function physics(a){
  a.step+=Math.abs(a.vx)*.045;
 
 }
-function separateFighters(){
+// Prevent walk-through without letting one fighter drag or propel the other.
+// Resolve only the movement that *caused* overlap on this physics frame.
+// Reversing those incoming steps gives stable contact, with no elastic push.
+function separateFighters(previousPlayerX,previousFoeX){
  if(Math.abs(player.y-foe.y)>=100)return;
- const delta=foe.x-player.x,spacing=Math.abs(delta);
+ const side=previousFoeX>=previousPlayerX?1:-1;
+ const separation=(foe.x-player.x)*side;
  const minimum=65;
- if(spacing>=minimum)return;
- const dir=delta>=0?1:-1;
- const overlap=minimum-spacing;
- const input=(key('d')?1:0)-(key('a')?1:0);
- const walkingIntoOpponent=input===dir&&!player.block&&!player.stun&&!attackHeld;
- // Incoming AI foot movement yields to an idle Link; intentional player
- // movement distributes overlap, without changing attack knockback.
- const playerShare=walkingIntoOpponent?.5:0;
- player.x=Math.max(55,Math.min(WORLD-55,player.x-dir*overlap*playerShare));
- foe.x=Math.max(55,Math.min(WORLD-55,foe.x+dir*overlap*(1-playerShare)));
- if(!foe.stun&&foe.vx*dir<0)foe.vx=0;
+ if(separation>=minimum)return;
+ const overlap=minimum-separation;
+ const playerAdvance=Math.max(0,(player.x-previousPlayerX)*side);
+ const foeAdvance=Math.max(0,(previousFoeX-foe.x)*side);
+ const totalAdvance=playerAdvance+foeAdvance;
+ // When Link moves into an idle opponent, only Link is stopped. When the
+ // opponent approaches an idle Link, only the opponent is stopped.
+ const playerShare=totalAdvance>0?playerAdvance/totalAdvance:0;
+ player.x=Math.max(55,Math.min(WORLD-55,player.x-side*overlap*playerShare));
+ foe.x=Math.max(55,Math.min(WORLD-55,foe.x+side*overlap*(1-playerShare)));
+ // Cancel only blocked locomotion. Combat impulses still use their normal
+ // stun / knockback handling; no special animated-arena collision rules.
+ if(playerAdvance>0&&!player.stun)player.vx=0;
+ if(foeAdvance>0&&!foe.stun)foe.vx=0;
 }
 function update(){
  if(menuState!=='game'){just={};return}
@@ -978,12 +988,19 @@ function update(){
   if(player.ground===-1&&aiMode==='approach')foe.vx*=.35;
  }else{foe.block=false;foe.vx*=.75}
 
+ // Physics positions before motion let collision undo the responsible step
+ // rather than shoving the other fighter across the map.
+ const previousPlayerX=player.x,previousFoeX=foe.x;
  physics(player);physics(foe);
- // The enemy may approach without dragging a stationary Link.
- separateFighters();
- // Camera tracks Link, never the enemy's approach or midpoint.
- const target=Math.max(0,Math.min(WORLD-W,player.x-W*.40));
- camera+=(target-camera)*.085;
+ separateFighters(previousPlayerX,previousFoeX);
+ // Stationary camera inside a broad safe region; pan only when Link nears
+ // the view edge. Enemy movement alone cannot change the camera position.
+ const screenX=player.x-camera;
+ let cameraTarget=camera;
+ if(screenX<155)cameraTarget=player.x-155;
+ else if(screenX>W-155)cameraTarget=player.x-(W-155);
+ cameraTarget=Math.max(0,Math.min(WORLD-W,cameraTarget));
+ camera+=(cameraTarget-camera)*.13;
  particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.3;p.life--});
  particles=particles.filter(p=>p.life>0);
  shake=Math.max(0,shake-1);just={};
