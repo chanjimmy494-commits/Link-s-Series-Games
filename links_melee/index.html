@@ -174,7 +174,7 @@ canvas#game{position:relative;z-index:1;display:block;width:min(100%,1100px);asp
 .seg button{min-width:48px;min-height:42px;padding:0 10px;border-radius:9px;border:2px solid #3a3f4a;background:#2b2e36;color:#e9e2cf;font:700 13px 'Silkscreen',ui-monospace,monospace;cursor:pointer}
 .seg button[aria-pressed=true]{background:#f9c250;border-color:#7a5212;color:#1a1206}
 .seg output{min-width:28px;text-align:center;font-size:16px;color:#f9c250}
-</style></head><body><header>LINK'S MELEE <small>v1.13.0 · Tournament Arena Pools</small></header><div id="arenaClip" class="arena-clip" aria-hidden="true"><img id="animatedArenaGif" class="animated-arena-gif" alt="" hidden></div><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
+</style></head><body><header>LINK'S MELEE <small>v1.13.1 · Named Arenas</small></header><div id="arenaClip" class="arena-clip" aria-hidden="true"><img id="animatedArenaGif" class="animated-arena-gif" alt="" hidden></div><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
 <div class="dock">
  <div class="dock-top">
   <button class="pill restart" id="restart" type="button" aria-label="Restart"><span class="cap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4a8 8 0 1 0 7.75 10h-2.1A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35A7.96 7.96 0 0 0 12 4z"/></svg></span>RESTART</button>
@@ -247,7 +247,7 @@ canvas#game{position:relative;z-index:1;display:block;width:min(100%,1100px);asp
  </section>
  <section id="stagePanel" class="front-panel front-stage-panel" aria-label="Exhibition stage selection" hidden>
   <h2 class="front-stage-heading">EXHIBITION MODE</h2>
-  <p class="front-subtitle">Choose a stage · Random opponent · One match</p>
+  <p class="front-subtitle">Choose a stage · Random opponent</p>
   <p class="stage-gallery-count" id="galleryCount"></p>
   <div id="stageChoices" class="stage-list"></div>
   <button id="backTitle" class="stage-back">BACK TO MENU</button>
@@ -413,14 +413,16 @@ const progressKey='links-melee-campaign-v109';
 // v1.13.0 tournament: each stage draws its arena at random from a pool the
 // user chose, re-drawn every time the match is entered. The four original
 // arenas remain available in Exhibition Mode.
+// Display names for every arena image, used by Exhibition and the tournament.
+const arenaNames={"IMG_3329.GIF":"GREAT TREE GROVE","IMG_3331.GIF":"BLOOD MOON SHRINE","IMG_3332.GIF":"OLD TOWN BY NIGHT","IMG_3333.GIF":"FESTIVAL STAGE","IMG_3334.GIF":"CHERRY BLOSSOM BRIDGE","IMG_3335.GIF":"BURNING VILLAGE","IMG_3336.GIF":"MOON CASTLE LOOKOUT","IMG_3337.GIF":"CANAL OPERA","IMG_3338.GIF":"MOONLIT WATERFALL","IMG_3339.GIF":"GUARDIAN TEMPLE","IMG_3340.GIF":"COUNTRY ROAD","IMG_3341.GIF":"DESERT COLOSSUS","IMG_3342.GIF":"HIDDEN FALLS CAVE","IMG_3343.GIF":"ABANDONED DOJO","IMG_3344.GIF":"PALACE COURTYARD","IMG_3347.GIF":"BURNING HALL","IMG_3348.GIF":"MOONLIT BAMBOO","IMG_3349.GIF":"CLIFFSIDE FALLS","IMG_3350.GIF":"SUNSET GRAVES","IMG_3351.GIF":"SNOWY GARDEN","IMG_3352.GIF":"TWIN FALLS RUINS","IMG_3353.GIF":"BLOOD RAIN RUINS","IMG_3354.GIF":"FOREST SHRINE STEPS","IMG_3355.GIF":"RUINED CATHEDRAL","IMG_3356.GIF":"LION THRONE","IMG_3357.GIF":"EDGE OF THE FALLS","IMG_3411.GIF":"CANDLELIT SANCTUM","IMG_3412.GIF":"MAW OF THE BEAST","IMG_3414.GIF":"DRAGON PIT","IMG_3415.GIF":"CRIMSON PORTAL","IMG_3416.GIF":"NIGHT BRIDGE","IMG_3418.GIF":"DUNE TEMPLE","IMG_3421.GIF":"CLOUD SANCTUARY","IMG_3422.GIF":"SUNKEN DUNGEON","IMG_3423.GIF":"MOONLIT GRAVEYARD","IMG_3425.GIF":"DEMON'S THRONE","IMG_3426.GIF":"AUTUMN SHRINE STAIRS","IMG_3427.GIF":"MISTY SHRINE STAIRS","IMG_3428.GIF":"MOLTEN WASTES","IMG_3429.GIF":"MOUNTAIN HOT SPRING","IMG_3431.GIF":"NIGHT PLAINS","throne_room_flickering_candles.png":"GOTHIC THRONE ROOM","A6E9E6CB-FFD3-4A64-B420-6A7E2636F8B7.JPEG":"FOREST GROTTO","DAC21C40-CCCB-4FE6-9A7C-65B771BE4A41.JPEG":"OVERGROWN ARCHWAY","IMG_3410.jpg":"CHECKERED HILLS"};
 const stages=[
- {opponent:'DARK SWORDSMAN',pool:[['FOREST SHRINE STEPS','IMG_3354.GIF'],['CLIFFSIDE FALLS','IMG_3349.GIF'],['PALACE COURTYARD','IMG_3344.GIF'],['CANAL OPERA','IMG_3337.GIF'],['COUNTRY ROAD','IMG_3340.GIF']]},
- {opponent:'RUINS CHALLENGER',pool:[['BURNING VILLAGE','IMG_3335.GIF'],['DESERT COLOSSUS','IMG_3341.GIF'],['HIDDEN FALLS CAVE','IMG_3342.GIF'],['DUNE TEMPLE','IMG_3418.GIF']]},
- {opponent:'RED SWORDSMAN',pool:[['SUNSET GRAVES','IMG_3350.GIF'],['MOONLIT BAMBOO','IMG_3348.GIF'],['MOUNTAIN HOT SPRING','IMG_3429.GIF']]},
- {opponent:'HOODED DARK SWORDSMAN',pool:[['RUINED CATHEDRAL','IMG_3355.GIF'],['BLOOD RAIN RUINS','IMG_3353.GIF'],['DRAGON PIT','IMG_3414.GIF'],['SUNKEN DUNGEON','IMG_3422.GIF']]},
- {opponent:'SHADOW LINK',pool:[['GOTHIC THRONE ROOM','throne_room_flickering_candles.png'],['NIGHT PLAINS','IMG_3431.GIF'],['EDGE OF THE FALLS','IMG_3357.GIF']]}
+ {opponent:'DARK SWORDSMAN',pool:['IMG_3354.GIF','IMG_3349.GIF','IMG_3344.GIF','IMG_3337.GIF','IMG_3340.GIF']},
+ {opponent:'RUINS CHALLENGER',pool:['IMG_3335.GIF','IMG_3341.GIF','IMG_3342.GIF','IMG_3418.GIF']},
+ {opponent:'RED SWORDSMAN',pool:['IMG_3350.GIF','IMG_3348.GIF','IMG_3429.GIF']},
+ {opponent:'HOODED DARK SWORDSMAN',pool:['IMG_3355.GIF','IMG_3353.GIF','IMG_3414.GIF','IMG_3422.GIF']},
+ {opponent:'SHADOW LINK',pool:['throne_room_flickering_candles.png','IMG_3431.GIF','IMG_3357.GIF']}
 ];
-for(const st of stages){st.pool=st.pool.map(([name,file])=>({name,background:'Stages/'+file,source:file,animated:true}));st.current=st.pool[0]}
+for(const st of stages){st.pool=st.pool.map(file=>({name:arenaNames[file]||file,background:'Stages/'+file,source:file,animated:true}));st.current=st.pool[0]}
 function drawTournamentArena(i){
  const st=stages[i];
  // Random pick; avoid repeating the previous draw when the pool allows.
@@ -445,12 +447,12 @@ const exhibitionArenas=[
  // tournamentIndex here indexes originalArenas / stageBackgrounds.
  ...originalArenas.map((stage,index)=>({...stage,group:'ORIGINAL ARENAS',tournamentIndex:index,source:stage.background})),
  ...galleryAnimatedImages.map((file,index)=>({
-  name:'ANIMATED ARENA '+String(index+1).padStart(2,'0'),
+  name:arenaNames[file]||'ANIMATED ARENA '+String(index+1).padStart(2,'0'),
   background:'Stages/'+file,
   source:file,group:'ANIMATED ARENAS',animated:true
  })),
  ...galleryStillImages.map((file,index)=>({
-  name:'STAGE ARTWORK '+String(index+1).padStart(2,'0'),
+  name:arenaNames[file]||'STAGE ARTWORK '+String(index+1).padStart(2,'0'),
   background:'Stages/'+file,
   source:file,group:'ADDITIONAL BACKGROUNDS',animated:false
  }))
