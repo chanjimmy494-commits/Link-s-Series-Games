@@ -119,7 +119,31 @@ html *,body *{touch-action:none!important;-webkit-touch-callout:none}
  .stage-choice{min-height:68px}
  .front-stage-panel{padding:8px 0 20px}
 }
-</style></head><body><header>LINK'S MELEE <small>v1.3.0 · Tournament and Exhibition Menus</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
+
+/* Exhibition gallery: stage previews retain their original GIF animation. */
+.front-screen,.front-screen *{touch-action:pan-y!important}
+.front-stage-panel{align-self:flex-start;margin:auto;min-height:min-content}
+.stage-group-heading{grid-column:1/-1;margin:15px 0 0;padding:0 4px 5px;border-bottom:1px solid #927748;color:#f4cc78;text-align:left;font:900 clamp(14px,3vw,19px) 'Courier New',monospace;letter-spacing:.035em;text-shadow:1px 2px 3px #000}
+.stage-group-heading:first-child{margin-top:3px}
+.stage-choice{isolation:isolate;background:#111822;min-height:clamp(86px,18vh,132px);touch-action:pan-y!important}
+.stage-preview{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2;pointer-events:none}
+.stage-choice::before{content:"";position:absolute;inset:0;background:linear-gradient(to bottom,#10152035 5%,#0a111bdd 94%);z-index:-1;pointer-events:none}
+.stage-choice strong,.stage-choice small{position:relative;z-index:1}
+.stage-choice small{overflow-wrap:anywhere}
+.stage-gallery-count{font:600 12px system-ui,sans-serif;color:#b5b6ba;letter-spacing:.07em}
+@media (orientation:landscape) and (pointer:coarse){
+ .front-stage-panel{padding-top:14px}
+ .stage-choice{min-height:clamp(78px,26vh,110px)}
+ .stage-group-heading{margin-top:9px}
+}
+@media (orientation:portrait) and (max-width:420px){
+ .stage-list{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ .stage-choice{min-height:100px;padding:7px}
+ .stage-choice strong{font-size:clamp(10px,2.7vw,14px)}
+ .stage-choice small{font-size:9px}
+ .stage-group-heading{font-size:15px}
+}
+</style></head><body><header>LINK'S MELEE <small>v1.3.1 · Animated Exhibition Arenas</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
 <div class="controls" aria-label="Touch game controls">
  <div class="pad labyrinth-pad" aria-label="Movement controls">
   <button class="up" data-k="w" aria-label="Jump"></button>
@@ -166,7 +190,8 @@ html *,body *{touch-action:none!important;-webkit-touch-callout:none}
  </section>
  <section id="stagePanel" class="front-panel front-stage-panel" aria-label="Exhibition stage selection" hidden>
   <h2 class="front-stage-heading">EXHIBITION MODE</h2>
-  <p class="front-subtitle">Select a stage · Random opponent · One match</p>
+  <p class="front-subtitle">Choose a stage · Random opponent · One match</p>
+  <p class="stage-gallery-count">36 arenas · 26 animated backgrounds</p>
   <div id="stageChoices" class="stage-list"></div>
   <button id="backTitle" class="stage-back">BACK TO MENU</button>
  </section>
@@ -207,7 +232,31 @@ const stages=[
  {name:'OVERGROWN RUINS',opponent:'SHADOW LINK',background:'2EB80A3E-3DFF-4440-8CCA-30EA71D1CEC4.png'}
 ];
 const stageBackgrounds=stages.map(stage=>{const im=new Image();im.src=stage.background;return im});
-function stagePlatforms(){return (stageIndex===0||stageIndex===3)?platforms:[]}
+// Snapshot of every GIF and static image actually found in links_melee/Stages/
+// on 2026-11-23. Keep original GIF paths: do not flatten or export first frames.
+const galleryGifs=["IMG_3329.GIF","IMG_3331.GIF","IMG_3332.GIF","IMG_3333.GIF","IMG_3334.GIF","IMG_3335.GIF","IMG_3336.GIF","IMG_3337.GIF","IMG_3338.GIF","IMG_3339.GIF","IMG_3340.GIF","IMG_3341.GIF","IMG_3342.GIF","IMG_3343.GIF","IMG_3344.GIF","IMG_3347.GIF","IMG_3348.GIF","IMG_3349.GIF","IMG_3350.GIF","IMG_3351.GIF","IMG_3352.GIF","IMG_3353.GIF","IMG_3354.GIF","IMG_3355.GIF","IMG_3356.GIF","IMG_3357.GIF"];
+const galleryStillImages=["A6E9E6CB-FFD3-4A64-B420-6A7E2636F8B7.JPEG","castle_arena.jpg","DAC21C40-CCCB-4FE6-9A7C-65B771BE4A41.JPEG","Misty Waterfall Cave Clearing-2.png","Overgrown Ruined Stone Outpost-1.png"];
+const exhibitionArenas=[
+ ...stages.map((stage,index)=>({...stage,group:'ORIGINAL ARENAS',tournamentIndex:index,source:stage.background})),
+ ...galleryGifs.map((file,index)=>({
+  name:'ANIMATED ARENA '+String(index+1).padStart(2,'0'),
+  background:'Stages/'+file,
+  source:file,group:'ANIMATED ARENAS',animated:true
+ })),
+ ...galleryStillImages.map((file,index)=>({
+  name:'STAGE ARTWORK '+String(index+1).padStart(2,'0'),
+  background:'Stages/'+file,
+  source:file,group:'ADDITIONAL BACKGROUNDS',animated:false
+ }))
+];
+let exhibitionArena=null,exhibitionBackground=null;
+function currentArena(){
+ return gameMode==='exhibition'&&exhibitionArena?exhibitionArena:stages[stageIndex];
+}
+function stagePlatforms(){
+ const arenaIndex=gameMode==='exhibition'?exhibitionArena?.tournamentIndex:stageIndex;
+ return (arenaIndex===0||arenaIndex===3)?platforms:[];
+}
 
 const assets={};let loaded=0;const files=['castle_arena.jpg',...Array.from({length:6},(_,i)=>`swordsman_${i}.png`),...Array.from({length:6},(_,i)=>`dark_${i}.png`)];files.forEach(f=>{let im=new Image;im.onload=()=>loaded++;im.src=f;assets[f]=im});
 const keys={};let just={};const key=k=>!!keys[k];let player,foe,particles,clock,round,notice,shake,aiTick,phaseTick,noticeTick,aiMode,aiModeTick,aiAttackLock,aiCommitDir,aiLastPlayerX;
@@ -222,7 +271,7 @@ function reset(){
  clearGameplayInput();
  startStage();
 }
-function startStage(){player={x:600,y:FLOOR,w:72,h:135,vx:0,vy:0,face:1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,blockAnim:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};foe={x:1060,y:FLOOR,w:72,h:135,vx:0,vy:0,face:-1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,blockAnim:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};particles=[];clock=90*60;round='intro';phaseTick=165;notice=stages[stageIndex].name;noticeTick=0;shake=0;aiTick=0;camera=350;aiMode='observe';aiModeTick=85;aiAttackLock=75;aiCommitDir=0;aiLastPlayerX=player.x;attackHeld=false;attackHoldFrames=0;attackCharged=false;attackQueued=false;heavyQueued=false;normalSlashNext='light';directionMemory='';directionMemoryFrames=0;just={}}
+function startStage(){player={x:600,y:FLOOR,w:72,h:135,vx:0,vy:0,face:1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,blockAnim:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};foe={x:1060,y:FLOOR,w:72,h:135,vx:0,vy:0,face:-1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,blockAnim:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};particles=[];clock=90*60;round='intro';phaseTick=165;notice=currentArena().name;noticeTick=0;shake=0;aiTick=0;camera=350;aiMode='observe';aiModeTick=85;aiAttackLock=75;aiCommitDir=0;aiLastPlayerX=player.x;attackHeld=false;attackHoldFrames=0;attackCharged=false;attackQueued=false;heavyQueued=false;normalSlashNext='light';directionMemory='';directionMemoryFrames=0;just={}}
 
 startStage();
 const frontScreen=document.getElementById('frontScreen');
@@ -247,11 +296,26 @@ function openStagePicker(){
  frontScreen.hidden=false;titlePanel.hidden=true;stagePanel.hidden=false;
  frontScreen.setAttribute('aria-label','Exhibition stage selection');
 }
-function startMatch(mode,selectedStage=0){
- gameMode=mode;stageIndex=selectedStage;
- opponentIndex=mode==='tournament'?stageIndex:Math.floor(Math.random()*stages.length);
+function startMatch(mode,selectedArena=null){
+ gameMode=mode;
+ if(mode==='tournament'){
+  stageIndex=0;opponentIndex=0;
+  exhibitionArena=null;exhibitionBackground=null;
+  try{sessionStorage.removeItem(progressKey)}catch(e){}
+ }else{
+  if(!selectedArena||!selectedArena.background)return;
+  exhibitionArena=selectedArena;
+  stageIndex=selectedArena.tournamentIndex??0;
+  opponentIndex=Math.floor(Math.random()*stages.length);
+  // Keep an HTMLImageElement pointing at the original animated GIF. Canvas
+  // redraws that image on every requestAnimationFrame; no GIF frames are
+  // converted to PNGs or cached as a static first-frame snapshot.
+  exhibitionBackground=selectedArena.tournamentIndex!=null?
+   stageBackgrounds[selectedArena.tournamentIndex]:new Image();
+  if(selectedArena.tournamentIndex==null)
+   exhibitionBackground.src=selectedArena.background;
+ }
  clearGameplayInput();
- if(mode==='tournament')try{sessionStorage.removeItem(progressKey)}catch(e){}
  startStage();menuState='game';frontScreen.hidden=true;
 }
 document.getElementById('restart').onclick=reset;
@@ -259,15 +323,29 @@ document.getElementById('home').onclick=openTitleScreen;
 document.getElementById('startTournament').onclick=()=>startMatch('tournament',0);
 document.getElementById('openExhibition').onclick=openStagePicker;
 document.getElementById('backTitle').onclick=openTitleScreen;
-stages.forEach((stage,index)=>{
+let lastGalleryGroup='';
+exhibitionArenas.forEach((arena,index)=>{
+ if(arena.group!==lastGalleryGroup){
+  lastGalleryGroup=arena.group;
+  const heading=document.createElement('h3');
+  heading.className='stage-group-heading';
+  heading.textContent=arena.group;
+  stageChoices.appendChild(heading);
+ }
  const button=document.createElement('button');
  button.type='button';button.className='stage-choice';
- button.style.backgroundImage='linear-gradient(180deg,#090f19aa,#080e16f2),url('+JSON.stringify(stage.background)+')';
- const title=document.createElement('strong');title.textContent=stage.name;
- const number=document.createElement('small');number.textContent='ARENA '+String(index+1).padStart(2,'0');
- button.append(number,title);
- button.setAttribute('aria-label','Play an exhibition at '+stage.name+' against a random opponent');
- button.onclick=()=>startMatch('exhibition',index);
+ const preview=document.createElement('img');
+ preview.className='stage-preview';
+ preview.loading='lazy';preview.decoding='async';
+ preview.src=arena.background;
+ preview.alt='';preview.setAttribute('aria-hidden','true');
+ const title=document.createElement('strong');title.textContent=arena.name;
+ const number=document.createElement('small');
+ number.textContent=arena.animated?'ANIMATED GIF · '+arena.source:
+  (arena.tournamentIndex!=null?'TOURNAMENT STAGE '+(arena.tournamentIndex+1):arena.source);
+ button.append(preview,number,title);
+ button.setAttribute('aria-label','Play an exhibition at '+arena.name+' against a random opponent');
+ button.onclick=()=>startMatch('exhibition',arena);
  stageChoices.appendChild(button);
 });
 
@@ -942,7 +1020,7 @@ function fighter(a,dark){
  c.restore();
 }
 function drawStage(){
- const bg=stageBackgrounds[stageIndex];
+ const bg=gameMode==='exhibition'?exhibitionBackground:stageBackgrounds[stageIndex];
  c.fillStyle='#172331';c.fillRect(0,0,W,H);
  if(bg.complete&&bg.naturalWidth){
   // Wide arena uses a softened, mirrored extension of the original static artwork.
