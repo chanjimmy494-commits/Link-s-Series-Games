@@ -148,7 +148,7 @@ canvas#game{position:relative;z-index:1}
  .stage-choice small{font-size:9px}
  .stage-group-heading{font-size:15px}
 }
-</style></head><body><header>LINK'S MELEE <small>v1.3.5 · Fighter Collision and Stage Cleanup</small></header><img id="animatedArenaGif" class="animated-arena-gif" alt="" aria-hidden="true" hidden><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
+</style></head><body><header>LINK'S MELEE <small>v1.3.6 · Animated Arena Edge Stability</small></header><img id="animatedArenaGif" class="animated-arena-gif" alt="" aria-hidden="true" hidden><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
 <div class="controls" aria-label="Touch game controls">
  <div class="pad labyrinth-pad" aria-label="Movement controls">
   <button class="up" data-k="w" aria-label="Jump"></button>
@@ -292,6 +292,9 @@ function stagePlatforms(){
  // only in the original Stage 1 castle environment.
  return arenaIndex===0&&!animatedArenaActive()?platforms:[];
 }
+// Native animated GIFs depict one fixed-screen arena. Their camera must not
+// scroll fighters across an unmoving DOM backdrop or an off-screen world.
+function arenaWorldWidth(){return animatedArenaActive()?W:WORLD;}
 
 const assets={};let loaded=0;const files=['castle_arena.jpg',...Array.from({length:6},(_,i)=>`swordsman_${i}.png`),...Array.from({length:6},(_,i)=>`dark_${i}.png`)];files.forEach(f=>{let im=new Image;im.onload=()=>loaded++;im.src=f;assets[f]=im});
 const keys={};let just={};const key=k=>!!keys[k];let player,foe,particles,clock,round,notice,shake,aiTick,phaseTick,noticeTick,aiMode,aiModeTick,aiAttackLock,aiCommitDir,aiLastPlayerX;
@@ -307,8 +310,12 @@ function reset(){
  startStage();
  syncAnimatedBackdrop();
 }
-function startStage(){player={x:650,y:FLOOR,w:72,h:135,vx:0,vy:0,face:1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,blockAnim:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};foe={x:1050,y:FLOOR,w:72,h:135,vx:0,vy:0,face:-1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,blockAnim:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};particles=[];clock=90*60;round='intro';phaseTick=165;notice=currentArena().name;noticeTick=0;shake=0;aiTick=0;// Spawn at fixed 280px/680px screen positions, symmetric about 480px.
-camera=Math.max(0,Math.min(WORLD-W,(player.x+foe.x)*.5-W*.5));aiMode='observe';aiModeTick=85;aiAttackLock=75;aiCommitDir=0;aiLastPlayerX=player.x;attackHeld=false;attackHoldFrames=0;attackCharged=false;attackQueued=false;heavyQueued=false;normalSlashNext='light';directionMemory='';directionMemoryFrames=0;just={}}
+function startStage(){
+ const singleScreenArena=animatedArenaActive();
+ // Original stages retain their existing balanced spawn locations. The GIF
+ // stages use the same 280px/680px *screen* placement with camera fixed at 0.
+ player={x:singleScreenArena?280:650,y:FLOOR,w:72,h:135,vx:0,vy:0,face:1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,blockAnim:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};foe={x:singleScreenArena?680:1050,y:FLOOR,w:72,h:135,vx:0,vy:0,face:-1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,blockAnim:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};particles=[];clock=90*60;round='intro';phaseTick=165;notice=currentArena().name;noticeTick=0;shake=0;aiTick=0;// Spawn at fixed 280px/680px screen positions, symmetric about 480px.
+camera=singleScreenArena?0:Math.max(0,Math.min(WORLD-W,(player.x+foe.x)*.5-W*.5));aiMode='observe';aiModeTick=85;aiAttackLock=75;aiCommitDir=0;aiLastPlayerX=player.x;attackHeld=false;attackHoldFrames=0;attackCharged=false;attackQueued=false;heavyQueued=false;normalSlashNext='light';directionMemory='';directionMemoryFrames=0;just={}}
 
 startStage();
 const frontScreen=document.getElementById('frontScreen');
@@ -896,31 +903,37 @@ function physics(a){
  if(a.y>=surface){a.y=surface;a.vy=0;a.ground=surface;a.coyote=7;if(wasAir)a.land=9}
  else{a.ground=-1;a.coyote=Math.max(0,a.coyote-1)}
  a.land=Math.max(0,a.land-1);
- a.x=Math.max(55,Math.min(WORLD-55,a.x+a.vx));
+ a.x=Math.max(55,Math.min(arenaWorldWidth()-55,a.x+a.vx));
  a.vx*=a.ground!==-1?.70:.94;
  a.step+=Math.abs(a.vx)*.045;
 
 }
-// Prevent walk-through without letting one fighter drag or propel the other.
-// Resolve only the movement that *caused* overlap on this physics frame.
-// Reversing those incoming steps gives stable contact, with no elastic push.
+// Position-based contact, using incoming motion to assign responsibility.
+// Crucially, limit the correction to the available space at either arena wall.
+// Previous code could repeatedly push a fighter into a clamped world edge.
 function separateFighters(previousPlayerX,previousFoeX){
  if(Math.abs(player.y-foe.y)>=100)return;
  const side=previousFoeX>=previousPlayerX?1:-1;
- const separation=(foe.x-player.x)*side;
  const minimum=65;
- if(separation>=minimum)return;
- const overlap=minimum-separation;
+ const gap=(foe.x-player.x)*side;
+ if(gap>=minimum)return;
+ const overlap=minimum-gap;
  const playerAdvance=Math.max(0,(player.x-previousPlayerX)*side);
  const foeAdvance=Math.max(0,(previousFoeX-foe.x)*side);
  const totalAdvance=playerAdvance+foeAdvance;
- // When Link moves into an idle opponent, only Link is stopped. When the
- // opponent approaches an idle Link, only the opponent is stopped.
- const playerShare=totalAdvance>0?playerAdvance/totalAdvance:0;
- player.x=Math.max(55,Math.min(WORLD-55,player.x-side*overlap*playerShare));
- foe.x=Math.max(55,Math.min(WORLD-55,foe.x+side*overlap*(1-playerShare)));
- // Cancel only blocked locomotion. Combat impulses still use their normal
- // stun / knockback handling; no special animated-arena collision rules.
+ const desiredPlayerShare=totalAdvance>0?playerAdvance/totalAdvance:0;
+ const minX=55,maxX=arenaWorldWidth()-55;
+ const playerRoom=Math.max(0,side>0?player.x-minX:maxX-player.x);
+ const foeRoom=Math.max(0,side>0?maxX-foe.x:foe.x-minX);
+ let playerBack=Math.min(overlap*desiredPlayerShare,playerRoom);
+ let foeBack=Math.min(overlap-playerBack,foeRoom);
+ // If the intended fighter is already against a wall, make the other
+ // fighter yield instead of storing overlap that triggers oscillation.
+ const leftOver=overlap-playerBack-foeBack;
+ if(leftOver>0)playerBack+=Math.min(leftOver,playerRoom-playerBack);
+ player.x-=side*playerBack;
+ foe.x+=side*foeBack;
+ // Reject blocked walking velocity, without suppressing active knockback.
  if(playerAdvance>0&&!player.stun)player.vx=0;
  if(foeAdvance>0&&!foe.stun)foe.vx=0;
 }
@@ -993,14 +1006,18 @@ function update(){
  const previousPlayerX=player.x,previousFoeX=foe.x;
  physics(player);physics(foe);
  separateFighters(previousPlayerX,previousFoeX);
- // Stationary camera inside a broad safe region; pan only when Link nears
- // the view edge. Enemy movement alone cannot change the camera position.
- const screenX=player.x-camera;
- let cameraTarget=camera;
- if(screenX<155)cameraTarget=player.x-155;
- else if(screenX>W-155)cameraTarget=player.x-(W-155);
- cameraTarget=Math.max(0,Math.min(WORLD-W,cameraTarget));
- camera+=(cameraTarget-camera)*.13;
+ // The animated background is a fixed, full-screen illustration:
+ // do not pan across it. Static worlds retain the existing camera dead-zone.
+ if(animatedArenaActive()){
+  camera=0;
+ }else{
+  const screenX=player.x-camera;
+  let cameraTarget=camera;
+  if(screenX<155)cameraTarget=player.x-155;
+  else if(screenX>W-155)cameraTarget=player.x-(W-155);
+  cameraTarget=Math.max(0,Math.min(WORLD-W,cameraTarget));
+  camera+=(cameraTarget-camera)*.13;
+ }
  particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.3;p.life--});
  particles=particles.filter(p=>p.life>0);
  shake=Math.max(0,shake-1);just={};
