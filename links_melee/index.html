@@ -80,7 +80,7 @@ html *,body *{touch-action:none!important;-webkit-touch-callout:none}
 }
 
 /* v1.3.0: compact fantasy title / exhibition arena selection. */
-.front-screen{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y!important;padding:max(18px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(18px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));background:linear-gradient(180deg,#080d17ee 0%,#101927df 52%,#070a11f4 100%),url('castle_arena.jpg') center/cover no-repeat}
+.front-screen{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y!important;padding:max(18px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(18px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));background:linear-gradient(180deg,#080d17ee 0%,#101927df 52%,#070a11f4 100%),url('castle_arena_clean.jpg') center/cover no-repeat}
 .front-screen[hidden],.front-panel[hidden]{display:none!important}
 .front-panel{width:min(100%,680px);margin:auto;display:flex;flex-direction:column;align-items:center;gap:12px;flex-shrink:0}
 .front-brand{position:relative;width:min(86vw,365px);height:clamp(220px,34vh,320px);display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 10px 15px #0009)}
@@ -148,7 +148,18 @@ canvas#game{position:relative;z-index:1}
  .stage-choice small{font-size:9px}
  .stage-group-heading{font-size:15px}
 }
-</style></head><body><header>LINK'S MELEE <small>v1.3.8 · Red Swordsman Foot Contact</small></header><img id="animatedArenaGif" class="animated-arena-gif" alt="" aria-hidden="true" hidden><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
+
+/* v1.3.9 landscape: keep the header and MENU / RESTART out of the canvas HUD.
+   They sit in the empty floor band at the bottom centre, between the D-pad
+   and the action buttons, where no health bar, clock or fighter is drawn. */
+@media (orientation:landscape) and (pointer:coarse){
+ header{top:auto!important;bottom:max(3px,env(safe-area-inset-bottom,0px))!important;background:none!important;font-size:10px!important;line-height:1.1;padding:0!important;opacity:.75}
+ header small{font-size:8px!important}
+ .restart,.game-home{top:auto!important;bottom:calc(max(3px,env(safe-area-inset-bottom,0px)) + 16px)!important;font-size:10px!important;padding:4px 10px!important;opacity:.85}
+ .restart{left:auto!important;right:calc(50% + 4px)!important;transform:none!important}
+ .game-home{right:auto!important;left:calc(50% + 4px)!important}
+}
+</style></head><body><header>LINK'S MELEE <small>v1.3.9 · Grounded Fighters &amp; Clean Arenas</small></header><img id="animatedArenaGif" class="animated-arena-gif" alt="" aria-hidden="true" hidden><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
 <div class="controls" aria-label="Touch game controls">
  <div class="pad labyrinth-pad" aria-label="Movement controls">
   <button class="up" data-k="w" aria-label="Jump"></button>
@@ -230,8 +241,8 @@ const canvas=document.getElementById('game'),c=canvas.getContext('2d');const ani
 const progressKey='links-melee-campaign-v109';
 // Tournament begins at stage one; the title screen is always the entry point.
 const stages=[
- {name:'OUTPOST RUINS',opponent:'DARK SWORDSMAN',background:'castle_arena.jpg'},
- {name:'TRAINING DOJO',opponent:'RUINS CHALLENGER',background:'../links_adventure_dojo_prototype/IMG_2918.png'},
+ {name:'OUTPOST RUINS',opponent:'DARK SWORDSMAN',background:'castle_arena_clean.jpg'},
+ {name:'TRAINING DOJO',opponent:'RUINS CHALLENGER',background:'training_dojo.jpg'},
  {name:'FOREST CLEARING',opponent:'RED SWORDSMAN',background:'62490EA1-5C4C-4938-95E4-35F25811C90F.png'},
  {name:'OUTPOST DUEL',opponent:'HOODED DARK SWORDSMAN',background:'Stages/IMG_3329.GIF',animated:true},
  {name:'OVERGROWN RUINS',opponent:'SHADOW LINK',background:'2EB80A3E-3DFF-4440-8CCA-30EA71D1CEC4.png'}
@@ -299,7 +310,7 @@ function stagePlatforms(){
 // scroll fighters across an unmoving DOM backdrop or an off-screen world.
 function arenaWorldWidth(){return animatedArenaActive()?W:WORLD;}
 
-const assets={};let loaded=0;const files=['castle_arena.jpg',...Array.from({length:6},(_,i)=>`swordsman_${i}.png`),...Array.from({length:6},(_,i)=>`dark_${i}.png`)];files.forEach(f=>{let im=new Image;im.onload=()=>loaded++;im.src=f;assets[f]=im});
+const assets={};let loaded=0;const files=[...Array.from({length:6},(_,i)=>`swordsman_${i}.png`),...Array.from({length:6},(_,i)=>`dark_${i}.png`)];files.forEach(f=>{let im=new Image;im.onload=()=>loaded++;im.src=f;assets[f]=im});
 const keys={};let just={};const key=k=>!!keys[k];let player,foe,particles,clock,round,notice,shake,aiTick,phaseTick,noticeTick,aiMode,aiModeTick,aiAttackLock,aiCommitDir,aiLastPlayerX;
 let attackHeld=false,attackHoldFrames=0,attackCharged=false,attackQueued=false,heavyQueued=false,normalSlashNext='light';
 let directionMemory='',directionMemoryFrames=0;
@@ -846,10 +857,14 @@ function drawAtlas(a,dark,action,progress){
  
  c.imageSmoothingEnabled=false;
  // Keep a consistent foot anchor, independent of the source image's empty margins.
+ // Atlas cells carry varying empty rows beneath the feet. Lower each cell by
+ // that measured padding so visible boots meet the floor; draw size is unchanged.
+ const cellBounds=getFrameBounds(im,drawRow,drawCol,cellW,cellH);
+ const footLift=cellBounds?Math.max(0,drawRow*cellH-(cellBounds.y+cellBounds.h))*166/cellH:0;
  if(dark&&opponentIndex===4){
   // Recolor the *pixels*, rather than relying on canvas filter (unreliable in iOS WebViews).
   const darkSheet=getShadowAtlas(im);
-  c.drawImage(darkSheet,(drawCol-1)*cellW,(drawRow-1)*cellH,cellW,cellH,-76,-166,152,166);
+  c.drawImage(darkSheet,(drawCol-1)*cellW,(drawRow-1)*cellH,cellW,cellH,-76,-166+footLift,152,166);
  }else if(dark&&(opponentIndex===1||opponentIndex===2||opponentIndex===3)){
   // Normalize the challenger to a stable visible height, not the varying
   // padding / zoom of individual atlas cells.
@@ -857,8 +872,8 @@ function drawAtlas(a,dark,action,progress){
   if(bounds){
    const dh=105,dw=Math.min(125,dh*bounds.w/bounds.h);
    c.drawImage(im,bounds.x,bounds.y,bounds.w,bounds.h,-dw/2,-dh,dw,dh);
-  }else c.drawImage(im,(drawCol-1)*cellW,(drawRow-1)*cellH,cellW,cellH,-76,-166,152,166);
- }else c.drawImage(im,(drawCol-1)*cellW,(drawRow-1)*cellH,cellW,cellH,-76,-166,152,166);
+  }else c.drawImage(im,(drawCol-1)*cellW,(drawRow-1)*cellH,cellW,cellH,-76,-166+footLift,152,166);
+ }else c.drawImage(im,(drawCol-1)*cellW,(drawRow-1)*cellH,cellW,cellH,-76,-166+footLift,152,166);
  c.restore();return true;
 }
 function attack(a,b,heavy,kind){
