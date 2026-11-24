@@ -174,7 +174,7 @@ canvas#game{position:relative;z-index:1;display:block;width:min(100%,1100px);asp
 .seg button{min-width:48px;min-height:42px;padding:0 10px;border-radius:9px;border:2px solid #3a3f4a;background:#2b2e36;color:#e9e2cf;font:700 13px 'Silkscreen',ui-monospace,monospace;cursor:pointer}
 .seg button[aria-pressed=true]{background:#f9c250;border-color:#7a5212;color:#1a1206}
 .seg output{min-width:28px;text-align:center;font-size:16px;color:#f9c250}
-</style></head><body><header>LINK'S MELEE <small>v1.12.1 · Opponent Personalities</small></header><div id="arenaClip" class="arena-clip" aria-hidden="true"><img id="animatedArenaGif" class="animated-arena-gif" alt="" hidden></div><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
+</style></head><body><header>LINK'S MELEE <small>v1.13.0 · Tournament Arena Pools</small></header><div id="arenaClip" class="arena-clip" aria-hidden="true"><img id="animatedArenaGif" class="animated-arena-gif" alt="" hidden></div><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
 <div class="dock">
  <div class="dock-top">
   <button class="pill restart" id="restart" type="button" aria-label="Restart"><span class="cap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4a8 8 0 1 0 7.75 10h-2.1A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35A7.96 7.96 0 0 0 12 4z"/></svg></span>RESTART</button>
@@ -410,14 +410,30 @@ let FLOOR=438;let camera=0;
 const CS=1.4;let stageIndex=0;let opponentIndex=0;let gameMode='tournament';let menuState='title';
 const progressKey='links-melee-campaign-v109';
 // Tournament begins at stage one; the title screen is always the entry point.
+// v1.13.0 tournament: each stage draws its arena at random from a pool the
+// user chose, re-drawn every time the match is entered. The four original
+// arenas remain available in Exhibition Mode.
 const stages=[
- {name:'OUTPOST RUINS',opponent:'DARK SWORDSMAN',background:'castle_arena_clean.jpg',ground:444},
- {name:'TRAINING DOJO',opponent:'RUINS CHALLENGER',background:'training_dojo.jpg',ground:470},
- {name:'FOREST CLEARING',opponent:'RED SWORDSMAN',background:'62490EA1-5C4C-4938-95E4-35F25811C90F.png',ground:470},
- {name:'OUTPOST DUEL',opponent:'HOODED DARK SWORDSMAN',background:'Stages/IMG_3329.GIF',animated:true,ground:472},
- {name:'OVERGROWN RUINS',opponent:'SHADOW LINK',background:'2EB80A3E-3DFF-4440-8CCA-30EA71D1CEC4.png',ground:465}
+ {opponent:'DARK SWORDSMAN',pool:[['FOREST SHRINE STEPS','IMG_3354.GIF'],['CLIFFSIDE FALLS','IMG_3349.GIF'],['PALACE COURTYARD','IMG_3344.GIF'],['CANAL OPERA','IMG_3337.GIF'],['COUNTRY ROAD','IMG_3340.GIF']]},
+ {opponent:'RUINS CHALLENGER',pool:[['BURNING VILLAGE','IMG_3335.GIF'],['DESERT COLOSSUS','IMG_3341.GIF'],['HIDDEN FALLS CAVE','IMG_3342.GIF'],['DUNE TEMPLE','IMG_3418.GIF']]},
+ {opponent:'RED SWORDSMAN',pool:[['SUNSET GRAVES','IMG_3350.GIF'],['MOONLIT BAMBOO','IMG_3348.GIF'],['MOUNTAIN HOT SPRING','IMG_3429.GIF']]},
+ {opponent:'HOODED DARK SWORDSMAN',pool:[['RUINED CATHEDRAL','IMG_3355.GIF'],['BLOOD RAIN RUINS','IMG_3353.GIF'],['DRAGON PIT','IMG_3414.GIF'],['SUNKEN DUNGEON','IMG_3422.GIF']]},
+ {opponent:'SHADOW LINK',pool:[['GOTHIC THRONE ROOM','throne_room_flickering_candles.png'],['NIGHT PLAINS','IMG_3431.GIF'],['EDGE OF THE FALLS','IMG_3357.GIF']]}
 ];
-const stageBackgrounds=stages.map(stage=>{const im=new Image();im.src=stage.background;return im});
+for(const st of stages){st.pool=st.pool.map(([name,file])=>({name,background:'Stages/'+file,source:file,animated:true}));st.current=st.pool[0]}
+function drawTournamentArena(i){
+ const st=stages[i];
+ // Random pick; avoid repeating the previous draw when the pool allows.
+ const options=st.pool.length>1?st.pool.filter(a=>a!==st.last):st.pool;
+ st.current=options[Math.floor(Math.random()*options.length)];st.last=st.current;
+}
+const originalArenas=[
+ {name:'OUTPOST RUINS',background:'castle_arena_clean.jpg',ground:444},
+ {name:'TRAINING DOJO',background:'training_dojo.jpg',ground:470},
+ {name:'FOREST CLEARING',background:'62490EA1-5C4C-4938-95E4-35F25811C90F.png',ground:470},
+ {name:'OVERGROWN RUINS',background:'2EB80A3E-3DFF-4440-8CCA-30EA71D1CEC4.png',ground:465}
+];
+const stageBackgrounds=originalArenas.map(stage=>{const im=new Image();im.src=stage.background;return im});
 // Snapshot of every GIF and static image actually found in links_melee/Stages/
 // on 2026-11-23. Keep original GIF paths: do not flatten or export first frames.
 // Keep original GIFs and recently uploaded GIFs grouped together.
@@ -426,9 +442,8 @@ const galleryApngs=["throne_room_flickering_candles.png"];
 const galleryAnimatedImages=[...galleryGifs,...galleryApngs];
 const galleryStillImages=["A6E9E6CB-FFD3-4A64-B420-6A7E2636F8B7.JPEG","DAC21C40-CCCB-4FE6-9A7C-65B771BE4A41.JPEG","IMG_3410.jpg"];
 const exhibitionArenas=[
- // Tournament stage 4 repeats stage 1's castle artwork. Keep the match
- // in Tournament Mode but omit its duplicate card from Exhibition Mode.
- ...stages.map((stage,index)=>({...stage,group:'ORIGINAL ARENAS',tournamentIndex:index,source:stage.background})).filter(stage=>stage.tournamentIndex!==3),
+ // tournamentIndex here indexes originalArenas / stageBackgrounds.
+ ...originalArenas.map((stage,index)=>({...stage,group:'ORIGINAL ARENAS',tournamentIndex:index,source:stage.background})),
  ...galleryAnimatedImages.map((file,index)=>({
   name:'ANIMATED ARENA '+String(index+1).padStart(2,'0'),
   background:'Stages/'+file,
@@ -446,7 +461,7 @@ const arenaGround={"IMG_3331.GIF":480,"IMG_3332.GIF":472,"IMG_3333.GIF":470,"IMG
 function arenaFloor(){const a=currentArena();return a?.ground??arenaGround[a?.source]??476}
 let exhibitionArena=null,exhibitionBackground=null;
 function currentArena(){
- return gameMode==='exhibition'&&exhibitionArena?exhibitionArena:stages[stageIndex];
+ return gameMode==='exhibition'&&exhibitionArena?exhibitionArena:stages[stageIndex].current;
 }
 function animatedArenaActive(){
  return !!currentArena()?.animated;
@@ -510,7 +525,7 @@ function syncAnimatedBackdrop(){
 function arenaImageLoaded(){
  // World width depends on the image's natural size. If it arrives while the
  // round intro is still running, re-centre the fighters and camera on it.
- if(menuState==='game'&&singleImageArena()&&round==='intro'){
+ if(menuState==='game'&&singleImageArena()&&(round==='intro'||round==='vs')){
   const w=arenaWorldWidth();player.x=w/2-200;foe.x=w/2+200;
   camera=Math.max(0,Math.min(w-W,w/2-W/2));
  }
@@ -521,7 +536,7 @@ window.addEventListener('resize',positionAnimatedBackdrop);
 window.addEventListener('orientationchange',positionAnimatedBackdrop);
 if(window.visualViewport)window.visualViewport.addEventListener('resize',positionAnimatedBackdrop);
 function stagePlatforms(){
- const arenaIndex=gameMode==='exhibition'?exhibitionArena?.tournamentIndex:stageIndex;
+ const arenaIndex=gameMode==='exhibition'?exhibitionArena?.tournamentIndex:-1;
  // Stage 4 uses a forest GIF with no masonry platforms. Retain platforms
  // only in the original Stage 1 castle environment.
  return arenaIndex===0&&!animatedArenaActive()?platforms:[];
@@ -551,6 +566,7 @@ function reset(){
  syncAnimatedBackdrop();
 }
 function newMatch(){
+ if(gameMode==='tournament')drawTournamentArena(stageIndex);
  roundsToWin=gameMode==='tournament'?2:(+settings.exhibitionRounds===3?2:1);
  matchWins={p:0,f:0};roundNum=1;matchOver=false;slowmo=0;koFlash=0;keepMeter={p:0,f:0};
  startStage();
@@ -684,7 +700,7 @@ exhibitionArenas.forEach((arena,index)=>{
  const title=document.createElement('strong');title.textContent=arena.name;
  const number=document.createElement('small');
  number.textContent=arena.animated?(arena.source.toLowerCase().endsWith('.png')?'ANIMATED APNG · ':'ANIMATED GIF · ')+arena.source:
-  (arena.tournamentIndex!=null?'TOURNAMENT STAGE '+(arena.tournamentIndex+1):arena.source);
+  (arena.tournamentIndex!=null?'ORIGINAL ARENA '+(arena.tournamentIndex+1):arena.source);
  button.append(preview,number,title);
  button.setAttribute('aria-label','Play an exhibition at '+arena.name+' against a random opponent');
  button.onclick=()=>startMatch('exhibition',arena);
