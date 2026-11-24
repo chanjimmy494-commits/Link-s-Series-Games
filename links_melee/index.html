@@ -160,7 +160,7 @@ canvas#game{position:relative;z-index:1;display:block;width:min(100%,1100px);asp
  .stage-group-heading{font-size:15px}
 }
 
-</style></head><body><header>LINK'S MELEE <small>v1.5.0 · Labyrinth Controls</small></header><div id="arenaClip" class="arena-clip" aria-hidden="true"><img id="animatedArenaGif" class="animated-arena-gif" alt="" hidden></div><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
+</style></head><body><header>LINK'S MELEE <small>v1.6.0 · Fighter Animation States</small></header><div id="arenaClip" class="arena-clip" aria-hidden="true"><img id="animatedArenaGif" class="animated-arena-gif" alt="" hidden></div><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
 <div class="dock">
  <div class="dock-top">
   <button class="pill restart" id="restart" type="button" aria-label="Restart"><span class="cap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4a8 8 0 1 0 7.75 10h-2.1A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35A7.96 7.96 0 0 0 12 4z"/></svg></span>RESTART</button>
@@ -362,6 +362,7 @@ function arenaWorldWidth(){return singleImageArena()?Math.max(W,arenaImageGeomet
 
 const assets={};let loaded=0;const files=[...Array.from({length:6},(_,i)=>`swordsman_${i}.png`),...Array.from({length:6},(_,i)=>`dark_${i}.png`)];files.forEach(f=>{let im=new Image;im.onload=()=>loaded++;im.src=f;assets[f]=im});
 const keys={};let just={};const key=k=>!!keys[k];let player,foe,particles,clock,round,notice,shake,aiTick,phaseTick,noticeTick,aiMode,aiModeTick,aiAttackLock,aiCommitDir,aiLastPlayerX;
+let hitstop=0;
 let attackHeld=false,attackHoldFrames=0,attackCharged=false,attackQueued=false,heavyQueued=false,normalSlashNext='light';
 let directionMemory='',directionMemoryFrames=0;
 function reset(){
@@ -378,7 +379,7 @@ function startStage(){
  const singleScreenArena=!!singleImageArena(),arenaW=arenaWorldWidth();
  // Original stages retain their existing balanced spawn locations. The GIF
  // stages use the same 280px/680px *screen* placement with camera fixed at 0.
- player={x:singleScreenArena?arenaW/2-200:650,y:FLOOR,w:72,h:135,vx:0,vy:0,face:1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,blockAnim:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};foe={x:singleScreenArena?arenaW/2+200:1050,y:FLOOR,w:72,h:135,vx:0,vy:0,face:-1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,blockAnim:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};particles=[];clock=90*60;round='intro';phaseTick=165;notice=currentArena().name;noticeTick=0;shake=0;aiTick=0;// Spawn at fixed 280px/680px screen positions, symmetric about 480px.
+ player={x:singleScreenArena?arenaW/2-200:650,y:FLOOR,w:72,h:135,vx:0,vy:0,face:1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,blockAnim:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};foe={x:singleScreenArena?arenaW/2+200:1050,y:FLOOR,w:72,h:135,vx:0,vy:0,face:-1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,blockAnim:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};for(const f of [player,foe])Object.assign(f,{hurt:0,flash:0,down:0,ko:false,idleT:0,crouchT:0,blockT:0,victory:false});hitstop=0;particles=[];clock=90*60;round='intro';phaseTick=165;notice=currentArena().name;noticeTick=0;shake=0;aiTick=0;// Spawn at fixed 280px/680px screen positions, symmetric about 480px.
 camera=Math.max(0,Math.min(arenaW-W,(player.x+foe.x)*.5-W*.5));aiMode='observe';aiModeTick=85;aiAttackLock=75;aiCommitDir=0;aiLastPlayerX=player.x;attackHeld=false;attackHoldFrames=0;attackCharged=false;attackQueued=false;heavyQueued=false;normalSlashNext='light';directionMemory='';directionMemoryFrames=0;just={}}
 
 startStage();
@@ -540,11 +541,11 @@ const moves={
 };
 const atlasImages={};for(const [name,file] of Object.entries({hero:'IMG_3200.PNG',foe:'IMG_3204.PNG',challenger2:'IMG_3209.PNG',challenger3:'IMG_3205.PNG',dualist:'IMG_3208.PNG'})){const im=new Image();im.src=file;atlasImages[name]=im}
 const atlasMap={
- hero:{idle:[1,1,3],light:[2,7,9],lunge:[1,4,6],rising:[1,4,6],low:[4,7,9],aerial:[1,4,6],heavy:[6,1,3],block:[3,7,9],crouch:[4,7,9],jump:[1,4,6],walk:[1,7,9],defeat:[6,7,9]},
- foe:{idle:[1,1,3],light:[4,7,9],lunge:[1,7,9],rising:[1,4,6],low:[5,1,3],aerial:[1,4,6],heavy:[4,1,3],block:[2,7,9],crouch:[5,1,3],jump:[1,7,9],walk:[1,7,9],defeat:[6,7,9]}
+ hero:{idle:[1,1,3],light:[2,7,9],lunge:[1,4,6],rising:[1,4,6],low:[4,7,9],aerial:[1,4,6],heavy:[6,1,3],block:[3,7,9],crouch:[4,7,9],jump:[1,4,6],walk:[1,7,9],knock:[5,7,9],defeat:[6,7,9],victory:[6,5,6]},
+ foe:{idle:[1,1,3],light:[4,7,9],lunge:[1,7,9],rising:[1,4,6],low:[5,1,3],aerial:[1,4,6],heavy:[4,1,3],block:[2,7,9],crouch:[5,1,3],jump:[1,7,9],walk:[1,7,9],knock:[5,7,9],defeat:[6,7,9]}
 };
 const challengerMaps={
- challenger2:{idle:[1,1,3],walk:[1,7,9],light:[4,1,3],downward:[6,1,3],lunge:[2,7,9],heavy:[6,1,3],rising:[4,1,3],low:[4,7,9],aerial:[1,7,9],block:[3,1,3],crouch:[4,7,9],jump:[1,7,9],defeat:[6,7,9]},
+ challenger2:{knock:[5,7,9],idle:[1,1,3],walk:[1,7,9],light:[4,1,3],downward:[6,1,3],lunge:[2,7,9],heavy:[6,1,3],rising:[4,1,3],low:[4,7,9],aerial:[1,7,9],block:[3,1,3],crouch:[4,7,9],jump:[1,7,9],defeat:[6,7,9]},
  challenger3:{idle:[1,1,3],walk:[4,1,3],light:[5,4,6],downward:[5,4,6],lunge:[2,4,6],heavy:[5,7,9],rising:[3,1,3],low:[4,7,9],aerial:[1,7,9],block:[1,1,3],crouch:[4,7,9],jump:[1,7,9],defeat:[6,7,9]},
  dualist:{idle:[1,1,3],walk:[1,7,9],light:[4,1,3],downward:[5,1,3],lunge:[2,7,9],heavy:[5,1,3],rising:[3,1,3],low:[4,7,9],aerial:[1,7,9],block:[3,1,3],crouch:[5,1,3],jump:[1,7,9],defeat:[6,7,9]}
 };
@@ -625,6 +626,7 @@ function drawSlashFrames(a,shadow=false){
  const scale=2.05;
  const footX=71,footY=115;
  c.drawImage(im,-footX*scale,-footY*scale,142*scale,127*scale);
+ drawHitFlash(a,slashFrames[frame],-footX*scale,-footY*scale,142*scale,127*scale);
  c.restore();return true;
 }
 const shadowAtlases=new WeakMap();
@@ -642,6 +644,20 @@ function getShadowAtlas(im){
   p[i+2]=Math.min(255,Math.round(lum*.43+45));
  }
  cx.putImageData(px,0,0);shadowAtlases.set(im,out);return out;
+}
+const flashCache=new WeakMap();
+function flashImage(im){
+ if(flashCache.has(im))return flashCache.get(im);
+ const out=document.createElement('canvas');out.width=im.naturalWidth||im.width;out.height=im.naturalHeight||im.height;
+ const g=out.getContext('2d');g.drawImage(im,0,0);g.globalCompositeOperation='source-in';g.fillStyle='#fff';g.fillRect(0,0,out.width,out.height);
+ flashCache.set(im,out);return out;
+}
+// Draw the fighter's sprite region again as a white silhouette for a few
+// frames after an unblocked hit (classic impact flash).
+function drawHitFlash(a,src,...args){
+ if(!(a.flash>0))return;
+ const prev=c.globalAlpha;c.globalAlpha=Math.min(.8,a.flash/6*.85);
+ c.drawImage(flashImage(src),...args);c.globalAlpha=prev;
 }
 const frameBoundsCache=new WeakMap();
 function getFrameBounds(im,row,col,cw,ch){
@@ -664,19 +680,22 @@ function getFrameBounds(im,row,col,cw,ch){
 const approvedSheet=new Image();approvedSheet.src='unnamed.png?rev=20261122';
 const approvedFrames={red:{},dark:{}};
 const approvedSpecs={
- idle:{xs:[428,500,572,644,716],y:37,w:54,h:68},
+ idle:{xs:[428,500,572,644,716],darkXs:[436,503,568,632,697],y:37,w:54,h:68},
  walk:{xs:[1006,1075,1136,1196,1256,1316,1376,1437],y:37,w:58,h:68},
  run:{xs:[420,486,551,616,681,745,806],y:108,w:68,h:68},
- light:{xs:[417,483,551,625,695,763],y:258,w:78,h:70},
+ light:{xs:[417,483,551,625,695,763],darkXs:[417,485,565,638,702,777],y:258,w:78,h:70},
  heavy:{xs:[1002,1071,1139,1206,1274,1343,1412,1480],y:257,w:88,h:72},
  block:{xs:[420,487,554],y:333,w:66,h:65},
  jump:{xs:[1005,1074,1140,1205,1272,1340,1408],y:187,w:76,h:73},
  running:{xs:[417,486,552,621,689],y:406,w:80,h:72},
  aerial:{xs:[804,869,934,998,1063],y:406,w:80,h:72},
- hit:{xs:[792,858,927],y:334,w:75,h:65}
+ hit:{xs:[792,858,927],y:334,w:75,h:65},
+ // v1.6.0: labelled rows on the same approved sheet, located by blob detection.
+ crouch:{xs:[1001,1068,1133,1198],y:110,w:62,h:74},
+ knockback:{xs:[1200,1261,1328,1398,1470],y:338,w:76,h:80}
 };
 function approvedSequence(action){
- return ({downward:'heavy',lunge:'light',rising:'heavy',low:'light',crouch:'block',defeat:'hit',aerial:'aerial',heavy:'heavy',light:'light',walk:'walk',idle:'idle',block:'block',jump:'jump',run:'run',running:'running'})[action]||'idle';
+ return ({downward:'heavy',lunge:'light',rising:'heavy',low:'light',crouch:'crouch',defeat:'knockback',knock:'knockback',hit:'hit',aerial:'aerial',heavy:'heavy',light:'light',walk:'walk',idle:'idle',block:'block',jump:'jump',run:'run',running:'running'})[action]||'idle';
 }
 // Remove disconnected sheet labels, neighboring sprites and isolated pixel debris.
 // Preserve the largest connected fighter silhouette and sword pixels attached to it.
@@ -820,8 +839,11 @@ function buildApprovedFrames(){
  for(const role of ['red','dark']){
   for(const [name,spec] of Object.entries(approvedSpecs)){
    const candidates=[];
-   for(let j=0;j<spec.xs.length;j++){
-    const center=spec.xs[j],left=center-spec.w/2;
+   // The hooded fighter's poses are not always at the red fighter's x
+   // positions on the shared sheet; use his measured centres where they differ.
+   const xs=(role==='dark'&&spec.darkXs)||spec.xs;
+   for(let j=0;j<xs.length;j++){
+    const center=xs[j],left=center-spec.w/2;
     const top=Math.round((spec.y+(role==='dark'?480:0)-spec.h/2)*sy);
     const canvasW=Math.round(spec.w*sx),canvasH=Math.round(spec.h*sy);
     const raw=document.createElement('canvas');
@@ -829,8 +851,8 @@ function buildApprovedFrames(){
     const rc=raw.getContext('2d',{willReadFrequently:true});
     // Source positions for adjacent illustrated poses are NOT evenly
     // spaced atlas cells. Never borrow pixels beyond their midpoint.
-    const previous=j?((spec.xs[j-1]+center)/2+1):left;
-    const following=j<spec.xs.length-1?((center+spec.xs[j+1])/2-1):(left+spec.w);
+    const previous=j?((xs[j-1]+center)/2+1):left;
+    const following=j<xs.length-1?((center+xs[j+1])/2-1):(left+spec.w);
     const cropL=Math.round(Math.max(0,left,previous)*sx);
     const cropR=Math.round(Math.min(1536,left+spec.w,following)*sx);
     const cropTop=Math.max(0,top);
@@ -880,6 +902,7 @@ function drawApproved(a,role,action,progress){
  // The dark fighter is anchored by his visible boot pixels, not the
  // invisible padding below the sprite on the source reference sheet.
  c.imageSmoothingEnabled=false;c.drawImage(im,-dw/2,-foot*scale,dw,dh);
+ drawHitFlash(a,im,-dw/2,-foot*scale,dw,dh);
  c.restore();return true;
 }
 
@@ -900,7 +923,7 @@ function drawAtlas(a,dark,action,progress){
  // mapped action to the fighter's actual world-facing direction.
  // +1 = source artwork points right, -1 = source artwork points left.
  const sourceFacing={
-  hero:{idle:-1,walk:1,jump:-1,crouch:-1,block:-1,light:-1,lunge:-1,rising:-1,low:-1,aerial:-1,heavy:-1,defeat:-1},
+  hero:{idle:-1,walk:1,jump:-1,crouch:-1,block:-1,light:-1,lunge:-1,rising:-1,low:-1,aerial:-1,heavy:-1,knock:-1,defeat:-1,victory:-1},
   foe:{idle:-1,walk:1,jump:1,crouch:-1,block:-1,light:1,lunge:1,rising:-1,low:1,aerial:-1,heavy:-1,defeat:-1}
  };
  const sourceDir=(sourceFacing[role]||sourceFacing.foe)[action]??-1;
@@ -913,19 +936,28 @@ function drawAtlas(a,dark,action,progress){
  // that measured padding so visible boots meet the floor; draw size is unchanged.
  const cellBounds=getFrameBounds(im,drawRow,drawCol,cellW,cellH);
  const footLift=cellBounds?Math.max(0,drawRow*cellH-(cellBounds.y+cellBounds.h))*166/cellH:0;
+ const sx=(drawCol-1)*cellW,sy=(drawRow-1)*cellH;
  if(dark&&opponentIndex===4){
   // Recolor the *pixels*, rather than relying on canvas filter (unreliable in iOS WebViews).
   const darkSheet=getShadowAtlas(im);
-  c.drawImage(darkSheet,(drawCol-1)*cellW,(drawRow-1)*cellH,cellW,cellH,-76,-166+footLift,152,166);
+  c.drawImage(darkSheet,sx,sy,cellW,cellH,-76,-166+footLift,152,166);
+  drawHitFlash(a,im,sx,sy,cellW,cellH,-76,-166+footLift,152,166);
  }else if(dark&&(opponentIndex===1||opponentIndex===2||opponentIndex===3)){
-  // Normalize the challenger to a stable visible height, not the varying
-  // padding / zoom of individual atlas cells.
-  const bounds=getFrameBounds(im,drawRow,drawCol,cellW,cellH);
-  if(bounds){
-   const dh=105,dw=Math.min(125,dh*bounds.w/bounds.h);
-   c.drawImage(im,bounds.x,bounds.y,bounds.w,bounds.h,-dw/2,-dh,dw,dh);
-  }else c.drawImage(im,(drawCol-1)*cellW,(drawRow-1)*cellH,cellW,cellH,-76,-166+footLift,152,166);
- }else c.drawImage(im,(drawCol-1)*cellW,(drawRow-1)*cellH,cellW,cellH,-76,-166+footLift,152,166);
+  // One constant scale per fighter, set so the idle pose stands 105 px tall.
+  // (Forcing every frame to 105 px squashed raised-sword frames and inflated
+  // short ones such as the knockdown.) Whole cell drawn, boots on the floor.
+  const ref=getFrameBounds(im,1,1,cellW,cellH);
+  const k=ref?105/ref.h:166/cellH,dw=cellW*k,dh=cellH*k;
+  const lift=cellBounds?Math.max(0,drawRow*cellH-(cellBounds.y+cellBounds.h))*k:0;
+  const cx=cellBounds?(cellBounds.x+cellBounds.w/2-sx)*k:dw/2;
+  // Centre on the body rather than the cell for frames that lean far forward.
+  const anchorX=action==='idle'||action==='walk'||action==='block'||action==='crouch'?cx:dw/2;
+  c.drawImage(im,sx,sy,cellW,cellH,-anchorX,-dh+lift,dw,dh);
+  drawHitFlash(a,im,sx,sy,cellW,cellH,-anchorX,-dh+lift,dw,dh);
+ }else{
+  c.drawImage(im,sx,sy,cellW,cellH,-76,-166+footLift,152,166);
+  drawHitFlash(a,im,sx,sy,cellW,cellH,-76,-166+footLift,152,166);
+ }
  c.restore();return true;
 }
 function attack(a,b,heavy,kind){
@@ -940,6 +972,13 @@ function attack(a,b,heavy,kind){
 function spawnHit(x,y,blocked,dark){
  for(let i=0;i<12;i++)particles.push({x,y,vx:(Math.random()-.5)*8,vy:(Math.random()-.5)*9,life:16,color:blocked?'#9fd5f6':dark?'#c09cff':'#f4d394'});
 }
+// Heavy hits and KOs launch the fighter into the knockback poses and onto the
+// floor. A heavy hit gets back up once its stun ends; a KO stays down.
+function knockDown(b,dir,final){
+ b.down=1;b.ko=final;b.atk=0;b.block=false;b.crouch=false;
+ b.vy=final?-8.5:-6.2;b.y-=2;b.ground=-1;b.coyote=0;b.vx=dir*(final?7.2:5.2);
+ b.stun=final?99999:64;b.inv=final?99999:86;
+}
 function hit(a,b){
  const m=moves[a.attackKind];if(!m||a.didHit||b.inv>0)return;
  const delta=b.x-a.x;
@@ -950,6 +989,11 @@ function hit(a,b){
  b.hp=Math.max(0,b.hp-damage);
  b.stamina=Math.max(0,b.stamina-(guarded?(a.heavy?32:17):3));
  b.inv=guarded?10:24;b.stun=guarded?5:m.stun;b.vx=a.face*(guarded?2.4:m.knock);
+ if(guarded)hitstop=Math.max(hitstop,3);
+ else{
+  b.hurt=m.stun+6;b.flash=6;hitstop=Math.max(hitstop,a.heavy?8:5);
+  if(a.heavy||b.hp<=0)knockDown(b,a.face,b.hp<=0);
+ }
  if(guarded&&b.stamina<=0){b.guardBreak=62;b.block=false;b.stun=62;notice='GUARD BROKEN'}
  else notice=guarded?'BLOCKED':a.heavy?'HEAVY STRIKE':'STRIKE';
  noticeTick=38;shake=guarded?1:4;spawnHit(b.x,b.y-83,guarded,a===foe);
@@ -958,6 +1002,9 @@ function hit(a,b){
 function aerialDrop(a){a.y+=9;a.ground=-1;a.coyote=0}
 function physics(a){
  a.cool=Math.max(0,a.cool-1);a.inv=Math.max(0,a.inv-1);a.stun=Math.max(0,a.stun-1);
+ a.idleT++;a.hurt=Math.max(0,a.hurt-1);a.flash=Math.max(0,a.flash-1);
+ a.crouchT=a.crouch?a.crouchT+1:0;a.blockT=a.block?a.blockT+1:0;
+ if(a.down>0){a.down++;if(!a.ko&&a.stun===0)a.down=0}
  a.guardBreak=Math.max(0,a.guardBreak-1);
  a.stamina=Math.min(100,a.stamina+(a.block?.10:.43));
  if(a.atk>0){
@@ -1011,8 +1058,16 @@ function separateFighters(previousPlayerX,previousFoeX){
 function update(){
  if(menuState!=='game'){just={};return}
   if(round==='intro'){phaseTick--;if(phaseTick<=0){round='play';notice='FIGHT';noticeTick=65}just={};return}
- if(round!=='play'){phaseTick++;shake=0;if(gameMode==='tournament'&&round==='win'&&phaseTick>125&&stageIndex<stages.length-1){stageIndex++;opponentIndex=stageIndex;try{sessionStorage.setItem(progressKey,String(stageIndex))}catch(e){}startStage();syncAnimatedBackdrop();}just={};return}
- clock--;if(clock<=0){shake=0;round=player.hp>=foe.hp?'win':'lose';phaseTick=0;notice=round==='win'?'TIME — VICTORY':'TIME — DEFEAT';just={};return}
+ if(round!=='play'){
+  // Keep simulating after the round ends so the loser falls and lands.
+  physics(player);physics(foe);
+  const winner=round==='win'?player:round==='lose'?foe:null;
+  if(winner&&phaseTick>45&&winner.ground!==-1&&winner.atk===0&&winner.down===0)winner.victory=true;
+ }
+ if(round!=='play'){phaseTick++;shake=0;if(gameMode==='tournament'&&round==='win'&&phaseTick>170&&stageIndex<stages.length-1){stageIndex++;opponentIndex=stageIndex;try{sessionStorage.setItem(progressKey,String(stageIndex))}catch(e){}startStage();syncAnimatedBackdrop();}just={};return}
+ // Impact freeze: inputs stay buffered and resume afterwards.
+ if(hitstop>0){hitstop--;return}
+ clock--;if(clock<=0){shake=0;player.inv=foe.inv=99999;round=player.hp>=foe.hp?'win':'lose';phaseTick=0;notice=round==='win'?'TIME — VICTORY':'TIME — DEFEAT';just={};return}
  noticeTick=Math.max(0,noticeTick-1);directionMemoryFrames=Math.max(0,directionMemoryFrames-1);if(just.s){directionMemory='down';directionMemoryFrames=11}else if(just.w){directionMemory='up';directionMemoryFrames=11}else if(just.a||just.d){directionMemory='forward';directionMemoryFrames=11}
  if(!player.stun){
   player.crouch=!attackHeld&&key('s')&&player.ground!==-1;player.block=!attackHeld&&key('k')&&player.atk===0&&player.stamina>0&&player.guardBreak===0;
@@ -1130,10 +1185,24 @@ function darkSprite(source){
  g.globalCompositeOperation='destination-in';g.drawImage(source,0,0);
  darkSpriteCache.set(source,layer);return layer;
 }
+function approvedRole(dark){return dark&&(opponentIndex===2||opponentIndex===3)}
 function fighter(a,dark){
  const airborne=a.ground===-1,attacking=a.atk>0,guarding=a.block&&!a.guardBreak;
  const moving=Math.abs(a.vx)>1.1,crouching=a.crouch&&!airborne;
  const action=guarding?'block':attacking?'attack':airborne?'jump':crouching?'crouch':moving?(Math.abs(a.vx)>3.7?'run':'walk'):'idle';
+ // Reaction states take precedence: knockdown, victory, hit flinch.
+ if(a.down>0){
+  // Airborne: knockback frames by vertical motion. Landed: lying on the floor,
+  // except the last frames before a non-final get-up.
+  const rising=!a.ko&&a.stun<14&&a.ground!==-1;
+  const p=a.ground===-1?(a.vy<-2?.05:a.vy<4?.3:.5):rising?.3:a.land>0?.7:.99;
+  const atlasPose=a.ground===-1||rising||a.land>0?'knock':'defeat';
+  if(drawAtlas(a,dark,approvedRole(dark)?'knock':atlasPose,approvedRole(dark)?p:(atlasPose==='knock'?Math.min(.99,p*1.4):0)))return;
+ }else if(a.victory){
+  if(drawAtlas(a,dark,'victory',Math.min(.99,(a.idleT%200)/40)))return;
+ }else if(a.hurt>0&&!attacking&&approvedRole(dark)){
+  if(drawAtlas(a,dark,'hit',Math.min(.99,1-a.hurt/24)))return;
+ }
  // Keep the sword drawn back during a held attack. This is a static
  // wind-up pose; the downward slash begins only after release.
  if(!dark&&attackHeld&&!attacking&&!guarding&&a.stun===0&&round==='play'){
@@ -1141,7 +1210,15 @@ function fighter(a,dark){
  }
  const atlasAction=attacking?a.attackKind:action==='run'?'walk':action;
  if((!dark||opponentIndex===4)&&attacking&&['light','downward','lunge','heavy'].includes(a.attackKind)&&drawSlashFrames(a,dark&&opponentIndex===4))return;
- const atlasProgress=attacking?Math.min(1,a.attackPhase/(a.attackDuration||moves[a.attackKind].duration)):((a.step*(dark&&opponentIndex===4?.25:.11))%1);
+ // Each action has its own clock: idle breathes on a timer (it used to
+ // freeze because walking distance drove it), jumps follow vertical speed,
+ // crouch and block ease into their held pose.
+ const atlasProgress=attacking?Math.min(1,a.attackPhase/(a.attackDuration||moves[a.attackKind].duration)):
+  action==='idle'?(a.idleT*.011)%1:
+  action==='jump'?(a.vy<-9?.05:a.vy<-3?.3:a.vy<3?.5:a.vy<9?.7:.9):
+  action==='crouch'?Math.min(.99,a.crouchT/10):
+  action==='block'?Math.min(.99,a.blockT/8):
+  ((a.step*(dark&&opponentIndex===4?.25:.11))%1);
  if(drawAtlas(a,dark,atlasAction,atlasProgress))return;
  const frames=animationFrames[action];
  const attackProgress=attacking?Math.max(0,Math.min(1,a.attackPhase/moves[a.attackKind].duration)):0;
