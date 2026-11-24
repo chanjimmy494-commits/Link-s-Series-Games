@@ -160,7 +160,7 @@ canvas#game{position:relative;z-index:1;display:block;width:min(100%,1100px);asp
  .stage-group-heading{font-size:15px}
 }
 
-</style></head><body><header>LINK'S MELEE <small>v1.6.1 · D-pad Up Aims</small></header><div id="arenaClip" class="arena-clip" aria-hidden="true"><img id="animatedArenaGif" class="animated-arena-gif" alt="" hidden></div><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
+</style></head><body><header>LINK'S MELEE <small>v1.7.0 · Fighters on the Real Ground</small></header><div id="arenaClip" class="arena-clip" aria-hidden="true"><img id="animatedArenaGif" class="animated-arena-gif" alt="" hidden></div><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
 <div class="dock">
  <div class="dock-top">
   <button class="pill restart" id="restart" type="button" aria-label="Restart"><span class="cap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4a8 8 0 1 0 7.75 10h-2.1A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35A7.96 7.96 0 0 0 12 4z"/></svg></span>RESTART</button>
@@ -241,15 +241,17 @@ document.addEventListener('touchstart',e=>{
  if(e.touches.length>1){e.preventDefault();return}
  const now=Date.now();if(now-lastGameTouch<350)e.preventDefault();lastGameTouch=now;
 },{passive:false});
-const canvas=document.getElementById('game'),c=canvas.getContext('2d');const animatedArenaGif=document.getElementById('animatedArenaGif');c.imageSmoothingEnabled=false;const W=960,H=540,FLOOR=438,WORLD=1720,platforms=[{x:375,y:345,w:235,h:16},{x:1110,y:345,w:235,h:16},{x:175,y:263,w:240,h:13},{x:730,y:267,w:250,h:13},{x:1325,y:263,w:215,h:13}];let camera=0;let stageIndex=0;let opponentIndex=0;let gameMode='tournament';let menuState='title';
+const canvas=document.getElementById('game'),c=canvas.getContext('2d');const animatedArenaGif=document.getElementById('animatedArenaGif');c.imageSmoothingEnabled=false;const W=960,H=540,WORLD=1720,platforms=[{x:375,y:345,w:235,h:16},{x:1110,y:345,w:235,h:16},{x:175,y:263,w:240,h:13},{x:730,y:267,w:250,h:13},{x:1325,y:263,w:215,h:13}];
+// v1.7.0: the floor is per arena, matched to where each artwork's ground is.
+let FLOOR=438;let camera=0;let stageIndex=0;let opponentIndex=0;let gameMode='tournament';let menuState='title';
 const progressKey='links-melee-campaign-v109';
 // Tournament begins at stage one; the title screen is always the entry point.
 const stages=[
- {name:'OUTPOST RUINS',opponent:'DARK SWORDSMAN',background:'castle_arena_clean.jpg'},
- {name:'TRAINING DOJO',opponent:'RUINS CHALLENGER',background:'training_dojo.jpg'},
- {name:'FOREST CLEARING',opponent:'RED SWORDSMAN',background:'62490EA1-5C4C-4938-95E4-35F25811C90F.png'},
- {name:'OUTPOST DUEL',opponent:'HOODED DARK SWORDSMAN',background:'Stages/IMG_3329.GIF',animated:true},
- {name:'OVERGROWN RUINS',opponent:'SHADOW LINK',background:'2EB80A3E-3DFF-4440-8CCA-30EA71D1CEC4.png'}
+ {name:'OUTPOST RUINS',opponent:'DARK SWORDSMAN',background:'castle_arena_clean.jpg',ground:444},
+ {name:'TRAINING DOJO',opponent:'RUINS CHALLENGER',background:'training_dojo.jpg',ground:470},
+ {name:'FOREST CLEARING',opponent:'RED SWORDSMAN',background:'62490EA1-5C4C-4938-95E4-35F25811C90F.png',ground:470},
+ {name:'OUTPOST DUEL',opponent:'HOODED DARK SWORDSMAN',background:'Stages/IMG_3329.GIF',animated:true,ground:472},
+ {name:'OVERGROWN RUINS',opponent:'SHADOW LINK',background:'2EB80A3E-3DFF-4440-8CCA-30EA71D1CEC4.png',ground:465}
 ];
 const stageBackgrounds=stages.map(stage=>{const im=new Image();im.src=stage.background;return im});
 // Snapshot of every GIF and static image actually found in links_melee/Stages/
@@ -274,6 +276,10 @@ const exhibitionArenas=[
   source:file,group:'ADDITIONAL BACKGROUNDS',animated:false
  }))
 ];
+// Feet line (canvas y, of 540) for each Exhibition artwork, calibrated by eye
+// against the art as framed in game. Unlisted art uses 476.
+const arenaGround={"IMG_3331.GIF":480,"IMG_3332.GIF":472,"IMG_3333.GIF":470,"IMG_3334.GIF":490,"IMG_3335.GIF":480,"IMG_3336.GIF":485,"IMG_3337.GIF":470,"IMG_3338.GIF":472,"IMG_3339.GIF":470,"IMG_3340.GIF":472,"IMG_3341.GIF":472,"IMG_3342.GIF":480,"IMG_3343.GIF":482,"IMG_3344.GIF":472,"IMG_3347.GIF":480,"IMG_3348.GIF":490,"IMG_3349.GIF":462,"IMG_3350.GIF":472,"IMG_3351.GIF":470,"IMG_3352.GIF":482,"IMG_3353.GIF":480,"IMG_3354.GIF":482,"IMG_3355.GIF":495,"IMG_3356.GIF":472,"IMG_3357.GIF":472,"IMG_3411.GIF":470,"IMG_3412.GIF":472,"IMG_3413.GIF":472,"IMG_3414.GIF":472,"IMG_3415.GIF":472,"IMG_3416.GIF":462,"IMG_3418.GIF":482,"IMG_3421.GIF":498,"IMG_3422.GIF":476,"IMG_3423.GIF":476,"IMG_3424.GIF":482,"IMG_3425.GIF":476,"IMG_3426.GIF":490,"IMG_3427.GIF":490,"IMG_3428.GIF":498,"IMG_3429.GIF":505,"IMG_3431.GIF":472,"throne_room_flickering_candles.png":492,"A6E9E6CB-FFD3-4A64-B420-6A7E2636F8B7.JPEG":480,"DAC21C40-CCCB-4FE6-9A7C-65B771BE4A41.JPEG":465,"IMG_3410.jpg":482};
+function arenaFloor(){const a=currentArena();return a?.ground??arenaGround[a?.source]??476}
 let exhibitionArena=null,exhibitionBackground=null;
 function currentArena(){
  return gameMode==='exhibition'&&exhibitionArena?exhibitionArena:stages[stageIndex];
@@ -309,7 +315,7 @@ function arenaImageGeometry(){
  if(!im||!im.naturalWidth||!im.naturalHeight)return {w:W,h:H,top:0};
  const aspect=im.naturalWidth/im.naturalHeight;
  if(aspect>=W/H){const w=Math.round(H*aspect);return {w,h:H,top:0}}
- const h=Math.round(W/aspect);return {w:W,h,top:Math.round((H-h)/2)};
+ const h=Math.round(W/aspect);return {w:W,h,top:H-h}; // keep the floor; trim sky
 }
 let backdropKey='';
 function positionAnimatedBackdrop(){
@@ -376,6 +382,7 @@ function reset(){
  syncAnimatedBackdrop();
 }
 function startStage(){
+ FLOOR=arenaFloor();
  const singleScreenArena=!!singleImageArena(),arenaW=arenaWorldWidth();
  // Original stages retain their existing balanced spawn locations. The GIF
  // stages use the same 280px/680px *screen* placement with camera fixed at 0.
@@ -1276,11 +1283,8 @@ function drawStage(){
   // No full-canvas background if the animated image has loaded.
   c.fillStyle='#172331';c.fillRect(0,0,arenaWorldWidth(),H);
  }
- // Ground and raised masonry are integrated into the castle palette.
- const groundW=Math.max(WORLD,arenaWorldWidth());
- c.fillStyle='#262c32';c.fillRect(0,FLOOR+2,groundW,H-FLOOR);
- c.fillStyle='#6b6257';c.fillRect(0,FLOOR,groundW,5);
- c.fillStyle='#4a4540';c.fillRect(0,FLOOR+5,groundW,15);
+ // v1.7.0: no floor overlay; fighters stand on each artwork's own ground.
+ // Raised masonry platforms remain on Stage 1.
  for(const p of stagePlatforms()){
   c.fillStyle='#151b21a0';c.fillRect(p.x+6,p.y+14,p.w,11);
   const timber=p.y<300;
@@ -1300,18 +1304,13 @@ function render(){
  if(shake&&round==='play')c.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);
  c.translate(-Math.round(camera),0);
  drawStage();
+ for(const a of [player,foe]){
+  const lift=Math.max(0,FLOOR-a.y),k=Math.max(.35,1-lift/220);
+  c.fillStyle='rgba(10,12,20,'+(0.42*k).toFixed(3)+')';c.beginPath();
+  c.ellipse(Math.round(a.x),FLOOR+2,30*k,6*k,0,0,Math.PI*2);c.fill();
+ }
  if(animatedArenaActive()){
-  // Ground-register fighters on the new GIFs, preserving their original
-  // height ratios and the unchanged underlying physics / hitboxes.
-  for(const a of [player,foe]){
-   if(a.ground===FLOOR&&Math.abs(a.y-FLOOR)<.5){
-    c.fillStyle='#13172099';c.beginPath();
-    c.ellipse(Math.round(a.x),FLOOR+5,26,5,0,0,Math.PI*2);c.fill();
-   }
-  }
-  c.save();c.translate(0,8);
   fighter(player,false);fighter(foe,true);
-  c.restore();
  }else{fighter(player,false);fighter(foe,true)}
  for(let p of particles){c.globalAlpha=p.life/22;c.fillStyle=p.color;c.fillRect(p.x,p.y,5,5)}
  c.globalAlpha=1;c.restore();
