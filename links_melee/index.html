@@ -148,7 +148,7 @@ canvas#game{position:relative;z-index:1}
  .stage-choice small{font-size:9px}
  .stage-group-heading{font-size:15px}
 }
-</style></head><body><header>LINK'S MELEE <small>v1.3.6 · Animated Arena Edge Stability</small></header><img id="animatedArenaGif" class="animated-arena-gif" alt="" aria-hidden="true" hidden><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
+</style></head><body><header>LINK'S MELEE <small>v1.3.7 · Expanded Exhibition Arenas</small></header><img id="animatedArenaGif" class="animated-arena-gif" alt="" aria-hidden="true" hidden><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
 <div class="controls" aria-label="Touch game controls">
  <div class="pad labyrinth-pad" aria-label="Movement controls">
   <button class="up" data-k="w" aria-label="Jump"></button>
@@ -196,7 +196,7 @@ canvas#game{position:relative;z-index:1}
  <section id="stagePanel" class="front-panel front-stage-panel" aria-label="Exhibition stage selection" hidden>
   <h2 class="front-stage-heading">EXHIBITION MODE</h2>
   <p class="front-subtitle">Choose a stage · Random opponent · One match</p>
-  <p class="stage-gallery-count">32 arenas · 26 animated backgrounds</p>
+  <p class="stage-gallery-count">51 arenas · 44 animated backgrounds</p>
   <div id="stageChoices" class="stage-list"></div>
   <button id="backTitle" class="stage-back">BACK TO MENU</button>
  </section>
@@ -239,13 +239,16 @@ const stages=[
 const stageBackgrounds=stages.map(stage=>{const im=new Image();im.src=stage.background;return im});
 // Snapshot of every GIF and static image actually found in links_melee/Stages/
 // on 2026-11-23. Keep original GIF paths: do not flatten or export first frames.
-const galleryGifs=["IMG_3329.GIF","IMG_3331.GIF","IMG_3332.GIF","IMG_3333.GIF","IMG_3334.GIF","IMG_3335.GIF","IMG_3336.GIF","IMG_3337.GIF","IMG_3338.GIF","IMG_3339.GIF","IMG_3340.GIF","IMG_3341.GIF","IMG_3342.GIF","IMG_3343.GIF","IMG_3344.GIF","IMG_3347.GIF","IMG_3348.GIF","IMG_3349.GIF","IMG_3350.GIF","IMG_3351.GIF","IMG_3352.GIF","IMG_3353.GIF","IMG_3354.GIF","IMG_3355.GIF","IMG_3356.GIF","IMG_3357.GIF"];
-const galleryStillImages=["A6E9E6CB-FFD3-4A64-B420-6A7E2636F8B7.JPEG","DAC21C40-CCCB-4FE6-9A7C-65B771BE4A41.JPEG"];
+// Keep original GIFs and recently uploaded GIFs grouped together.
+const galleryGifs=["IMG_3329.GIF","IMG_3331.GIF","IMG_3332.GIF","IMG_3333.GIF","IMG_3334.GIF","IMG_3335.GIF","IMG_3336.GIF","IMG_3337.GIF","IMG_3338.GIF","IMG_3339.GIF","IMG_3340.GIF","IMG_3341.GIF","IMG_3342.GIF","IMG_3343.GIF","IMG_3344.GIF","IMG_3347.GIF","IMG_3348.GIF","IMG_3349.GIF","IMG_3350.GIF","IMG_3351.GIF","IMG_3352.GIF","IMG_3353.GIF","IMG_3354.GIF","IMG_3355.GIF","IMG_3356.GIF","IMG_3357.GIF","IMG_3411.GIF","IMG_3412.GIF","IMG_3413.GIF","IMG_3414.GIF","IMG_3415.GIF","IMG_3416.GIF","IMG_3418.GIF","IMG_3421.GIF","IMG_3422.GIF","IMG_3423.GIF","IMG_3424.GIF","IMG_3425.GIF","IMG_3426.GIF","IMG_3427.GIF","IMG_3428.GIF","IMG_3429.GIF","IMG_3431.GIF"];
+const galleryApngs=["throne_room_flickering_candles.png"];
+const galleryAnimatedImages=[...galleryGifs,...galleryApngs];
+const galleryStillImages=["A6E9E6CB-FFD3-4A64-B420-6A7E2636F8B7.JPEG","DAC21C40-CCCB-4FE6-9A7C-65B771BE4A41.JPEG","IMG_3410.jpg"];
 const exhibitionArenas=[
  // Tournament stage 4 repeats stage 1's castle artwork. Keep the match
  // in Tournament Mode but omit its duplicate card from Exhibition Mode.
  ...stages.map((stage,index)=>({...stage,group:'ORIGINAL ARENAS',tournamentIndex:index,source:stage.background})).filter(stage=>stage.tournamentIndex!==3),
- ...galleryGifs.map((file,index)=>({
+ ...galleryAnimatedImages.map((file,index)=>({
   name:'ANIMATED ARENA '+String(index+1).padStart(2,'0'),
   background:'Stages/'+file,
   source:file,group:'ANIMATED ARENAS',animated:true
@@ -387,7 +390,7 @@ exhibitionArenas.forEach((arena,index)=>{
  preview.alt='';preview.setAttribute('aria-hidden','true');
  const title=document.createElement('strong');title.textContent=arena.name;
  const number=document.createElement('small');
- number.textContent=arena.animated?'ANIMATED GIF · '+arena.source:
+ number.textContent=arena.animated?(arena.source.toLowerCase().endsWith('.png')?'ANIMATED APNG · ':'ANIMATED GIF · ')+arena.source:
   (arena.tournamentIndex!=null?'TOURNAMENT STAGE '+(arena.tournamentIndex+1):arena.source);
  button.append(preview,number,title);
  button.setAttribute('aria-label','Play an exhibition at '+arena.name+' against a random opponent');
