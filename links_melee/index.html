@@ -78,7 +78,48 @@ html *,body *{touch-action:none!important;-webkit-touch-callout:none}
  .labyrinth-pad{width:40vw!important;height:40vw!important}
  .combat-buttons button{width:15vw!important;height:22vw!important}
 }
-</style></head><body><header>LINK'S MELEE <small>v1.2.7 · Dark Swordsman Head Size</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
+
+/* v1.3.0: compact fantasy title / exhibition arena selection. */
+.front-screen{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y!important;padding:max(18px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(18px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));background:linear-gradient(180deg,#080d17ee 0%,#101927df 52%,#070a11f4 100%),url('castle_arena.jpg') center/cover no-repeat}
+.front-screen[hidden],.front-panel[hidden]{display:none!important}
+.front-panel{width:min(100%,680px);margin:auto;display:flex;flex-direction:column;align-items:center;gap:12px;flex-shrink:0}
+.front-brand{position:relative;width:min(86vw,365px);height:clamp(220px,34vh,320px);display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 10px 15px #0009)}
+.front-emblem{height:100%;width:100%;object-fit:contain;shape-rendering:crispEdges}
+.front-brand-title{position:absolute;left:50%;top:53%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;color:#ffca53;font:900 clamp(38px,8vw,63px)/.95 'Courier New',monospace;letter-spacing:-.055em;text-shadow:3px 3px 0 #75430c,6px 7px 0 #281604,0 0 12px #211603;white-space:nowrap;pointer-events:none}
+.front-brand-title span:last-child{margin-top:1px}
+.front-actions{display:flex;flex-direction:column;width:min(88vw,350px);gap:11px}
+.front-action,.stage-back{display:block;cursor:pointer;width:100%;min-height:51px;padding:11px 14px;border:2px solid #cda04f;border-radius:5px;background:linear-gradient(#362b21ed,#181923e8);color:#ffcf61;box-shadow:inset 0 0 0 2px #191521,0 4px 0 #090a0d;font:900 clamp(15px,3.8vw,21px) 'Courier New',monospace;letter-spacing:.02em;text-shadow:1px 2px 0 #000;touch-action:manipulation!important;-webkit-tap-highlight-color:transparent}
+.front-action:active,.stage-back:active,.stage-choice:active{background:#5c482c;transform:translateY(2px)}
+.front-subtitle{margin:0;color:#d1c4ad;font:600 12px system-ui,sans-serif;letter-spacing:.18em;text-transform:uppercase;text-shadow:1px 2px 3px #000}
+.front-stage-panel{width:min(100%,760px);padding:8px 0 16px}
+.front-stage-heading{margin:0 0 2px;color:#ffcd58;font:900 clamp(24px,5vw,36px) 'Courier New',monospace;text-shadow:3px 4px 0 #231809}
+.stage-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;width:100%;margin:10px 0}
+.stage-choice{position:relative;isolation:isolate;min-height:clamp(78px,16vh,112px);display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-end;gap:3px;padding:10px;border:2px solid #a68b58;border-radius:7px;background-position:center;background-size:cover;background-repeat:no-repeat;box-shadow:0 4px 10px #0009;color:#fff3d6;text-align:left;cursor:pointer;overflow:hidden;touch-action:manipulation!important;-webkit-tap-highlight-color:transparent}
+.stage-choice:focus-visible,.front-action:focus-visible,.stage-back:focus-visible{outline:3px solid #f5d88c;outline-offset:3px}
+.stage-choice strong{font:900 clamp(12px,2.7vw,18px) 'Courier New',monospace;letter-spacing:.02em;text-shadow:1px 2px 3px #000}
+.stage-choice small{font:700 11px system-ui,sans-serif;color:#ffce66;text-shadow:1px 2px 3px #000}
+.stage-back{width:min(85vw,275px);min-height:45px;margin-top:5px;font-size:16px}
+.game-home{font-size:12px;padding:7px 13px;border:1px solid #9e886c;border-radius:6px;background:#29364b;color:#fff;position:fixed;z-index:6;right:12px;bottom:max(9px,env(safe-area-inset-bottom));touch-action:manipulation!important}
+@media (orientation:landscape) and (pointer:coarse){
+ .game-home{top:max(23px,calc(env(safe-area-inset-top) + 20px));bottom:auto;right:max(89px,calc(env(safe-area-inset-right) + 88px));font-size:10px;padding:4px 8px;opacity:.85}
+ .front-panel:not(.front-stage-panel){width:min(98%,850px);flex-direction:row;justify-content:center;gap:clamp(10px,5vw,65px)}
+ .front-brand{width:min(48vw,325px);height:min(83vh,245px)}
+ .front-brand-title{font-size:clamp(30px,5.2vw,55px)}
+ .front-actions{width:min(42vw,340px)}
+ .front-stage-panel{max-width:850px}
+ .stage-list{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+ .stage-choice{min-height:75px}
+}
+@media (orientation:portrait) and (pointer:coarse){
+ .front-brand{height:min(36vh,310px)}
+ .game-home{right:max(12px,env(safe-area-inset-right));bottom:calc(env(safe-area-inset-bottom) + 10px)}
+}
+@media (max-width:420px) and (orientation:portrait){
+ .stage-list{grid-template-columns:1fr;gap:8px}
+ .stage-choice{min-height:68px}
+ .front-stage-panel{padding:8px 0 20px}
+}
+</style></head><body><header>LINK'S MELEE <small>v1.3.0 · Tournament and Exhibition Menus</small></header><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
 <div class="controls" aria-label="Touch game controls">
  <div class="pad labyrinth-pad" aria-label="Movement controls">
   <button class="up" data-k="w" aria-label="Jump"></button>
@@ -95,7 +136,43 @@ html *,body *{touch-action:none!important;-webkit-touch-callout:none}
 </div>
 <div class="legend">LEFT PAD: ↑ Jump · ← → Move · ↓ Crouch &nbsp; | &nbsp; RIGHT: Attack · Block · Jump</div>
 <button class="restart" id="restart">RESTART</button>
-<footer>Playable offline · Swordsman vs Dark Swordsman · Single-stage prototype · Combat update</footer><script>
+<button class="game-home" id="home" aria-label="Return to Link's Melee menu">MENU</button>
+<div id="frontScreen" class="front-screen" role="dialog" aria-label="Link's Melee main menu">
+ <section id="titlePanel" class="front-panel" aria-label="Title screen">
+  <div class="front-brand">
+   <svg class="front-emblem" viewBox="0 0 360 300" role="img" aria-label="Sword and shield emblem" xmlns="http://www.w3.org/2000/svg">
+    <defs><linearGradient id="metal" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#728294"/><stop offset=".31" stop-color="#e8eef0"/><stop offset=".57" stop-color="#ffffff"/><stop offset="1" stop-color="#8498ad"/></linearGradient><linearGradient id="wood" x1="0" y1="0" x2=".9" y2="1"><stop offset="0" stop-color="#805d3a"/><stop offset="1" stop-color="#3c2b21"/></linearGradient></defs>
+    <g transform="translate(174 145) rotate(-43)">
+     <path d="M-13 -86 L13 -86 L13 125 L0 169 L-13 125 Z" fill="url(#metal)" stroke="#313d51" stroke-width="5"/>
+     <path d="M0 -78 L0 147" stroke="#f7fbff" stroke-width="4" opacity=".85"/>
+     <path d="M-14 -130 L14 -130 L14 -88 L-14 -88 Z" fill="#71502f" stroke="#32251d" stroke-width="4"/>
+     <path d="M-47 -103 L47 -103 L47 -89 L-47 -89 Z" fill="#e2a632" stroke="#5e3e14" stroke-width="5"/>
+     <path d="M-14 -157 L14 -157 L14 -134 L-14 -134 Z" fill="#775a37" stroke="#422a1c" stroke-width="4"/>
+     <path d="M-19 -166 L19 -166 L19 -149 L-19 -149 Z" fill="#edb23f" stroke="#6d4619" stroke-width="3"/>
+    </g>
+    <circle cx="177" cy="148" r="103" fill="#704818" stroke="#271b13" stroke-width="9"/>
+    <circle cx="177" cy="148" r="94" fill="#c18a2c" stroke="#e7aa33" stroke-width="7"/>
+    <circle cx="177" cy="148" r="84" fill="url(#wood)" stroke="#3b2816" stroke-width="7"/>
+    <path d="M117 102 Q177 81 235 103 M113 128 Q177 110 242 130 M115 179 Q176 198 240 175 M140 215 Q177 225 212 214" fill="none" stroke="#9a7243" stroke-width="5" opacity=".34"/>
+    <circle cx="177" cy="148" r="17" fill="#a37735" stroke="#342b23" stroke-width="6"/>
+    <circle cx="177" cy="148" r="6" fill="#d6a34e"/>
+   </svg>
+   <div class="front-brand-title"><span>Link's</span><span>Melee</span></div>
+  </div>
+  <nav class="front-actions" aria-label="Choose game mode">
+   <button id="startTournament" class="front-action">START TOURNAMENT</button>
+   <button id="openExhibition" class="front-action">EXHIBITION MODE</button>
+  </nav>
+ </section>
+ <section id="stagePanel" class="front-panel front-stage-panel" aria-label="Exhibition stage selection" hidden>
+  <h2 class="front-stage-heading">EXHIBITION MODE</h2>
+  <p class="front-subtitle">Select a stage · Random opponent · One match</p>
+  <div id="stageChoices" class="stage-list"></div>
+  <button id="backTitle" class="stage-back">BACK TO MENU</button>
+ </section>
+</div>
+
+<footer>Five-stage tournament · Exhibition mode · Swordsman duels</footer><script>
 (()=>{
 // Block double-tap smart zoom and pinch zoom at the document level,
 // including the space between buttons (which previously remained zoomable).
@@ -119,9 +196,9 @@ document.addEventListener('touchstart',e=>{
  if(e.touches.length>1){e.preventDefault();return}
  const now=Date.now();if(now-lastGameTouch<350)e.preventDefault();lastGameTouch=now;
 },{passive:false});
-const canvas=document.getElementById('game'),c=canvas.getContext('2d');c.imageSmoothingEnabled=false;const W=960,H=540,FLOOR=438,WORLD=1720,platforms=[{x:375,y:345,w:235,h:16},{x:1110,y:345,w:235,h:16},{x:175,y:263,w:240,h:13},{x:730,y:267,w:250,h:13},{x:1325,y:263,w:215,h:13}];let camera=0;let stageIndex=0;
+const canvas=document.getElementById('game'),c=canvas.getContext('2d');c.imageSmoothingEnabled=false;const W=960,H=540,FLOOR=438,WORLD=1720,platforms=[{x:375,y:345,w:235,h:16},{x:1110,y:345,w:235,h:16},{x:175,y:263,w:240,h:13},{x:730,y:267,w:250,h:13},{x:1325,y:263,w:215,h:13}];let camera=0;let stageIndex=0;let opponentIndex=0;let gameMode='tournament';let menuState='title';
 const progressKey='links-melee-campaign-v109';
-try{const saved=Number(sessionStorage.getItem(progressKey));if(Number.isInteger(saved)&&saved>=0&&saved<5)stageIndex=saved}catch(e){}
+// Tournament begins at stage one; the title screen is always the entry point.
 const stages=[
  {name:'OUTPOST RUINS',opponent:'DARK SWORDSMAN',background:'castle_arena.jpg'},
  {name:'TRAINING DOJO',opponent:'RUINS CHALLENGER',background:'../links_adventure_dojo_prototype/IMG_2918.png'},
@@ -136,10 +213,65 @@ const assets={};let loaded=0;const files=['castle_arena.jpg',...Array.from({leng
 const keys={};let just={};const key=k=>!!keys[k];let player,foe,particles,clock,round,notice,shake,aiTick,phaseTick,noticeTick,aiMode,aiModeTick,aiAttackLock,aiCommitDir,aiLastPlayerX;
 let attackHeld=false,attackHoldFrames=0,attackCharged=false,attackQueued=false,heavyQueued=false,normalSlashNext='light';
 let directionMemory='',directionMemoryFrames=0;
-function reset(){stageIndex=0;try{sessionStorage.removeItem(progressKey)}catch(e){}startStage();}
+function reset(){
+ if(menuState!=='game')return;
+ if(gameMode==='tournament'){
+  stageIndex=0;opponentIndex=0;
+  try{sessionStorage.removeItem(progressKey)}catch(e){}
+ }else opponentIndex=Math.floor(Math.random()*stages.length);
+ clearGameplayInput();
+ startStage();
+}
 function startStage(){player={x:600,y:FLOOR,w:72,h:135,vx:0,vy:0,face:1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,blockAnim:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};foe={x:1060,y:FLOOR,w:72,h:135,vx:0,vy:0,face:-1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,blockAnim:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};particles=[];clock=90*60;round='intro';phaseTick=165;notice=stages[stageIndex].name;noticeTick=0;shake=0;aiTick=0;camera=350;aiMode='observe';aiModeTick=85;aiAttackLock=75;aiCommitDir=0;aiLastPlayerX=player.x;attackHeld=false;attackHoldFrames=0;attackCharged=false;attackQueued=false;heavyQueued=false;normalSlashNext='light';directionMemory='';directionMemoryFrames=0;just={}}
-startStage();document.getElementById('restart').onclick=reset;
-document.addEventListener('keydown',e=>{let k=e.key.toLowerCase();if(k.startsWith('arrow'))k={arrowleft:'a',arrowright:'d',arrowup:'w'}[k]||k;if(k===' ')k='w';if(['a','d','w','s','j','k','l'].includes(k))e.preventDefault();if(k==='r')reset();if(!keys[k])just[k]=true;keyboardHolds[k]=true;keys[k]=true});document.addEventListener('keyup',e=>{let k=e.key.toLowerCase();if(k.startsWith('arrow'))k={arrowleft:'a',arrowright:'d',arrowup:'w'}[k]||k;if(k===' ')k='w';keyboardHolds[k]=false;syncTouch(k)});
+
+startStage();
+const frontScreen=document.getElementById('frontScreen');
+const titlePanel=document.getElementById('titlePanel');
+const stagePanel=document.getElementById('stagePanel');
+const stageChoices=document.getElementById('stageChoices');
+function clearGameplayInput(){
+ touchPointers.clear();
+ for(const k in keys)keys[k]=false;
+ for(const k in keyboardHolds)keyboardHolds[k]=false;
+ attackHeld=false;attackHoldFrames=0;attackCharged=false;
+ attackQueued=false;heavyQueued=false;just={};
+ document.querySelectorAll('.controls .pressed').forEach(button=>button.classList.remove('pressed'));
+}
+function openTitleScreen(){
+ menuState='title';round='menu';clearGameplayInput();
+ frontScreen.hidden=false;titlePanel.hidden=false;stagePanel.hidden=true;
+ frontScreen.setAttribute('aria-label',"Link's Melee main menu");
+}
+function openStagePicker(){
+ menuState='stages';round='menu';clearGameplayInput();
+ frontScreen.hidden=false;titlePanel.hidden=true;stagePanel.hidden=false;
+ frontScreen.setAttribute('aria-label','Exhibition stage selection');
+}
+function startMatch(mode,selectedStage=0){
+ gameMode=mode;stageIndex=selectedStage;
+ opponentIndex=mode==='tournament'?stageIndex:Math.floor(Math.random()*stages.length);
+ clearGameplayInput();
+ if(mode==='tournament')try{sessionStorage.removeItem(progressKey)}catch(e){}
+ startStage();menuState='game';frontScreen.hidden=true;
+}
+document.getElementById('restart').onclick=reset;
+document.getElementById('home').onclick=openTitleScreen;
+document.getElementById('startTournament').onclick=()=>startMatch('tournament',0);
+document.getElementById('openExhibition').onclick=openStagePicker;
+document.getElementById('backTitle').onclick=openTitleScreen;
+stages.forEach((stage,index)=>{
+ const button=document.createElement('button');
+ button.type='button';button.className='stage-choice';
+ button.style.backgroundImage='linear-gradient(180deg,#090f19aa,#080e16f2),url('+JSON.stringify(stage.background)+')';
+ const title=document.createElement('strong');title.textContent=stage.name;
+ const number=document.createElement('small');number.textContent='ARENA '+String(index+1).padStart(2,'0');
+ button.append(number,title);
+ button.setAttribute('aria-label','Play an exhibition at '+stage.name+' against a random opponent');
+ button.onclick=()=>startMatch('exhibition',index);
+ stageChoices.appendChild(button);
+});
+
+document.addEventListener('keydown',e=>{let k=e.key.toLowerCase();if(k.startsWith('arrow'))k={arrowleft:'a',arrowright:'d',arrowup:'w'}[k]||k;if(k===' ')k='w';if(['a','d','w','s','j','k','l'].includes(k))e.preventDefault();if(menuState!=='game')return;if(k==='r')reset();if(!keys[k])just[k]=true;keyboardHolds[k]=true;keys[k]=true});document.addEventListener('keyup',e=>{let k=e.key.toLowerCase();if(k.startsWith('arrow'))k={arrowleft:'a',arrowright:'d',arrowup:'w'}[k]||k;if(k===' ')k='w';keyboardHolds[k]=false;syncTouch(k)});
 const keyboardHolds={},touchPointers=new Map();
 const pads=[...document.querySelectorAll('.pad')];
 const padKeys=[{up:'w',left:'a',right:'d',down:'s'},{up:'l',right:'k',down:'j'}];
@@ -561,7 +693,7 @@ function drawApproved(a,role,action,progress){
 }
 
 function drawAtlas(a,dark,action,progress){
- const role=dark?(stageIndex===4?'hero':stageIndex===3?'dualist':stageIndex===2?'challenger3':stageIndex===1?'challenger2':'foe'):'hero',im=atlasImages[role];if(!im.complete||!im.naturalWidth)return false;
+ const role=dark?(opponentIndex===4?'hero':opponentIndex===3?'dualist':opponentIndex===2?'challenger3':opponentIndex===1?'challenger2':'foe'):'hero',im=atlasImages[role];if(!im.complete||!im.naturalWidth)return false;
  if(role==='challenger3'&&drawApproved(a,'red',action,progress))return true;
  if(role==='dualist'&&drawApproved(a,'dark',action,progress))return true;
  const mapping=atlasMap[role]||atlasMap.foe;
@@ -586,11 +718,11 @@ function drawAtlas(a,dark,action,progress){
  
  c.imageSmoothingEnabled=false;
  // Keep a consistent foot anchor, independent of the source image's empty margins.
- if(dark&&stageIndex===4){
+ if(dark&&opponentIndex===4){
   // Recolor the *pixels*, rather than relying on canvas filter (unreliable in iOS WebViews).
   const darkSheet=getShadowAtlas(im);
   c.drawImage(darkSheet,(drawCol-1)*cellW,(drawRow-1)*cellH,cellW,cellH,-76,-166,152,166);
- }else if(dark&&(stageIndex===1||stageIndex===2||stageIndex===3)){
+ }else if(dark&&(opponentIndex===1||opponentIndex===2||opponentIndex===3)){
   // Normalize the challenger to a stable visible height, not the varying
   // padding / zoom of individual atlas cells.
   const bounds=getFrameBounds(im,drawRow,drawCol,cellW,cellH);
@@ -605,7 +737,7 @@ function attack(a,b,heavy,kind){
  if(a.cool>0||a.stun>0||a.atk>0||round!=='play'||a.block||a.guardBreak>0)return;
  const chosen=kind||(heavy?'heavy':'light');const m=moves[chosen];if(a.stamina<m.cost)return;
  a.heavy=heavy;a.attackKind=chosen;
- a.attackDuration=(a===foe&&stageIndex===4)?Math.max(12,Math.round(m.duration*.36)):m.duration;
+ a.attackDuration=(a===foe&&opponentIndex===4)?Math.max(12,Math.round(m.duration*.36)):m.duration;
  a.atk=a.attackDuration;a.attackPhase=0;
  a.cool=a.attackDuration+(heavy?8:3);a.stamina-=m.cost;a.didHit=false;a.block=false;
  a.combo=(a.combo+1)%3;a.vx*=.72;
@@ -653,8 +785,9 @@ function physics(a){
 
 }
 function update(){
- if(round==='intro'){phaseTick--;if(phaseTick<=0){round='play';notice='FIGHT';noticeTick=65}just={};return}
- if(round!=='play'){phaseTick++;shake=0;if(round==='win'&&phaseTick>125&&stageIndex<stages.length-1){stageIndex++;try{sessionStorage.setItem(progressKey,String(stageIndex))}catch(e){}startStage();}just={};return}
+ if(menuState!=='game'){just={};return}
+  if(round==='intro'){phaseTick--;if(phaseTick<=0){round='play';notice='FIGHT';noticeTick=65}just={};return}
+ if(round!=='play'){phaseTick++;shake=0;if(gameMode==='tournament'&&round==='win'&&phaseTick>125&&stageIndex<stages.length-1){stageIndex++;opponentIndex=stageIndex;try{sessionStorage.setItem(progressKey,String(stageIndex))}catch(e){}startStage();}just={};return}
  clock--;if(clock<=0){shake=0;round=player.hp>=foe.hp?'win':'lose';phaseTick=0;notice=round==='win'?'TIME — VICTORY':'TIME — DEFEAT';just={};return}
  noticeTick=Math.max(0,noticeTick-1);directionMemoryFrames=Math.max(0,directionMemoryFrames-1);if(just.s){directionMemory='down';directionMemoryFrames=11}else if(just.w){directionMemory='up';directionMemoryFrames=11}else if(just.a||just.d){directionMemory='forward';directionMemoryFrames=11}
  if(!player.stun){
@@ -682,12 +815,12 @@ function update(){
  // No attacks while the player is outside meaningful reach, and no instant attack loops.
  if(aiModeTick<=0){
   if(aiMode==='windup'){aiMode='strike';aiModeTick=5}
-  else if(aiMode==='strike'){aiMode='recover';aiModeTick=(stageIndex===4?8:42)+Math.floor(Math.random()*(stageIndex===4?12:25));aiAttackLock=Math.max(aiAttackLock,aiModeTick)}
-  else if(aiMode==='recover'){aiMode='observe';aiModeTick=(stageIndex===4?5:25)+Math.floor(Math.random()*(stageIndex===4?9:23))}
+  else if(aiMode==='strike'){aiMode='recover';aiModeTick=(opponentIndex===4?8:42)+Math.floor(Math.random()*(opponentIndex===4?12:25));aiAttackLock=Math.max(aiAttackLock,aiModeTick)}
+  else if(aiMode==='recover'){aiMode='observe';aiModeTick=(opponentIndex===4?5:25)+Math.floor(Math.random()*(opponentIndex===4?9:23))}
   else if(aiMode==='guard'){aiMode='observe';aiModeTick=22+Math.floor(Math.random()*20)}
   else if(dist>215){aiMode='approach';aiModeTick=45+Math.floor(Math.random()*24);aiCommitDir=dir}
   else if(aiAttackLock===0&&dist<155&&Math.abs(player.y-foe.y)<90&&Math.random()<.55){
-   aiMode='windup';aiModeTick=(stageIndex===4?5:24)+Math.floor(Math.random()*(stageIndex===4?7:13));aiCommitDir=dir;
+   aiMode='windup';aiModeTick=(opponentIndex===4?5:24)+Math.floor(Math.random()*(opponentIndex===4?7:13));aiCommitDir=dir;
   }else if(player.atk>0&&dist<165&&Math.random()<.65){aiMode='guard';aiModeTick=24;aiCommitDir=dir}
   else{aiMode=Math.random()<.3?'reposition':'observe';aiModeTick=30+Math.floor(Math.random()*35);aiCommitDir=Math.random()<.5?1:-1}
  }
@@ -703,12 +836,12 @@ function update(){
   else if(aiMode==='strike'){
    foe.face=aiCommitDir;foe.vx=aiCommitDir*1.05;
    if(aiModeTick===4&&aiAttackLock===0){
-    if(stageIndex===4){const kind=['light','downward','lunge','heavy'][Math.floor(Math.random()*4)];attack(foe,player,kind==='heavy',kind)}
-    else if(stageIndex>=1&&stageIndex<=3){
+    if(opponentIndex===4){const kind=['light','downward','lunge','heavy'][Math.floor(Math.random()*4)];attack(foe,player,kind==='heavy',kind)}
+    else if(opponentIndex>=1&&opponentIndex<=3){
      const kind=['light','lunge','downward','heavy'][foe.combo%4];
      attack(foe,player,kind==='heavy',kind);
     }else attack(foe,player,Math.random()<.35);
-    aiAttackLock=stageIndex===4?17:100;
+    aiAttackLock=opponentIndex===4?17:100;
    }
   }else if(aiMode==='recover'){foe.vx*=.65;if(player.atk>0&&dist<120&&foe.atk===0&&foe.stamina>22&&aiModeTick<20)foe.block=true}
   // Do not pursue a jumping player in lockstep; allow crossovers and repositioning.
@@ -775,8 +908,8 @@ function fighter(a,dark){
   if(drawAtlas(a,false,'heavy',0))return;
  }
  const atlasAction=attacking?a.attackKind:action==='run'?'walk':action;
- if((!dark||stageIndex===4)&&attacking&&['light','downward','lunge','heavy'].includes(a.attackKind)&&drawSlashFrames(a,dark&&stageIndex===4))return;
- const atlasProgress=attacking?Math.min(1,a.attackPhase/(a.attackDuration||moves[a.attackKind].duration)):((a.step*(dark&&stageIndex===4?.25:.11))%1);
+ if((!dark||opponentIndex===4)&&attacking&&['light','downward','lunge','heavy'].includes(a.attackKind)&&drawSlashFrames(a,dark&&opponentIndex===4))return;
+ const atlasProgress=attacking?Math.min(1,a.attackPhase/(a.attackDuration||moves[a.attackKind].duration)):((a.step*(dark&&opponentIndex===4?.25:.11))%1);
  if(drawAtlas(a,dark,atlasAction,atlasProgress))return;
  const frames=animationFrames[action];
  const attackProgress=attacking?Math.max(0,Math.min(1,a.attackPhase/moves[a.attackKind].duration)):0;
@@ -843,12 +976,13 @@ function render(){
  for(let p of particles){c.globalAlpha=p.life/22;c.fillStyle=p.color;c.fillRect(p.x,p.y,5,5)}
  c.globalAlpha=1;c.restore();
  bar(28,20,player.hp,player.stamina);bar(592,20,foe.hp,foe.stamina,true);
- text('SWORDSMAN',28,85,18,'#f8e0ad','left');text(stages[stageIndex].opponent,932,85,18,'#e4baff','right');
+ text('SWORDSMAN',28,85,18,'#f8e0ad','left');text(stages[opponentIndex].opponent,932,85,18,'#e4baff','right');
  text(String(Math.max(0,Math.ceil(clock/60))),480,48,38);
- if(round==='intro'){c.fillStyle='#0a1020a8';c.fillRect(245,175,470,145);text('CASTLE DUEL',480,226,35,'#f7db9e');text(phaseTick>105?'READY':phaseTick>45?'DRAW YOUR SWORD':'FIGHT!',480,278,27,'#dce9f4')}
- else if(round!=='play'){c.fillStyle='#0a1020cc';c.fillRect(160,155,640,200);text(notice,480,232,33,round==='win'?'#f8d587':'#f1a1a1');text('Press R or RESTART to fight again',480,285,19)}
+ if(round==='intro'){c.fillStyle='#0a1020a8';c.fillRect(245,175,470,145);text(gameMode==='tournament'?'MATCH '+(stageIndex+1)+' OF '+stages.length:'EXHIBITION',480,226,35,'#f7db9e');text(phaseTick>105?'READY':phaseTick>45?'DRAW YOUR SWORD':'FIGHT!',480,278,27,'#dce9f4')}
+ else if(round!=='play'){c.fillStyle='#0a1020cc';c.fillRect(160,155,640,200);text(gameMode==='tournament'&&round==='win'&&stageIndex===stages.length-1?'TOURNAMENT CHAMPION':notice,480,232,33,round==='win'?'#f8d587':'#f1a1a1');text(gameMode==='exhibition'?'Single match complete · MENU to choose another arena':'Press R / RESTART or return to MENU',480,285,19)}
  else if(noticeTick>0)text(notice,480,120,21,'#ffe4a8');
 }
+openTitleScreen();
 let last=0,acc=0;function loop(now){let dt=Math.min(50,now-last||16.7);last=now;acc+=dt;while(acc>=16.667){update();acc-=16.667}render();requestAnimationFrame(loop)}requestAnimationFrame(loop);
 })();
 </script></body></html>
