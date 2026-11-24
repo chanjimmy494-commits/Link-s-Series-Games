@@ -174,7 +174,7 @@ canvas#game{position:relative;z-index:1;display:block;width:min(100%,1100px);asp
 .seg button{min-width:48px;min-height:42px;padding:0 10px;border-radius:9px;border:2px solid #3a3f4a;background:#2b2e36;color:#e9e2cf;font:700 13px 'Silkscreen',ui-monospace,monospace;cursor:pointer}
 .seg button[aria-pressed=true]{background:#f9c250;border-color:#7a5212;color:#1a1206}
 .seg output{min-width:28px;text-align:center;font-size:16px;color:#f9c250}
-</style></head><body><header>LINK'S MELEE <small>v1.9.0 · Rounds, Pause &amp; Options</small></header><div id="arenaClip" class="arena-clip" aria-hidden="true"><img id="animatedArenaGif" class="animated-arena-gif" alt="" hidden></div><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
+</style></head><body><header>LINK'S MELEE <small>v1.10.0 · Versus Screen &amp; Records</small></header><div id="arenaClip" class="arena-clip" aria-hidden="true"><img id="animatedArenaGif" class="animated-arena-gif" alt="" hidden></div><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
 <div class="dock">
  <div class="dock-top">
   <button class="pill restart" id="restart" type="button" aria-label="Restart"><span class="cap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4a8 8 0 1 0 7.75 10h-2.1A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35A7.96 7.96 0 0 0 12 4z"/></svg></span>RESTART</button>
@@ -242,6 +242,7 @@ canvas#game{position:relative;z-index:1;display:block;width:min(100%,1100px);asp
    <button id="startTournament" class="front-action">START TOURNAMENT</button>
    <button id="openExhibition" class="front-action">EXHIBITION MODE</button>
    <button id="openOptions" class="front-action">OPTIONS</button>
+   <p id="bestClear" class="front-subtitle" hidden></p>
   </nav>
  </section>
  <section id="stagePanel" class="front-panel front-stage-panel" aria-label="Exhibition stage selection" hidden>
@@ -496,13 +497,14 @@ const assets={};let loaded=0;const files=[...Array.from({length:6},(_,i)=>`sword
 const keys={};let just={};const key=k=>!!keys[k];let player,foe,particles,clock,round,notice,shake,aiTick,phaseTick,noticeTick,aiMode,aiModeTick,aiAttackLock,aiCommitDir,aiLastPlayerX;
 let hitstop=0;
 // v1.9.0 match structure
+let tourneyFrames=0,clearInfo=null;
 let roundsToWin=2,matchWins={p:0,f:0},roundNum=1,matchOver=false,slowmo=0,koFlash=0,paused=false;
 let attackHeld=false,attackHoldFrames=0,attackCharged=false,attackQueued=false,heavyQueued=false,normalSlashNext='light';
 let directionMemory='',directionMemoryFrames=0;
 function reset(){
  if(menuState!=='game')return;
  if(gameMode==='tournament'){
-  stageIndex=0;opponentIndex=0;
+  stageIndex=0;opponentIndex=0;tourneyFrames=0;clearInfo=null;
   try{sessionStorage.removeItem(progressKey)}catch(e){}
  }else opponentIndex=Math.floor(Math.random()*stages.length);
  clearGameplayInput();
@@ -513,6 +515,8 @@ function newMatch(){
  roundsToWin=gameMode==='tournament'?2:(+settings.exhibitionRounds===3?2:1);
  matchWins={p:0,f:0};roundNum=1;matchOver=false;slowmo=0;koFlash=0;
  startStage();
+ // v1.10.0: versus screen before every tournament match.
+ if(gameMode==='tournament'){round='vs';phaseTick=190;sfx.play('gong')}
 }
 // A round ends by KO or time. The match ends when a side reaches roundsToWin.
 function endRound(result,byTime){
@@ -520,6 +524,12 @@ function endRound(result,byTime){
  matchWins[result==='win'?'p':'f']++;
  matchOver=matchWins.p>=roundsToWin||matchWins.f>=roundsToWin;
  if(matchOver)notice=(byTime?'TIME — ':'')+(result==='win'?'VICTORY':'DEFEAT');
+ if(matchOver&&result==='win'&&gameMode==='tournament'&&stageIndex===stages.length-1){
+  let best=null;try{best=+localStorage.getItem('links-melee-best-clear')||null}catch(e){}
+  const record=!best||tourneyFrames<best;
+  if(record)try{localStorage.setItem('links-melee-best-clear',String(tourneyFrames))}catch(e){}
+  clearInfo={time:tourneyFrames,best:record?tourneyFrames:best,record};
+ }
  else notice=(byTime?'TIME — ':'')+(result==='win'?'SWORDSMAN':stages[opponentIndex].opponent)+' TAKES ROUND '+roundNum;
 }
 function startStage(){
@@ -547,6 +557,7 @@ function openTitleScreen(){
  menuState='title';round='menu';clearGameplayInput();
  animatedArenaGif.hidden=true;
  frontScreen.hidden=false;titlePanel.hidden=false;stagePanel.hidden=true;
+ {let best=null;try{best=+localStorage.getItem('links-melee-best-clear')||null}catch(e){}const el=document.getElementById('bestClear');el.hidden=!best;if(best)el.textContent='Best tournament clear  '+fmtTime(best)}
  frontScreen.setAttribute('aria-label',"Link's Melee main menu");
 }
 function openStagePicker(){
@@ -558,7 +569,7 @@ function openStagePicker(){
 function startMatch(mode,selectedArena=null){
  gameMode=mode;
  if(mode==='tournament'){
-  stageIndex=0;opponentIndex=0;
+  stageIndex=0;opponentIndex=0;tourneyFrames=0;clearInfo=null;
   exhibitionArena=null;exhibitionBackground=null;
   try{sessionStorage.removeItem(progressKey)}catch(e){}
  }else{
@@ -608,6 +619,7 @@ document.getElementById('pauseRestart').onclick=()=>{setPaused(false);reset()};
 document.getElementById('pauseOptions').onclick=()=>openOptions('pause');
 document.getElementById('pauseQuit').onclick=()=>{setPaused(false);optionsMenu.hidden=true;openTitleScreen()};
 document.addEventListener('keydown',e=>{const k=e.key.toLowerCase();if((k==='p'||k==='escape')&&menuState==='game'){e.preventDefault();if(!optionsMenu.hidden)return;setPaused(!paused)}});
+canvas.addEventListener('pointerdown',()=>{if(round==='vs')phaseTick=0});
 document.getElementById('restart').onclick=reset;
 document.getElementById('home').onclick=openTitleScreen;
 document.getElementById('startTournament').onclick=()=>startMatch('tournament',0);
@@ -1238,6 +1250,8 @@ function separateFighters(previousPlayerX,previousFoeX){
 }
 function update(){
  if(menuState!=='game'||paused){just={};return}
+ if(round==='vs'){phaseTick--;if(Object.keys(just).length||attackQueued||heavyQueued){phaseTick=Math.min(phaseTick,0);attackQueued=heavyQueued=false}
+  if(phaseTick<=0){round='intro';phaseTick=165}just={};return}
   if(round==='intro'){phaseTick--;if(phaseTick===150)sfx.play('bell');if(phaseTick<=0){round='play';notice='FIGHT';noticeTick=65;sfx.play('gong')}just={};return}
  if(round!=='play'){
   // Keep simulating after the round ends so the loser falls and lands.
@@ -1253,6 +1267,7 @@ function update(){
   just={};return}
  // Impact freeze: inputs stay buffered and resume afterwards.
  if(hitstop>0){hitstop--;return}
+ if(gameMode==='tournament')tourneyFrames++;
  clock--;if(clock<=0){shake=0;player.inv=foe.inv=99999;endRound(player.hp>=foe.hp?'win':'lose',true);just={};return}
  noticeTick=Math.max(0,noticeTick-1);directionMemoryFrames=Math.max(0,directionMemoryFrames-1);if(just.s){directionMemory='down';directionMemoryFrames=11}else if(just.w||just.u){directionMemory='up';directionMemoryFrames=11}else if(just.a||just.d){directionMemory='forward';directionMemoryFrames=11}
  if(!player.stun){
@@ -1474,6 +1489,33 @@ function drawStage(){
   for(let x=p.x+40;x<p.x+p.w;x+=55){c.beginPath();c.moveTo(x,p.y+5);c.lineTo(x,p.y+15);c.stroke()}
  }
 }
+function fmtTime(frames){const t=Math.round(frames/60);return Math.floor(t/60)+':'+String(t%60).padStart(2,'0')}
+function drawVS(){
+ const t=190-phaseTick,slide=Math.min(1,t/22),ease=1-Math.pow(1-slide,3);
+ c.save();c.setTransform(1,0,0,1,0,0);
+ c.fillStyle='#07090f';c.fillRect(0,0,W,H);
+ // Split panels slide in from each side.
+ c.save();c.translate(-(1-ease)*520,0);c.fillStyle='#173524';c.beginPath();c.moveTo(0,0);c.lineTo(530,0);c.lineTo(430,H);c.lineTo(0,H);c.fill();c.restore();
+ c.save();c.translate((1-ease)*520,0);c.fillStyle='#2c1838';c.beginPath();c.moveTo(530,0);c.lineTo(W,0);c.lineTo(W,H);c.lineTo(430,H);c.fill();c.restore();
+ c.strokeStyle='#f9c250';c.lineWidth=5;c.globalAlpha=ease;c.beginPath();c.moveTo(530,0);c.lineTo(430,H);c.stroke();c.globalAlpha=1;
+ // Fighters, large, in their live idle animation.
+ for(const [a,dark,x] of [[player,false,250-(1-ease)*300],[foe,true,710+(1-ease)*300]]){
+  const show=Object.assign({},a,{x,y:430,face:dark?-1:1,vx:0,vy:0,atk:0,block:false,crouch:false,ground:FLOOR,down:0,victory:false,hurt:0,flash:0,inv:0});
+  const prevFloor=FLOOR;
+  c.save();c.translate(x,430);c.scale(2.1,2.1);c.translate(-x,-430);fighter(show,dark);c.restore();
+ }
+ const name=stages[opponentIndex].opponent;
+ c.globalAlpha=ease;
+ text('SWORDSMAN',250,488,34,'#b8f0a8');text(name,710,488,name.length>16?26:34,'#e4baff');
+ text('MATCH '+(stageIndex+1)+' OF '+stages.length,480,44,22,'#cfc8b6');text(currentArena().name,480,74,18,'#9d978a');
+ c.globalAlpha=1;
+ const pop=Math.min(1,Math.max(0,(t-18)/10));
+ if(pop>0){c.save();c.translate(480,270);const k=.6+.4*pop+(pop<1?.25*Math.sin(pop*Math.PI):0);c.scale(k,k);
+  c.font="700 96px 'Silkscreen',ui-monospace,monospace";c.textAlign='center';c.textBaseline='middle';
+  c.lineWidth=10;c.strokeStyle='#3a1f05';c.strokeText('VS',0,0);c.fillStyle='#f9c250';c.fillText('VS',0,0);c.restore();c.textBaseline='alphabetic'}
+ if(t>60){c.globalAlpha=.55+.35*Math.sin(t/9);text('Tap to fight',480,530,15,'#e9e2cf');c.globalAlpha=1}
+ c.restore();
+}
 function render(){
  // Without a full-screen canvas background, erase the preceding combat
  // frame so characters, particles and the HUD never leave ghost images.
@@ -1509,9 +1551,11 @@ function render(){
   text(phaseTick>105?'READY':phaseTick>45?'DRAW YOUR SWORD':'FIGHT!',480,296,27,'#dce9f4')}
  else if(round!=='play'){c.fillStyle='#0a1020cc';c.fillRect(140,155,680,200);
   if(!matchOver){text(notice,480,232,27,round==='win'?'#f8d587':'#f1a1a1');text('Next round…',480,285,19)}
-  else{text(gameMode==='tournament'&&round==='win'&&stageIndex===stages.length-1?'TOURNAMENT CHAMPION':notice,480,232,33,round==='win'?'#f8d587':'#f1a1a1');
+  else{const champ=gameMode==='tournament'&&round==='win'&&stageIndex===stages.length-1;text(champ?'TOURNAMENT CHAMPION':notice,480,champ&&clearInfo?218:232,33,round==='win'?'#f8d587':'#f1a1a1');
+   if(champ&&clearInfo)text('CLEAR TIME '+fmtTime(clearInfo.time)+(clearInfo.record?'  ·  NEW RECORD!':'  ·  BEST '+fmtTime(clearInfo.best)),480,256,20,clearInfo.record?'#f9c250':'#dce9f4');
    text(gameMode==='exhibition'?'Match complete · MENU to choose another arena':'Press R / RESTART or return to MENU',480,285,19)}}
  else if(noticeTick>0)text(notice,480,120,21,'#ffe4a8');
+ if(round==='vs')drawVS();
 }
 openTitleScreen();
 let last=0,acc=0;function loop(now){let dt=Math.min(50,now-last||16.7);last=now;
