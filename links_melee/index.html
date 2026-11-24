@@ -174,7 +174,7 @@ canvas#game{position:relative;z-index:1;display:block;width:min(100%,1100px);asp
 .seg button{min-width:48px;min-height:42px;padding:0 10px;border-radius:9px;border:2px solid #3a3f4a;background:#2b2e36;color:#e9e2cf;font:700 13px 'Silkscreen',ui-monospace,monospace;cursor:pointer}
 .seg button[aria-pressed=true]{background:#f9c250;border-color:#7a5212;color:#1a1206}
 .seg output{min-width:28px;text-align:center;font-size:16px;color:#f9c250}
-</style></head><body><header>LINK'S MELEE <small>v1.14.2 · The Armory</small></header><div id="arenaClip" class="arena-clip" aria-hidden="true"><img id="animatedArenaGif" class="animated-arena-gif" alt="" hidden></div><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
+</style></head><body><header>LINK'S MELEE <small>v1.15.0 · Swordsman Move Set</small></header><div id="arenaClip" class="arena-clip" aria-hidden="true"><img id="animatedArenaGif" class="animated-arena-gif" alt="" hidden></div><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
 <div class="dock">
  <div class="dock-top">
   <button class="pill restart" id="restart" type="button" aria-label="Restart"><span class="cap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4a8 8 0 1 0 7.75 10h-2.1A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35A7.96 7.96 0 0 0 12 4z"/></svg></span>RESTART</button>
@@ -415,7 +415,7 @@ const progressKey='links-melee-campaign-v109';
 // user chose, re-drawn every time the match is entered. The four original
 // arenas remain available in Exhibition Mode.
 // Display names for every arena image, used by Exhibition and the tournament.
-const arenaNames={"IMG_3329.GIF":"GREAT TREE GROVE","IMG_3331.GIF":"BLOOD MOON SHRINE","IMG_3332.GIF":"OLD TOWN BY NIGHT","IMG_3333.GIF":"FESTIVAL STAGE","IMG_3334.GIF":"CHERRY BLOSSOM BRIDGE","IMG_3335.GIF":"BURNING VILLAGE","IMG_3336.GIF":"MOON CASTLE LOOKOUT","IMG_3337.GIF":"CANAL OPERA","IMG_3338.GIF":"MOONLIT WATERFALL","IMG_3339.GIF":"GUARDIAN TEMPLE","IMG_3340.GIF":"COUNTRY ROAD","IMG_3341.GIF":"DESERT COLOSSUS","IMG_3342.GIF":"HIDDEN FALLS CAVE","IMG_3343.GIF":"ABANDONED DOJO","IMG_3344.GIF":"PALACE COURTYARD","IMG_3347.GIF":"BURNING HALL","IMG_3348.GIF":"MOONLIT BAMBOO","IMG_3349.GIF":"CLIFFSIDE FALLS","IMG_3350.GIF":"SUNSET GRAVES","IMG_3351.GIF":"SNOWY GARDEN","IMG_3352.GIF":"TWIN FALLS RUINS","IMG_3353.GIF":"BLOOD RAIN RUINS","IMG_3354.GIF":"FOREST SHRINE STEPS","IMG_3355.GIF":"RUINED CATHEDRAL","IMG_3356.GIF":"LION THRONE","IMG_3357.GIF":"EDGE OF THE FALLS","IMG_3411.GIF":"CANDLELIT SANCTUM","IMG_3412.GIF":"MAW OF THE BEAST","IMG_3414.GIF":"THE ARMORY","IMG_3415.GIF":"CRIMSON PORTAL","IMG_3416.GIF":"NIGHT BRIDGE","IMG_3418.GIF":"DUNE TEMPLE","IMG_3421.GIF":"CLOUD SANCTUARY","IMG_3422.GIF":"SUNKEN DUNGEON","IMG_3423.GIF":"MOONLIT GRAVEYARD","IMG_3425.GIF":"DEMON'S THRONE","IMG_3426.GIF":"AUTUMN SHRINE STAIRS","IMG_3427.GIF":"MISTY SHRINE STAIRS","IMG_3428.GIF":"MOLTEN WASTES","IMG_3429.GIF":"MOUNTAIN HOT SPRING","IMG_3431.GIF":"NIGHT PLAINS","throne_room_flickering_candles.png":"GOTHIC THRONE ROOM","A6E9E6CB-FFD3-4A64-B420-6A7E2636F8B7.JPEG":"FOREST GROTTO","DAC21C40-CCCB-4FE6-9A7C-65B771BE4A41.JPEG":"OVERGROWN ARCHWAY","IMG_3410.jpg":"CHECKERED HILLS"};
+const arenaNames={"IMG_3329.GIF":"GREAT TREE GROVE","IMG_3331.GIF":"BLOOD MOON SHRINE","IMG_3332.GIF":"OLD TOWN BY NIGHT","IMG_3333.GIF":"FESTIVAL STAGE","IMG_3334.GIF":"CHERRY BLOSSOM BRIDGE","IMG_3335.GIF":"BURNING VILLAGE","IMG_3336.GIF":"MOON CASTLE LOOKOUT","IMG_3337.GIF":"CANAL OPERA","IMG_3338.GIF":"MOONLIT WATERFALL","IMG_3339.GIF":"GUARDIAN TEMPLE","IMG_3340.GIF":"COUNTRY ROAD","IMG_3341.GIF":"DESERT COLOSSUS","IMG_3342.GIF":"HIDDEN FALLS CAVE","IMG_3343.GIF":"ABANDONED DOJO","IMG_3344.GIF":"PALACE COURTYARD","IMG_3347.GIF":"BURNING HALL","IMG_3348.GIF":"MOONLIT BAMBOO","IMG_3349.GIF":"CLIFFSIDE FALLS","IMG_3350.GIF":"SUNSET GRAVES","IMG_3351.GIF":"SNOWY GARDEN","IMG_3352.GIF":"TWIN FALLS RUINS","IMG_3353.GIF":"BLOOD RAIN RUINS","IMG_3354.GIF":"FOREST SHRINE STEPS","IMG_3355.GIF":"RUINED CATHEDRAL","IMG_3356.GIF":"LION THRONE","IMG_3357.GIF":"EDGE OF THE FALLS","IMG_3411.GIF":"CANDLELIT SANCTUM","IMG_3412.GIF":"MAW OF THE BEAST","IMG_3414.GIF":"THE ARMORY","IMG_3415.GIF":"CRIMSON PORTAL","IMG_3416.GIF":"NIGHT BRIDGE","IMG_3418.GIF":"DUNE TEMPLE","IMG_3421.GIF":"CLOUD SANCTUARY","IMG_3422.GIF":"SUNKEN DUNGEON","IMG_3423.GIF":"MOONLIT GRAVEYARD","IMG_3425.GIF":"DEMON'S THRONE","IMG_3426.GIF":"AUTUMN SHRINE STAIRS","IMG_3427.GIF":"MISTY SHRINE STAIRS","IMG_3428.GIF":"MOLTEN WASTES","IMG_3429.GIF":"MOUNTAIN HOT SPRING","IMG_3431.GIF":"NIGHT PLAINS","throne_room_flickering_candles.png":"ZELDA'S CHAMBER","A6E9E6CB-FFD3-4A64-B420-6A7E2636F8B7.JPEG":"FOREST GROTTO","DAC21C40-CCCB-4FE6-9A7C-65B771BE4A41.JPEG":"OVERGROWN ARCHWAY","IMG_3410.jpg":"CHECKERED HILLS"};
 const stages=[
  {opponent:'DARK SWORDSMAN',pool:['IMG_3354.GIF','IMG_3349.GIF','IMG_3344.GIF','IMG_3337.GIF','IMG_3340.GIF']},
  {opponent:'RUINS CHALLENGER',pool:['IMG_3335.GIF','IMG_3341.GIF','IMG_3342.GIF','IMG_3418.GIF']},
@@ -784,6 +784,12 @@ const moves={
  low:{duration:21,activeStart:7,activeEnd:12,cost:8,range:Math.round(110*CS),damage:8,knock:4,stun:10},
  aerial:{duration:24,activeStart:8,activeEnd:15,cost:11,range:Math.round(125*CS),damage:12,knock:6,stun:12},
  heavy:{duration:48,activeStart:19,activeEnd:34,cost:24,range:Math.round(143*CS),damage:19,knock:9,stun:18},
+ // v1.15.0 sheet moves: combo hits 2 and 3, dash thrust, down stab, shield bash.
+ combo2:{duration:26,activeStart:6,activeEnd:14,cost:6,range:Math.round(130*CS),damage:11,knock:5,stun:14},
+ combo3:{duration:34,activeStart:9,activeEnd:21,cost:8,range:Math.round(140*CS),damage:14,knock:9,stun:18},
+ dash:{duration:32,activeStart:6,activeEnd:20,cost:12,range:Math.round(160*CS),damage:13,knock:8,stun:15},
+ downstab:{duration:30,activeStart:5,activeEnd:26,cost:10,range:Math.round(105*CS),damage:14,knock:5,stun:16},
+ bash:{duration:24,activeStart:6,activeEnd:13,cost:10,range:Math.round(95*CS),damage:5,knock:10,stun:22,guardDrain:30},
  // v1.11.0 Sword Rush: meter special. Dash with four cuts, then a launching finisher.
  special:{duration:62,activeStart:10,activeEnd:52,cost:0,range:Math.round(150*CS),damage:7,knock:2.5,stun:24}
 };
@@ -828,7 +834,7 @@ const challengerAttackFrames={
  }
 };
 
-function directionAttack(a){const toward=a.face>0?'d':'a';const dir=key('s')?'down':(key('u')||key('w'))?'up':key(toward)?'forward':directionMemoryFrames>0?directionMemory:'';return a.ground===-1?'aerial':dir==='down'?'low':dir==='up'?'rising':dir==='forward'?'lunge':'light'}
+function directionAttack(a){const toward=a.face>0?'d':'a';const dir=key('s')?'down':(key('u')||key('w'))?'up':key(toward)?'forward':directionMemoryFrames>0?directionMemory:'';if(a.ground===-1)return key('s')?'downstab':'aerial';if(a.running&&key(toward))return 'dash';return dir==='down'?'low':dir==='up'?'rising':dir==='forward'?'lunge':'light'}
 
 // Decode the approved transparent GIF into independent canvas frames once.
 // Frame selection is controlled by the combat clock, not the GIF's own clock.
@@ -1224,7 +1230,7 @@ function attack(a,b,heavy,kind){
  a.heavy=heavy;a.attackKind=chosen;
  a.attackDuration=(a===foe&&opponentIndex===4)?Math.max(14,Math.round(m.duration*.6)):m.duration;
  a.atk=a.attackDuration;a.attackPhase=0;
- a.cool=a.attackDuration+(heavy?8:3);a.stamina-=m.cost;a.didHit=false;a.swung=false;a.block=false;
+ a.cool=a.attackDuration+(heavy?8:(chosen==='light'||chosen==='combo2')?0:3);a.stamina-=m.cost;a.didHit=false;a.swung=false;a.block=false;
  a.combo=(a.combo+1)%3;a.vx*=.72;
 }
 // v1.12.0 opponent personalities. One decision engine, tuned per fighter:
@@ -1247,7 +1253,7 @@ const AI_PROFILES=[
  {style:'EXECUTIONER',react:15,block:.45,punish:.6,antiAir:.35,aggro:.55,range:1.35,retreat:.25,jump:.04,walk:2.3,windup:[18,10],recover:[30,16],combo:1,mix:{lunge:4,heavy:4,downward:2},special:.75,guardCrush:true},
  // 5 Shadow Link: the mirror. Near-instant reads, punishes, anti-airs,
  // feints, jumps in, and spends meter. The final test.
- {style:'SHADOW',react:7,block:.8,punish:.92,antiAir:.75,aggro:.72,range:1.05,retreat:.2,jump:.07,walk:3.3,windup:[6,6],recover:[11,10],combo:3,mix:{light:3,downward:3,lunge:3,low:2,heavy:2,rising:1},special:1,feint:.18}
+ {style:'SHADOW',react:7,block:.8,punish:.92,antiAir:.75,aggro:.72,range:1.05,retreat:.2,jump:.07,walk:3.3,windup:[6,6],recover:[11,10],combo:3,mix:{light:5,downward:2,lunge:2,dash:2,low:1,heavy:2,rising:1},special:1,feint:.18}
 ];
 // Difficulty scales every profile; Normal is the profiles exactly as tuned.
 // Easy: slower reads, fewer guards and punishes, longer telegraphs.
@@ -1271,6 +1277,10 @@ const rnd=n=>Math.floor(Math.random()*(n+1));
 function pickMove(P){const e=Object.entries(P.mix);let r=Math.random()*e.reduce((t,[,w])=>t+w,0);for(const [k,w] of e)if((r-=w)<0)return k;return 'light'}
 function aiStrike(kind,dir){
  if(foe.ground===-1)kind='aerial';
+ // Shadow Link mirrors the player's string and dash thrust.
+ if(opponentIndex===4&&kind==='light'&&foe.lastKind==='light'&&foe.lastKindT>0)kind='combo2';
+ else if(opponentIndex===4&&kind==='light'&&foe.lastKind==='combo2'&&foe.lastKindT>0)kind='combo3';
+ foe.lastKind=kind;foe.lastKindT=40;
  if(foe.stamina<moves[kind].cost)kind='light';
  foe.face=dir;attack(foe,player,kind==='heavy',kind);
 }
@@ -1278,7 +1288,7 @@ function runAI(){
  const P=effectiveProfile(AI_PROFILES[opponentIndex]||AI_PROFILES[0]);
  const dx=player.x-foe.x,dist=Math.abs(dx),dir=Math.sign(dx)||foe.face;
  const reach=k=>moves[k].range;
- ai.t--;ai.lock=Math.max(0,ai.lock-1);
+ ai.t--;ai.lock=Math.max(0,ai.lock-1);foe.lastKindT=Math.max(0,(foe.lastKindT||0)-1);
  // Perception: how long the player's current attack has been visible.
  if(player.atk>0){if(!ai.atkSeen){ai.atkSeen=true;ai.atkAge=0;ai.blockRolled=false;ai.punishRolled=false}else ai.atkAge++}
  else ai.atkSeen=false;
@@ -1372,8 +1382,8 @@ function hit(a,b){
  const guarded=b.block&&b.face===-a.face&&b.guardBreak===0;
  const damage=guarded?Math.max(1,Math.round(m.damage*.15)):m.damage;
  b.hp=Math.max(0,b.hp-(a===foe?damage*difficulty().damage:damage));
- b.stamina=Math.max(0,b.stamina-(guarded?(a.heavy?32:17):3));
- b.inv=guarded?10:(a.attackKind==='special'?(a.heavy?40:5):24);b.stun=guarded?5:m.stun;b.vx=a.face*(guarded?2.4:m.knock);
+ b.stamina=Math.max(0,b.stamina-(guarded?(m.guardDrain||(a.heavy?32:17)):3));
+ b.inv=guarded?10:(a.attackKind==='special'?(a.heavy?40:5):(a.attackKind==='light'||a.attackKind==='combo2')?12:24);b.stun=guarded?5:m.stun;b.vx=a.face*(guarded?2.4:m.knock);
  const playerInvolved=a===player||b===player;
  // Meter: landing hits builds most, blocking some, being hit a little.
  if(a.attackKind!=='special')a.meter=Math.min(100,a.meter+(guarded?5:a.heavy?16:11));
@@ -1405,6 +1415,8 @@ function physics(a){
  if(a.atk>0){
   let m=moves[a.attackKind];a.atk--;a.attackPhase=a.attackDuration-a.atk;
   if(!a.swung&&a.attackPhase>=Math.round(a.attackDuration*m.activeStart/m.duration)-2){a.swung=true;sfx.play('swing',a.heavy)}
+  if(a.attackKind==='dash'&&a.attackPhase<=18)a.vx=a.face*9.5;
+  if(a.attackKind==='downstab'&&a.ground===-1)a.vy=Math.max(a.vy,11);
   if(a.attackKind==='special'){
    // Rush forward through the first two thirds, rearming a cut every 10 frames.
    if(a.attackPhase>=6&&a.attackPhase<=40)a.vx=a.face*8.5;
@@ -1480,12 +1492,18 @@ function update(){
  if(gameMode==='tournament')tourneyFrames++;
  clock--;if(clock<=0){shake=0;player.inv=foe.inv=99999;endRound(player.hp>=foe.hp?'win':'lose',true);just={};return}
  noticeTick=Math.max(0,noticeTick-1);directionMemoryFrames=Math.max(0,directionMemoryFrames-1);if(just.s){directionMemory='down';directionMemoryFrames=11}else if(just.w||just.u){directionMemory='up';directionMemoryFrames=11}else if(just.a||just.d){directionMemory='forward';directionMemoryFrames=11}
+ player.chainT=player.atk>0&&(player.attackKind==='light'||player.attackKind==='combo2')?20:Math.max(0,(player.chainT||0)-1);
+ if(!player.chainT)player.chain='';
+ // Run: tap the same direction twice quickly; ends when it is released.
+ for(const [k,d] of [['a',-1],['d',1]])if(just[k]){if(player.tapDir===d&&player.tapT>0)player.running=true;player.tapDir=d;player.tapT=16}
+ player.tapT=Math.max(0,(player.tapT||0)-1);
+ if(player.running&&!key(player.tapDir>0?'d':'a'))player.running=false;
  if(!player.stun){
   player.crouch=!attackHeld&&key('s')&&player.ground!==-1;player.block=!attackHeld&&key('k')&&player.atk===0&&player.stamina>0&&player.guardBreak===0;
   if(attackHeld){player.vx=0;player.jumpBuffer=0;}
   let move=(key('d')?1:0)-(key('a')?1:0);
   if(move&&!player.block&&!attackHeld){
-   player.vx=move*(player.crouch?1.65:player.atk?2.1:5.2);player.face=move;
+   player.vx=move*(player.crouch?1.65:player.atk?2.1:player.running?8.4:5.2);player.face=move;
   }
   if(just.w&&!attackHeld)player.jumpBuffer=9;
   if(!attackHeld&&player.jumpBuffer>0&&player.coyote>0&&player.atk===0&&!player.block&&!key('s')){player.vy=-17.4;sfx.play('jump');player.land=0;player.coyote=0;player.jumpBuffer=0;player.ground=-1}
@@ -1500,8 +1518,18 @@ function update(){
   if(heavyQueued){if(player.cool===0&&player.atk===0){
    // Up + held Attack: a rising heavy launcher (knocks down) instead of the overhead.
    attack(player,foe,true,(key('u')||key('w'))&&player.ground!==-1?'rising':'heavy');heavyQueued=false}}
-  if(attackQueued){if(player.cool===0&&player.atk===0){const dir=directionAttack(player);const kind=dir==='light'?normalSlashNext:dir;attack(player,foe,false,kind);if(dir==='light'&&player.atk>0)normalSlashNext=normalSlashNext==='light'?'downward':'light';attackQueued=false}}
-  if(!attackHeld&&just.j&&player.cool===0&&player.atk===0){const dir=directionAttack(player);const kind=dir==='light'?normalSlashNext:dir;attack(player,foe,false,kind);if(dir==='light'&&player.atk>0)normalSlashNext=normalSlashNext==='light'?'downward':'light';}
+  // Keyboard presses during an attack are buffered like touch releases.
+  if(!attackHeld&&just.j)attackQueued=true;
+  // Three-hit string: the current slash, then combo2 and combo3 if ATTACK
+  // is pressed again during or shortly after the previous hit.
+  if(attackQueued&&player.cool===0&&player.atk===0){
+   const dir=directionAttack(player);
+   const kind=dir!=='light'?dir:player.chainT>0&&player.chain==='light'?'combo2':player.chainT>0&&player.chain==='combo2'?'combo3':'light';
+   attack(player,foe,false,kind);
+   if(player.atk>0){player.chain=kind==='combo3'?'':kind;}
+   attackQueued=false;
+  }
+  if(!attackHeld&&just.k&&key('s')&&player.ground!==-1&&player.cool===0&&player.atk===0){player.block=false;attack(player,foe,false,'bash')}
   if(just.l&&!attackHeld)attack(player,foe,true);
  }else{player.block=false;player.crouch=false;}
  runAI();
@@ -1564,12 +1592,72 @@ function darkSprite(source){
  g.globalCompositeOperation='destination-in';g.drawImage(source,0,0);
  darkSpriteCache.set(source,layer);return layer;
 }
+const SHEET_MOVES={"idle":{"dir":1,"f":[[10,1162,54,1216],[57,1162,102,1216],[106,1163,151,1216],[160,1164,205,1216],[209,1164,254,1216],[261,1163,305,1216]]},"walk":{"dir":1,"f":[[305,144,351,199],[355,143,396,198],[402,144,444,198],[450,143,496,198],[502,144,555,199],[561,145,611,198]]},"run":{"dir":1,"f":[[27,402,80,452],[87,403,137,456],[144,405,191,456],[198,404,244,456],[251,402,303,452],[310,403,358,455],[365,405,412,455],[419,404,467,455],[501,402,554,452],[561,403,611,456],[618,405,661,456],[668,404,710,456],[717,402,769,452],[776,403,824,455],[831,405,874,455],[881,404,925,455]]},"jump":{"dir":-1,"f":[[794,557,835,621]]},"crouch":{"dir":-1,"f":[[662,627,717,675],[727,633,782,675],[792,638,848,675],[858,638,913,675],[923,638,978,675]]},"block":{"dir":1,"f":[[205,2374,264,2416]]},"combo2":{"dir":1,"f":[[22,1271,70,1325],[75,1271,150,1325],[156,1272,259,1325]]},"combo3":{"dir":1,"f":[[481,1251,543,1325],[552,1246,641,1325],[647,1275,735,1325],[741,1275,817,1325]]},"lunge":{"dir":1,"f":[[31,1335,75,1388],[81,1336,127,1388],[133,1336,179,1388],[182,1338,265,1388],[275,1338,359,1388],[365,1338,449,1388],[455,1338,539,1388],[545,1335,589,1388]]},"dash":{"dir":1,"f":[[17,1444,61,1496],[65,1445,149,1496],[158,1445,240,1496],[248,1445,330,1496],[338,1445,420,1496]]},"rising":{"dir":1,"f":[[309,1058,367,1126],[368,1066,421,1127],[434,1049,476,1127],[480,1077,548,1127],[552,1074,593,1144],[597,1072,646,1132]]},"downstab":{"dir":1,"f":[[309,2045,367,2113],[383,2045,432,2113],[427,2060,474,2113],[484,2063,525,2118],[536,2056,577,2120],[702,2073,760,2134],[768,2041,797,2134]]},"special":{"dir":1,"f":[[31,2251,79,2304],[85,2250,135,2304],[141,2250,174,2304],[180,2250,235,2304],[241,2250,292,2304],[298,2250,349,2304],[355,2250,406,2304],[412,2250,466,2304],[472,2250,530,2304],[536,2250,586,2304],[592,2251,641,2304],[645,2252,701,2304],[705,2254,761,2304],[765,2252,821,2304],[825,2249,881,2304],[885,2254,941,2304],[945,2254,1001,2304]]},"bash":{"dir":1,"f":[[414,2366,439,2413],[463,2369,488,2413],[510,2369,535,2413],[555,2368,582,2412],[627,2371,684,2420],[706,2350,733,2420],[753,2376,808,2422],[811,2376,855,2420]]},"hit":{"dir":1,"f":[[746,719,788,769],[797,717,834,770]]},"knock":{"dir":1,"f":[[842,722,904,769],[917,725,987,761]]},"getup":{"dir":-1,"f":[[789,805,842,833],[848,800,912,834],[914,796,966,833],[973,787,1025,832]]}};
+// v1.15.0 Swordsman sheet (IMG_3225, same artist as the hero atlas). Frames
+// are cut once at load, background keyed out, and anchored on the boots;
+// Shadow Link reuses them through the same pixel recolour as his atlas.
+const swordSheet=new Image();swordSheet.src='IMG_3225.PNG';
+const sheetFrames={},SHEET_SCALE=1.86;
+function buildSheetFrames(){
+ for(const [name,mv] of Object.entries(SHEET_MOVES)){
+  sheetFrames[name]=mv.f.map(([x0,y0,x1,y1])=>{
+   const w=x1-x0,h=y1-y0,cv=document.createElement('canvas');cv.width=w;cv.height=h;
+   const g=cv.getContext('2d',{willReadFrequently:true});g.drawImage(swordSheet,x0,y0,w,h,0,0,w,h);
+   const id=g.getImageData(0,0,w,h),p=id.data;let foot=0;
+   for(let i=0;i<p.length;i+=4){if(p[i]===0&&p[i+1]===64&&p[i+2]===128)p[i+3]=0;else if(p[i+3])foot=Math.max(foot,(i/4/w|0)+1)}
+   g.putImageData(id,0,0);
+   // Horizontal anchor: centre of the body in the lowest quarter, ignoring
+   // grey/white blade pixels so a low sword does not shift the fighter.
+   let sx=0,n=0;const top=Math.max(0,foot-Math.round(h*.3));
+   for(let y=top;y<foot;y++)for(let x=0;x<w;x++){const i=(y*w+x)*4;if(!p[i+3])continue;const r=p[i],gg=p[i+1],b=p[i+2];
+    if(Math.abs(r-gg)<22&&Math.abs(gg-b)<22&&r>110)continue;sx+=x;n++}
+   return {cv,ax:n?sx/n:w/2,ay:foot,w,h};
+  });
+ }
+}
+swordSheet.onload=buildSheetFrames;
+function sheetFighter(dark){return !dark||opponentIndex===4}
+function drawSheet(a,dark){
+ if(!swordSheet.complete||!sheetFrames.idle)return false;
+ const attacking=a.atk>0,airborne=a.ground===-1;
+ let name=null,p=0;
+ if(a.down>0){
+  if(!a.ko&&a.stun<14&&!airborne){name='getup';p=Math.min(.99,(14-a.stun)/14)}
+  else if(airborne){name='knock';p=a.vy<2?0:.99}
+  else{name='knock';p=.99}
+ }else if(a.victory)return false;
+ else if(a.hurt>0&&!attacking){name='hit';p=a.hurt>10?0:.99}
+ else if(!dark&&attackHeld&&!attacking&&round==='play')return false;
+ else if(attacking){
+  const k=a.attackKind==='aerial'?'rising':a.attackKind==='low'?'crouch':a.attackKind;
+  if(!SHEET_MOVES[k])return false; // light / downward / heavy keep the original slash art
+  name=k;p=Math.min(.99,a.attackPhase/(a.attackDuration||moves[a.attackKind].duration));
+ }
+ else if(a.block&&!a.guardBreak){name='block';p=Math.min(.99,a.blockT/8)}
+ else if(airborne){name='jump'}
+ else if(a.crouch){name='crouch';p=Math.min(.99,a.crouchT/10)}
+ else if(Math.abs(a.vx)>6.5){name='run';p=(a.step*.06)%1}
+ else if(Math.abs(a.vx)>1.1){name='walk';p=(a.step*.075)%1}
+ else{name='idle';p=(a.idleT*.012)%1}
+ const seq=sheetFrames[name];if(!seq||!seq.length)return false;
+ const f=seq[Math.min(seq.length-1,Math.floor(p*seq.length))];
+ const src=dark?getShadowAtlas(f.cv):f.cv,K=SHEET_SCALE;
+ c.save();c.translate(Math.round(a.x),Math.round(a.y));
+ if(a.face*SHEET_MOVES[name].dir<0)c.scale(-1,1);
+ if(a.inv>0&&a.inv<99999&&a.inv%4<2&&!(a.down>0))c.globalAlpha=.6;
+ c.imageSmoothingEnabled=false;
+ c.drawImage(src,-f.ax*K,-f.ay*K,f.w*K,f.h*K);
+ drawHitFlash(a,f.cv,-f.ax*K,-f.ay*K,f.w*K,f.h*K);
+ if(a.guardBreak>0){c.scale(a.face*SHEET_MOVES[name].dir<0?-1:1,1);c.fillStyle='#ffe6a3';c.font='bold 14px system-ui';c.textAlign='center';c.fillText('GUARD BREAK',0,-163)}
+ c.restore();return true;
+}
 function approvedRole(dark){return dark&&(opponentIndex===2||opponentIndex===3)}
 function fighter(a,dark){
  c.save();c.translate(Math.round(a.x),Math.round(a.y));c.scale(CS,CS);c.translate(-Math.round(a.x),-Math.round(a.y));
  try{fighterDraw(a,dark)}finally{c.restore()}
 }
 function fighterDraw(a,dark){
+ if(sheetFighter(dark)&&drawSheet(a,dark))return;
  const airborne=a.ground===-1,attacking=a.atk>0,guarding=a.block&&!a.guardBreak;
  const moving=Math.abs(a.vx)>1.1,crouching=a.crouch&&!airborne;
  const action=guarding?'block':attacking?'attack':airborne?'jump':crouching?'crouch':moving?(Math.abs(a.vx)>3.7?'run':'walk'):'idle';
