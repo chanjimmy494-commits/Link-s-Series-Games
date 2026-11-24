@@ -148,7 +148,7 @@ canvas#game{position:relative;z-index:1}
  .stage-choice small{font-size:9px}
  .stage-group-heading{font-size:15px}
 }
-</style></head><body><header>LINK'S MELEE <small>v1.3.7 · Expanded Exhibition Arenas</small></header><img id="animatedArenaGif" class="animated-arena-gif" alt="" aria-hidden="true" hidden><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
+</style></head><body><header>LINK'S MELEE <small>v1.3.8 · Red Swordsman Foot Contact</small></header><img id="animatedArenaGif" class="animated-arena-gif" alt="" aria-hidden="true" hidden><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
 <div class="controls" aria-label="Touch game controls">
  <div class="pad labyrinth-pad" aria-label="Movement controls">
   <button class="up" data-k="w" aria-label="Jump"></button>
@@ -788,10 +788,11 @@ function buildApprovedFrames(){
     if(valid)trimApprovedHalo(image,raw.width,raw.height,role);
     rc.putImageData(image,0,0);
     if(valid){
-     if(role==='dark'){
-      const bounds=approvedAlphaBounds(image,raw.width,raw.height);
-      candidates.push({canvas:raw,foot:bounds?(bounds.maxY+1):raw.height});
-     }else candidates.push(raw); // keep approved red fighter unaltered
+     // Both approved fighters stand on their visible boot pixels. The red
+     // fighter's art, crop and 1.82 scale are unchanged; only the anchor row
+     // moves from the transparent crop bottom to his lowest visible pixel.
+     const bounds=approvedAlphaBounds(image,raw.width,raw.height);
+     candidates.push({canvas:raw,foot:bounds?(bounds.maxY+1):raw.height});
     }
    }
    // Some labeled reference frames were incomplete or contaminated.
