@@ -123,7 +123,10 @@ html *,body *{touch-action:none!important;-webkit-touch-callout:none}
 /* A native DOM image must carry GIF motion: canvas.drawImage uses the first
    poster frame for GIFs under the HTML canvas standard. */
 canvas#game{position:relative;z-index:1}
-.animated-arena-gif{position:fixed;z-index:0;display:block;object-fit:cover;image-rendering:auto;pointer-events:none;user-select:none;-webkit-user-select:none}
+/* v1.4.0: the arena image is shown at its full width inside a clip box that
+   matches the canvas's drawn area, and is panned with the game camera. */
+.arena-clip{position:fixed;z-index:0;overflow:hidden;pointer-events:none;left:0;top:0;width:0;height:0}
+.animated-arena-gif{position:absolute;left:0;top:0;display:block;max-width:none;transform-origin:0 0;will-change:transform;image-rendering:auto;pointer-events:none;user-select:none;-webkit-user-select:none}
 .animated-arena-gif[hidden]{display:none!important}
 /* Exhibition gallery: stage previews retain their original GIF animation. */
 .front-screen,.front-screen *{touch-action:pan-y!important}
@@ -159,7 +162,7 @@ canvas#game{position:relative;z-index:1}
  .restart{left:auto!important;right:calc(50% + 4px)!important;transform:none!important}
  .game-home{right:auto!important;left:calc(50% + 4px)!important}
 }
-</style></head><body><header>LINK'S MELEE <small>v1.3.9 · Grounded Fighters &amp; Clean Arenas</small></header><img id="animatedArenaGif" class="animated-arena-gif" alt="" aria-hidden="true" hidden><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
+</style></head><body><header>LINK'S MELEE <small>v1.4.0 · Full-Width Arenas</small></header><div id="arenaClip" class="arena-clip" aria-hidden="true"><img id="animatedArenaGif" class="animated-arena-gif" alt="" hidden></div><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
 <div class="controls" aria-label="Touch game controls">
  <div class="pad labyrinth-pad" aria-label="Movement controls">
   <button class="up" data-k="w" aria-label="Jump"></button>
@@ -277,13 +280,49 @@ function currentArena(){
 function animatedArenaActive(){
  return !!currentArena()?.animated;
 }
+const arenaClip=document.getElementById('arenaClip');
+// The canvas may be letterboxed (object-fit:contain in landscape) or bordered
+// (desktop). Measure the area its 960x540 pixels actually occupy on screen.
+function canvasContentRect(){
+ const r=canvas.getBoundingClientRect(),cw=canvas.clientWidth,ch=canvas.clientHeight;
+ const left=r.left+canvas.clientLeft,top=r.top+canvas.clientTop;
+ if(getComputedStyle(canvas).objectFit==='contain'){
+  const k=Math.min(cw/W,ch/H)||1;
+  return {left:left+(cw-W*k)/2,top:top+(ch-H*k)/2,width:W*k,height:H*k,kx:k,ky:k};
+ }
+ // Default object-fit:fill stretches the bitmap to the element's content box.
+ return {left,top,width:cw,height:ch,kx:cw/W||1,ky:ch/H||1};
+}
+// A single-image arena (animated GIF/APNG, or an Exhibition still) is shown
+// whole: matched to the canvas height when wider than 16:9, so its full width
+// becomes the walkable world; matched to the width when narrower.
+function singleImageArena(){
+ const arena=currentArena();
+ if(!arena)return null;
+ if(arena.animated)return animatedArenaGif;
+ if(gameMode==='exhibition'&&arena.tournamentIndex==null)return exhibitionBackground;
+ return null;
+}
+function arenaImageGeometry(){
+ const im=singleImageArena();
+ if(!im||!im.naturalWidth||!im.naturalHeight)return {w:W,h:H,top:0};
+ const aspect=im.naturalWidth/im.naturalHeight;
+ if(aspect>=W/H){const w=Math.round(H*aspect);return {w,h:H,top:0}}
+ const h=Math.round(W/aspect);return {w:W,h,top:Math.round((H-h)/2)};
+}
+let backdropKey='';
 function positionAnimatedBackdrop(){
- if(animatedArenaGif.hidden)return;
- const r=canvas.getBoundingClientRect();
- animatedArenaGif.style.left=r.left+'px';
- animatedArenaGif.style.top=r.top+'px';
- animatedArenaGif.style.width=r.width+'px';
- animatedArenaGif.style.height=r.height+'px';
+ if(animatedArenaGif.hidden){arenaClip.style.width='0px';backdropKey='';return}
+ const r=canvasContentRect(),g=arenaImageGeometry();
+ const key=[r.left,r.top,r.width,r.height,g.w,g.h,g.top].map(v=>Math.round(v*100)).join(',');
+ if(key!==backdropKey){
+  backdropKey=key;
+  arenaClip.style.left=r.left+'px';arenaClip.style.top=r.top+'px';
+  arenaClip.style.width=r.width+'px';arenaClip.style.height=r.height+'px';
+  animatedArenaGif.style.width=(g.w*r.kx)+'px';animatedArenaGif.style.height=(g.h*r.ky)+'px';
+ }
+ // Same rounded camera as the canvas translate, so art and fighters never drift.
+ animatedArenaGif.style.transform='translate3d('+(-Math.round(camera)*r.kx)+'px,'+(g.top*r.ky)+'px,0)';
 }
 function syncAnimatedBackdrop(){
  if(animatedArenaActive()){
@@ -297,6 +336,16 @@ function syncAnimatedBackdrop(){
   animatedArenaGif.removeAttribute('src');
  }
 }
+function arenaImageLoaded(){
+ // World width depends on the image's natural size. If it arrives while the
+ // round intro is still running, re-centre the fighters and camera on it.
+ if(menuState==='game'&&singleImageArena()&&round==='intro'){
+  const w=arenaWorldWidth();player.x=w/2-200;foe.x=w/2+200;
+  camera=Math.max(0,Math.min(w-W,w/2-W/2));
+ }
+ backdropKey='';positionAnimatedBackdrop();
+}
+animatedArenaGif.addEventListener('load',arenaImageLoaded);
 window.addEventListener('resize',positionAnimatedBackdrop);
 window.addEventListener('orientationchange',positionAnimatedBackdrop);
 if(window.visualViewport)window.visualViewport.addEventListener('resize',positionAnimatedBackdrop);
@@ -306,9 +355,9 @@ function stagePlatforms(){
  // only in the original Stage 1 castle environment.
  return arenaIndex===0&&!animatedArenaActive()?platforms:[];
 }
-// Native animated GIFs depict one fixed-screen arena. Their camera must not
-// scroll fighters across an unmoving DOM backdrop or an off-screen world.
-function arenaWorldWidth(){return animatedArenaActive()?W:WORLD;}
+// Single-image arenas are as wide as their artwork; the camera pans across
+// them and the DOM image layer is moved by exactly the same camera value.
+function arenaWorldWidth(){return singleImageArena()?Math.max(W,arenaImageGeometry().w):WORLD;}
 
 const assets={};let loaded=0;const files=[...Array.from({length:6},(_,i)=>`swordsman_${i}.png`),...Array.from({length:6},(_,i)=>`dark_${i}.png`)];files.forEach(f=>{let im=new Image;im.onload=()=>loaded++;im.src=f;assets[f]=im});
 const keys={};let just={};const key=k=>!!keys[k];let player,foe,particles,clock,round,notice,shake,aiTick,phaseTick,noticeTick,aiMode,aiModeTick,aiAttackLock,aiCommitDir,aiLastPlayerX;
@@ -325,11 +374,11 @@ function reset(){
  syncAnimatedBackdrop();
 }
 function startStage(){
- const singleScreenArena=animatedArenaActive();
+ const singleScreenArena=!!singleImageArena(),arenaW=arenaWorldWidth();
  // Original stages retain their existing balanced spawn locations. The GIF
  // stages use the same 280px/680px *screen* placement with camera fixed at 0.
- player={x:singleScreenArena?280:650,y:FLOOR,w:72,h:135,vx:0,vy:0,face:1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,blockAnim:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};foe={x:singleScreenArena?680:1050,y:FLOOR,w:72,h:135,vx:0,vy:0,face:-1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,blockAnim:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};particles=[];clock=90*60;round='intro';phaseTick=165;notice=currentArena().name;noticeTick=0;shake=0;aiTick=0;// Spawn at fixed 280px/680px screen positions, symmetric about 480px.
-camera=singleScreenArena?0:Math.max(0,Math.min(WORLD-W,(player.x+foe.x)*.5-W*.5));aiMode='observe';aiModeTick=85;aiAttackLock=75;aiCommitDir=0;aiLastPlayerX=player.x;attackHeld=false;attackHoldFrames=0;attackCharged=false;attackQueued=false;heavyQueued=false;normalSlashNext='light';directionMemory='';directionMemoryFrames=0;just={}}
+ player={x:singleScreenArena?arenaW/2-200:650,y:FLOOR,w:72,h:135,vx:0,vy:0,face:1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,blockAnim:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};foe={x:singleScreenArena?arenaW/2+200:1050,y:FLOOR,w:72,h:135,vx:0,vy:0,face:-1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,blockAnim:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};particles=[];clock=90*60;round='intro';phaseTick=165;notice=currentArena().name;noticeTick=0;shake=0;aiTick=0;// Spawn at fixed 280px/680px screen positions, symmetric about 480px.
+camera=Math.max(0,Math.min(arenaW-W,(player.x+foe.x)*.5-W*.5));aiMode='observe';aiModeTick=85;aiAttackLock=75;aiCommitDir=0;aiLastPlayerX=player.x;attackHeld=false;attackHoldFrames=0;attackCharged=false;attackQueued=false;heavyQueued=false;normalSlashNext='light';directionMemory='';directionMemoryFrames=0;just={}}
 
 startStage();
 const frontScreen=document.getElementById('frontScreen');
@@ -371,8 +420,10 @@ function startMatch(mode,selectedArena=null){
   // Animated arenas use the native DOM GIF layer behind the game canvas.
   exhibitionBackground=selectedArena.animated?null:
    (selectedArena.tournamentIndex!=null?stageBackgrounds[selectedArena.tournamentIndex]:new Image());
-  if(!selectedArena.animated&&selectedArena.tournamentIndex==null)
+  if(!selectedArena.animated&&selectedArena.tournamentIndex==null){
+   exhibitionBackground.onload=arenaImageLoaded;
    exhibitionBackground.src=selectedArena.background;
+  }
  }
  clearGameplayInput();
  startStage();menuState='game';frontScreen.hidden=true;
@@ -1025,16 +1076,14 @@ function update(){
  const previousPlayerX=player.x,previousFoeX=foe.x;
  physics(player);physics(foe);
  separateFighters(previousPlayerX,previousFoeX);
- // The animated background is a fixed, full-screen illustration:
- // do not pan across it. Static worlds retain the existing camera dead-zone.
- if(animatedArenaActive()){
-  camera=0;
- }else{
+ // Every arena uses the same dead-zone camera, clamped to its own world width.
+ // Single-image arenas move their DOM layer by this camera in render().
+ {
   const screenX=player.x-camera;
   let cameraTarget=camera;
   if(screenX<155)cameraTarget=player.x-155;
   else if(screenX>W-155)cameraTarget=player.x-(W-155);
-  cameraTarget=Math.max(0,Math.min(WORLD-W,cameraTarget));
+  cameraTarget=Math.max(0,Math.min(arenaWorldWidth()-W,cameraTarget));
   camera+=(cameraTarget-camera)*.13;
  }
  particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.3;p.life--});
@@ -1128,8 +1177,12 @@ function drawStage(){
  // Only draw canvas backgrounds for the tournament and still-image arenas.
  if(!animatedArenaActive()){
   const bg=gameMode==='exhibition'?exhibitionBackground:stageBackgrounds[stageIndex];
-  c.fillStyle='#172331';c.fillRect(0,0,W,H);
-  if(bg&&bg.complete&&bg.naturalWidth){
+  c.fillStyle='#172331';c.fillRect(0,0,arenaWorldWidth(),H);
+  if(singleImageArena()&&bg&&bg.complete&&bg.naturalWidth){
+   // Exhibition still image: whole artwork, correct aspect, no mirroring.
+   const g=arenaImageGeometry();
+   c.drawImage(bg,0,g.top,g.w,g.h);
+  }else if(bg&&bg.complete&&bg.naturalWidth){
    // Existing arena artwork retains its original mirrored canvas tiling.
    const scale=1.08,tw=W*scale;
    for(let i=0;i<3;i++){
@@ -1140,12 +1193,13 @@ function drawStage(){
   }
  }else if(!animatedArenaGif.complete||!animatedArenaGif.naturalWidth){
   // No full-canvas background if the animated image has loaded.
-  c.fillStyle='#172331';c.fillRect(0,0,W,H);
+  c.fillStyle='#172331';c.fillRect(0,0,arenaWorldWidth(),H);
  }
  // Ground and raised masonry are integrated into the castle palette.
- c.fillStyle='#262c32';c.fillRect(0,FLOOR+2,WORLD,H-FLOOR);
- c.fillStyle='#6b6257';c.fillRect(0,FLOOR,WORLD,5);
- c.fillStyle='#4a4540';c.fillRect(0,FLOOR+5,WORLD,15);
+ const groundW=Math.max(WORLD,arenaWorldWidth());
+ c.fillStyle='#262c32';c.fillRect(0,FLOOR+2,groundW,H-FLOOR);
+ c.fillStyle='#6b6257';c.fillRect(0,FLOOR,groundW,5);
+ c.fillStyle='#4a4540';c.fillRect(0,FLOOR+5,groundW,15);
  for(const p of stagePlatforms()){
   c.fillStyle='#151b21a0';c.fillRect(p.x+6,p.y+14,p.w,11);
   const timber=p.y<300;
@@ -1160,7 +1214,7 @@ function drawStage(){
 function render(){
  // Without a full-screen canvas background, erase the preceding combat
  // frame so characters, particles and the HUD never leave ghost images.
- if(animatedArenaActive())c.clearRect(0,0,W,H);
+ if(animatedArenaActive()){c.clearRect(0,0,W,H);positionAnimatedBackdrop()}
  c.save();
  if(shake&&round==='play')c.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);
  c.translate(-Math.round(camera),0);
