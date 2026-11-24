@@ -50,9 +50,10 @@ canvas#game{position:relative;z-index:1;display:block;width:min(100%,1100px);asp
  box-shadow:0 calc(var(--d)*.07) 0 #7a5212,0 calc(var(--d)*.035) 0 calc(var(--d)*.075) #2b2e36;
  -webkit-appearance:none;appearance:none;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
 .combat-buttons button.pressed{transform:translateY(calc(var(--d)*.055));box-shadow:0 calc(var(--d)*.015) 0 #7a5212,0 calc(var(--d)*.01) 0 calc(var(--d)*.075) #2b2e36;filter:brightness(.94)}
-.combat-block{left:calc(var(--d)*.07);top:calc(var(--d)*.07)}
-.combat-attack{left:calc(var(--d)*1.02);top:calc(var(--d)*1.02)}
-.combat-jump{left:calc(var(--d)*.07);top:calc(var(--d)*1.97)}
+/* v1.15.1 layout: JUMP top, BLOCK right, ATTACK bottom */
+.combat-jump{left:calc(var(--d)*.07);top:calc(var(--d)*.07)}
+.combat-block{left:calc(var(--d)*1.02);top:calc(var(--d)*1.02)}
+.combat-attack{left:calc(var(--d)*.07);top:calc(var(--d)*1.97)}
 
 /* Desktop / mouse: page scrolls normally, panel sits below the arena */
 @media (pointer:fine){html,body{height:auto;overflow:auto}}
@@ -174,7 +175,7 @@ canvas#game{position:relative;z-index:1;display:block;width:min(100%,1100px);asp
 .seg button{min-width:48px;min-height:42px;padding:0 10px;border-radius:9px;border:2px solid #3a3f4a;background:#2b2e36;color:#e9e2cf;font:700 13px 'Silkscreen',ui-monospace,monospace;cursor:pointer}
 .seg button[aria-pressed=true]{background:#f9c250;border-color:#7a5212;color:#1a1206}
 .seg output{min-width:28px;text-align:center;font-size:16px;color:#f9c250}
-</style></head><body><header>LINK'S MELEE <small>v1.15.0 · Swordsman Move Set</small></header><div id="arenaClip" class="arena-clip" aria-hidden="true"><img id="animatedArenaGif" class="animated-arena-gif" alt="" hidden></div><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
+</style></head><body><header>LINK'S MELEE <small>v1.15.1 · Button Layout</small></header><div id="arenaClip" class="arena-clip" aria-hidden="true"><img id="animatedArenaGif" class="animated-arena-gif" alt="" hidden></div><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
 <div class="dock">
  <div class="dock-top">
   <button class="pill restart" id="restart" type="button" aria-label="Restart"><span class="cap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4a8 8 0 1 0 7.75 10h-2.1A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35A7.96 7.96 0 0 0 12 4z"/></svg></span>RESTART</button>
