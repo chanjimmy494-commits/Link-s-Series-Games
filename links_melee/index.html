@@ -148,7 +148,7 @@ canvas#game{position:relative;z-index:1}
  .stage-choice small{font-size:9px}
  .stage-group-heading{font-size:15px}
 }
-</style></head><body><header>LINK'S MELEE <small>v1.3.3 · Exhibition Gallery Cleanup</small></header><img id="animatedArenaGif" class="animated-arena-gif" alt="" aria-hidden="true" hidden><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
+</style></head><body><header>LINK'S MELEE <small>v1.3.4 · Tournament Stage 4 and Arena Physics</small></header><img id="animatedArenaGif" class="animated-arena-gif" alt="" aria-hidden="true" hidden><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
 <div class="controls" aria-label="Touch game controls">
  <div class="pad labyrinth-pad" aria-label="Movement controls">
   <button class="up" data-k="w" aria-label="Jump"></button>
@@ -233,7 +233,7 @@ const stages=[
  {name:'OUTPOST RUINS',opponent:'DARK SWORDSMAN',background:'castle_arena.jpg'},
  {name:'TRAINING DOJO',opponent:'RUINS CHALLENGER',background:'../links_adventure_dojo_prototype/IMG_2918.png'},
  {name:'FOREST CLEARING',opponent:'RED SWORDSMAN',background:'62490EA1-5C4C-4938-95E4-35F25811C90F.png'},
- {name:'OUTPOST DUEL',opponent:'HOODED DARK SWORDSMAN',background:'castle_arena.jpg'},
+ {name:'OUTPOST DUEL',opponent:'HOODED DARK SWORDSMAN',background:'Stages/IMG_3329.GIF',animated:true},
  {name:'OVERGROWN RUINS',opponent:'SHADOW LINK',background:'2EB80A3E-3DFF-4440-8CCA-30EA71D1CEC4.png'}
 ];
 const stageBackgrounds=stages.map(stage=>{const im=new Image();im.src=stage.background;return im});
@@ -261,7 +261,7 @@ function currentArena(){
  return gameMode==='exhibition'&&exhibitionArena?exhibitionArena:stages[stageIndex];
 }
 function animatedArenaActive(){
- return gameMode==='exhibition'&&!!exhibitionArena?.animated;
+ return !!currentArena()?.animated;
 }
 function positionAnimatedBackdrop(){
  if(animatedArenaGif.hidden)return;
@@ -273,8 +273,9 @@ function positionAnimatedBackdrop(){
 }
 function syncAnimatedBackdrop(){
  if(animatedArenaActive()){
-  if(animatedArenaGif.getAttribute('src')!==exhibitionArena.background)
-   animatedArenaGif.src=exhibitionArena.background;
+  const chosen=currentArena().background;
+  if(animatedArenaGif.getAttribute('src')!==chosen)
+   animatedArenaGif.src=chosen;
   animatedArenaGif.hidden=false;
   positionAnimatedBackdrop();
  }else{
@@ -302,8 +303,9 @@ function reset(){
  }else opponentIndex=Math.floor(Math.random()*stages.length);
  clearGameplayInput();
  startStage();
+ syncAnimatedBackdrop();
 }
-function startStage(){player={x:600,y:FLOOR,w:72,h:135,vx:0,vy:0,face:1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,blockAnim:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};foe={x:1060,y:FLOOR,w:72,h:135,vx:0,vy:0,face:-1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,blockAnim:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};particles=[];clock=90*60;round='intro';phaseTick=165;notice=currentArena().name;noticeTick=0;shake=0;aiTick=0;camera=350;aiMode='observe';aiModeTick=85;aiAttackLock=75;aiCommitDir=0;aiLastPlayerX=player.x;attackHeld=false;attackHoldFrames=0;attackCharged=false;attackQueued=false;heavyQueued=false;normalSlashNext='light';directionMemory='';directionMemoryFrames=0;just={}}
+function startStage(){player={x:600,y:FLOOR,w:72,h:135,vx:0,vy:0,face:1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,blockAnim:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};foe={x:1060,y:FLOOR,w:72,h:135,vx:0,vy:0,face:-1,hp:100,stamina:100,atk:0,heavy:false,cool:0,block:false,inv:0,stun:0,combo:0,guardBreak:0,hitstop:0,land:0,step:0,blockAnim:0,attackKind:'',attackPhase:0,ground:FLOOR,drop:0,coyote:0,jumpBuffer:0};particles=[];clock=90*60;round='intro';phaseTick=165;notice=currentArena().name;noticeTick=0;shake=0;aiTick=0;camera=Math.max(0,Math.min(WORLD-W,player.x-W*.40));aiMode='observe';aiModeTick=85;aiAttackLock=75;aiCommitDir=0;aiLastPlayerX=player.x;attackHeld=false;attackHoldFrames=0;attackCharged=false;attackQueued=false;heavyQueued=false;normalSlashNext='light';directionMemory='';directionMemoryFrames=0;just={}}
 
 startStage();
 const frontScreen=document.getElementById('frontScreen');
@@ -896,10 +898,26 @@ function physics(a){
  a.step+=Math.abs(a.vx)*.045;
 
 }
+function separateFighters(){
+ if(Math.abs(player.y-foe.y)>=100)return;
+ const delta=foe.x-player.x,spacing=Math.abs(delta);
+ const minimum=65;
+ if(spacing>=minimum)return;
+ const dir=delta>=0?1:-1;
+ const overlap=minimum-spacing;
+ const input=(key('d')?1:0)-(key('a')?1:0);
+ const walkingIntoOpponent=input===dir&&!player.block&&!player.stun&&!attackHeld;
+ // Incoming AI foot movement yields to an idle Link; intentional player
+ // movement distributes overlap, without changing attack knockback.
+ const playerShare=walkingIntoOpponent?.5:0;
+ player.x=Math.max(55,Math.min(WORLD-55,player.x-dir*overlap*playerShare));
+ foe.x=Math.max(55,Math.min(WORLD-55,foe.x+dir*overlap*(1-playerShare)));
+ if(!foe.stun&&foe.vx*dir<0)foe.vx=0;
+}
 function update(){
  if(menuState!=='game'){just={};return}
   if(round==='intro'){phaseTick--;if(phaseTick<=0){round='play';notice='FIGHT';noticeTick=65}just={};return}
- if(round!=='play'){phaseTick++;shake=0;if(gameMode==='tournament'&&round==='win'&&phaseTick>125&&stageIndex<stages.length-1){stageIndex++;opponentIndex=stageIndex;try{sessionStorage.setItem(progressKey,String(stageIndex))}catch(e){}startStage();}just={};return}
+ if(round!=='play'){phaseTick++;shake=0;if(gameMode==='tournament'&&round==='win'&&phaseTick>125&&stageIndex<stages.length-1){stageIndex++;opponentIndex=stageIndex;try{sessionStorage.setItem(progressKey,String(stageIndex))}catch(e){}startStage();syncAnimatedBackdrop();}just={};return}
  clock--;if(clock<=0){shake=0;round=player.hp>=foe.hp?'win':'lose';phaseTick=0;notice=round==='win'?'TIME — VICTORY':'TIME — DEFEAT';just={};return}
  noticeTick=Math.max(0,noticeTick-1);directionMemoryFrames=Math.max(0,directionMemoryFrames-1);if(just.s){directionMemory='down';directionMemoryFrames=11}else if(just.w){directionMemory='up';directionMemoryFrames=11}else if(just.a||just.d){directionMemory='forward';directionMemoryFrames=11}
  if(!player.stun){
@@ -961,12 +979,11 @@ function update(){
  }else{foe.block=false;foe.vx*=.75}
 
  physics(player);physics(foe);
- // Camera follows the midpoint but gives the player extra visibility when fighters separate.
- const target=Math.max(0,Math.min(WORLD-W,(player.x+foe.x)*.5-W*.5));camera+=(target-camera)*.085;
- if(Math.abs(player.x-foe.x)<65&&Math.abs(player.y-foe.y)<100){
-  let overlap=65-Math.abs(player.x-foe.x),dir=player.x<foe.x?-1:1;
-  player.x+=dir*overlap*.5;foe.x-=dir*overlap*.5;
- }
+ // The enemy may approach without dragging a stationary Link.
+ separateFighters();
+ // Camera tracks Link, never the enemy's approach or midpoint.
+ const target=Math.max(0,Math.min(WORLD-W,player.x-W*.40));
+ camera+=(target-camera)*.085;
  particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.3;p.life--});
  particles=particles.filter(p=>p.life>0);
  shake=Math.max(0,shake-1);just={};
@@ -1094,7 +1111,20 @@ function render(){
  c.save();
  if(shake&&round==='play')c.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);
  c.translate(-Math.round(camera),0);
- drawStage();fighter(player,false);fighter(foe,true);
+ drawStage();
+ if(animatedArenaActive()){
+  // Ground-register fighters on the new GIFs, preserving their original
+  // height ratios and the unchanged underlying physics / hitboxes.
+  for(const a of [player,foe]){
+   if(a.ground===FLOOR&&Math.abs(a.y-FLOOR)<.5){
+    c.fillStyle='#13172099';c.beginPath();
+    c.ellipse(Math.round(a.x),FLOOR+5,26,5,0,0,Math.PI*2);c.fill();
+   }
+  }
+  c.save();c.translate(0,8);
+  fighter(player,false);fighter(foe,true);
+  c.restore();
+ }else{fighter(player,false);fighter(foe,true)}
  for(let p of particles){c.globalAlpha=p.life/22;c.fillStyle=p.color;c.fillRect(p.x,p.y,5,5)}
  c.globalAlpha=1;c.restore();
  bar(28,20,player.hp,player.stamina);bar(592,20,foe.hp,foe.stamina,true);
