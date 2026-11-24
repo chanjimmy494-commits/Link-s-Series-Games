@@ -160,7 +160,7 @@ canvas#game{position:relative;z-index:1;display:block;width:min(100%,1100px);asp
  .stage-group-heading{font-size:15px}
 }
 
-</style></head><body><header>LINK'S MELEE <small>v1.7.0 · Fighters on the Real Ground</small></header><div id="arenaClip" class="arena-clip" aria-hidden="true"><img id="animatedArenaGif" class="animated-arena-gif" alt="" hidden></div><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
+</style></head><body><header>LINK'S MELEE <small>v1.8.0 · Sound &amp; Haptics</small></header><div id="arenaClip" class="arena-clip" aria-hidden="true"><img id="animatedArenaGif" class="animated-arena-gif" alt="" hidden></div><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
 <div class="dock">
  <div class="dock-top">
   <button class="pill restart" id="restart" type="button" aria-label="Restart"><span class="cap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4a8 8 0 1 0 7.75 10h-2.1A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35A7.96 7.96 0 0 0 12 4z"/></svg></span>RESTART</button>
@@ -241,6 +241,96 @@ document.addEventListener('touchstart',e=>{
  if(e.touches.length>1){e.preventDefault();return}
  const now=Date.now();if(now-lastGameTouch<350)e.preventDefault();lastGameTouch=now;
 },{passive:false});
+// v1.8.0 sound: every effect is synthesised with Web Audio (no audio files).
+// iOS only allows audio after a user gesture, so the context is created and
+// resumed on the first touch / key press. Settings persist per device.
+const settings=(()=>{const d={sound:true,volume:.8,haptics:true,exhibitionRounds:1};
+ try{return Object.assign(d,JSON.parse(localStorage.getItem('links-melee-settings')||'{}'))}catch(e){return d}})();
+function saveSettings(){try{localStorage.setItem('links-melee-settings',JSON.stringify(settings))}catch(e){}}
+const sfx=(()=>{
+ let ac=null,master=null,noise=null,echo=null,bus=null;
+ function init(){
+  if(ac)return ac;
+  const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return null;
+  ac=new AC();
+  const comp=ac.createDynamicsCompressor();comp.threshold.value=-14;comp.ratio.value=5;comp.connect(ac.destination);
+  master=ac.createGain();master.gain.value=settings.volume;master.connect(comp);bus=master;
+  // Shared feedback delay for KO / gong tails.
+  echo=ac.createDelay(1);echo.delayTime.value=.19;const fb=ac.createGain();fb.gain.value=.38;
+  const echoOut=ac.createGain();echoOut.gain.value=.55;echo.connect(fb);fb.connect(echo);echo.connect(echoOut);echoOut.connect(master);
+  noise=ac.createBuffer(1,ac.sampleRate,ac.sampleRate);const d=noise.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+  return ac;
+ }
+ function unlock(){const a=init();if(a&&a.state!=='running')a.resume().catch(()=>{})}
+ ['pointerdown','touchend','keydown'].forEach(ev=>document.addEventListener(ev,unlock,{capture:true,passive:true}));
+ const ready=()=>settings.sound&&ac&&ac.state==='running';
+ const T=()=>ac.currentTime;
+ function env(g,t,a,peak,dec,end=.0001){g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(peak,t+a);g.gain.exponentialRampToValueAtTime(end,t+a+dec)}
+ function noiseBurst({t=T(),dur=.15,type='bandpass',f0=2000,f1=600,q=1.2,peak=.5,attack=.004,dest=bus,rate=1}){
+  const s=ac.createBufferSource();s.buffer=noise;s.playbackRate.value=rate;
+  const f=ac.createBiquadFilter();f.type=type;f.Q.value=q;f.frequency.setValueAtTime(f0,t);f.frequency.exponentialRampToValueAtTime(Math.max(40,f1),t+dur);
+  const g=ac.createGain();env(g,t,attack,peak,dur);s.connect(f);f.connect(g);g.connect(dest);
+  s.start(t,Math.random()*.5);s.stop(t+attack+dur+.05);return g;
+ }
+ function tone({t=T(),type='sine',f0=120,f1=40,dur=.18,peak=.6,attack=.003,dest=bus}){
+  const o=ac.createOscillator();o.type=type;o.frequency.setValueAtTime(f0,t);o.frequency.exponentialRampToValueAtTime(Math.max(20,f1),t+dur);
+  const g=ac.createGain();env(g,t,attack,peak,dur);o.connect(g);g.connect(dest);o.start(t);o.stop(t+attack+dur+.05);
+ }
+ function metal({t=T(),base=1180,dur=.42,peak=.16,dest=bus}){
+  // Inharmonic partials give a struck-steel ring rather than a musical note.
+  for(const [r,a] of [[1,1],[1.58,.7],[2.24,.5],[2.92,.38],[4.1,.22]]){
+   tone({t,type:'sine',f0:base*r*(1+Math.random()*.012),f1:base*r*.985,dur:dur*(1.15-r*.12),peak:peak*a,attack:.001,dest});
+  }
+  noiseBurst({t,dur:.05,type:'highpass',f0:3500,f1:5000,q:.7,peak:.35,attack:.001,dest});
+ }
+ const play={
+  swing(heavy){noiseBurst({dur:heavy?.24:.13,f0:heavy?1500:2600,f1:heavy?260:700,q:heavy?1.6:1.1,peak:heavy?.42:.3,attack:heavy?.02:.008});
+   if(heavy)tone({type:'sine',f0:110,f1:60,dur:.2,peak:.12,attack:.03})},
+  hit(heavy){noiseBurst({dur:heavy?.16:.09,type:'lowpass',f0:heavy?2600:3200,f1:300,q:.8,peak:heavy?.75:.55,attack:.001});
+   tone({f0:heavy?140:180,f1:heavy?38:60,dur:heavy?.26:.14,peak:heavy?.9:.6});
+   if(heavy)noiseBurst({dur:.22,type:'bandpass',f0:700,f1:120,q:2,peak:.35,attack:.002})},
+  block(heavy){metal({base:heavy?960:1220,dur:heavy?.55:.38,peak:heavy?.2:.15});tone({f0:300,f1:120,dur:.06,peak:.25})},
+  guardBreak(){metal({base:820,dur:.7,peak:.22});noiseBurst({dur:.45,type:'highpass',f0:6000,f1:1800,q:.6,peak:.3,attack:.002});
+   tone({f0:220,f1:55,dur:.35,peak:.5})},
+  jump(){noiseBurst({dur:.1,f0:600,f1:1600,q:1.4,peak:.12,attack:.01})},
+  land(){tone({f0:120,f1:55,dur:.08,peak:.22});noiseBurst({dur:.06,type:'lowpass',f0:900,f1:200,peak:.12})},
+  bodyFall(){tone({f0:95,f1:35,dur:.3,peak:.75});noiseBurst({dur:.25,type:'lowpass',f0:1200,f1:120,q:.7,peak:.4,attack:.002})},
+  ko(){const t=T();tone({t,f0:160,f1:28,dur:1.1,peak:1});tone({t,f0:160,f1:28,dur:.9,peak:.5,dest:echo});
+   noiseBurst({t,dur:.6,type:'lowpass',f0:3000,f1:90,q:.6,peak:.8,attack:.002,dest:echo});noiseBurst({t,dur:.35,type:'lowpass',f0:3000,f1:150,q:.6,peak:.7,attack:.001})},
+  gong(){const t=T();for(const [f,a] of [[196,1],[293.7,.55],[392,.4],[523,.22]])tone({t,f0:f,f1:f*.995,dur:1.4,peak:.44*a,attack:.004,dest:echo});tone({t,f0:f,f1:f*.995,dur:1.2,peak:.18*a,attack:.004});
+   metal({t,base:620,dur:.9,peak:.08})},
+  bell(){const t=T();for(const [f,a] of [[880,1],[1320,.4],[2200,.2]])tone({t,f0:f,f1:f,dur:.5,peak:.12*a,attack:.002})},
+  select(){tone({type:'square',f0:660,f1:660,dur:.05,peak:.08,attack:.001});tone({t:T()+.05,type:'square',f0:990,f1:990,dur:.07,peak:.07,attack:.001})},
+  victory(){const t=T();[523,659,784,1047].forEach((f,i)=>tone({t:t+i*.11,type:'square',f0:f,f1:f,dur:i===3?.45:.1,peak:.07,attack:.002}))},
+  defeat(){const t=T();[392,330,262,196].forEach((f,i)=>tone({t:t+i*.16,type:'triangle',f0:f,f1:f*.98,dur:i===3?.6:.15,peak:.12,attack:.004}))}
+ };
+ return {
+  unlock,
+  play(name,...args){
+   if(!ready())return;
+   // Mix: impacts loudest, clangs next, swings and footfalls quieter.
+   const trim={swing:args[0]?6.5:11,hit:args[0]?3.9:3.7,block:args[0]?4.3:3.5,guardBreak:2.5,jump:20,land:5.5,bodyFall:3.3,ko:1.5,gong:2,bell:4.9,select:4.7,victory:4.2,defeat:2.5}[name]||1;
+   try{bus=ac.createGain();bus.gain.value=trim;bus.connect(master);play[name](...args)}catch(e){}finally{bus=master}
+  },
+  setVolume(v){settings.volume=v;if(master)master.gain.value=v}
+ };
+})();
+// Haptics: navigator.vibrate where supported (Android). iPhone Safari has no
+// vibration API; iOS 18+ produces a light tap when a switch-style checkbox
+// is toggled, which is used here as a best-effort fallback.
+const haptic=(()=>{
+ let lbl=null;
+ function iosTap(){
+  if(!lbl){lbl=document.createElement('label');lbl.style.cssText='position:fixed;left:-99px;top:0;width:1px;height:1px;opacity:0;pointer-events:none';
+   const i=document.createElement('input');i.type='checkbox';i.setAttribute('switch','');lbl.appendChild(i);document.body.appendChild(lbl)}
+  lbl.click();
+ }
+ return function(ms=18){
+  if(!settings.haptics)return;
+  try{if(navigator.vibrate){navigator.vibrate(ms);return}iosTap()}catch(e){}
+ };
+})();
+
 const canvas=document.getElementById('game'),c=canvas.getContext('2d');const animatedArenaGif=document.getElementById('animatedArenaGif');c.imageSmoothingEnabled=false;const W=960,H=540,WORLD=1720,platforms=[{x:375,y:345,w:235,h:16},{x:1110,y:345,w:235,h:16},{x:175,y:263,w:240,h:13},{x:730,y:267,w:250,h:13},{x:1325,y:263,w:215,h:13}];
 // v1.7.0: the floor is per arena, matched to where each artwork's ground is.
 let FLOOR=438;let camera=0;let stageIndex=0;let opponentIndex=0;let gameMode='tournament';let menuState='title';
@@ -438,6 +528,7 @@ function startMatch(mode,selectedArena=null){
  startStage();menuState='game';frontScreen.hidden=true;
  syncAnimatedBackdrop();
 }
+document.addEventListener('click',e=>{if(e.target.closest('.front-action,.stage-choice,.stage-back,.pill,.menu-btn'))sfx.play('select')},true);
 document.getElementById('restart').onclick=reset;
 document.getElementById('home').onclick=openTitleScreen;
 document.getElementById('startTournament').onclick=()=>startMatch('tournament',0);
@@ -974,7 +1065,7 @@ function attack(a,b,heavy,kind){
  a.heavy=heavy;a.attackKind=chosen;
  a.attackDuration=(a===foe&&opponentIndex===4)?Math.max(12,Math.round(m.duration*.36)):m.duration;
  a.atk=a.attackDuration;a.attackPhase=0;
- a.cool=a.attackDuration+(heavy?8:3);a.stamina-=m.cost;a.didHit=false;a.block=false;
+ a.cool=a.attackDuration+(heavy?8:3);a.stamina-=m.cost;a.didHit=false;a.swung=false;a.block=false;
  a.combo=(a.combo+1)%3;a.vx*=.72;
 }
 function spawnHit(x,y,blocked,dark){
@@ -997,12 +1088,14 @@ function hit(a,b){
  b.hp=Math.max(0,b.hp-damage);
  b.stamina=Math.max(0,b.stamina-(guarded?(a.heavy?32:17):3));
  b.inv=guarded?10:24;b.stun=guarded?5:m.stun;b.vx=a.face*(guarded?2.4:m.knock);
- if(guarded)hitstop=Math.max(hitstop,3);
+ const playerInvolved=a===player||b===player;
+ if(guarded){hitstop=Math.max(hitstop,3);sfx.play('block',a.heavy);if(playerInvolved)haptic(8)}
  else{
+  sfx.play(b.hp<=0?'ko':'hit',a.heavy);if(playerInvolved)haptic(b.hp<=0?60:b===player?30:14);
   b.hurt=m.stun+6;b.flash=6;hitstop=Math.max(hitstop,a.heavy?8:5);
   if(a.heavy||b.hp<=0)knockDown(b,a.face,b.hp<=0);
  }
- if(guarded&&b.stamina<=0){b.guardBreak=62;b.block=false;b.stun=62;notice='GUARD BROKEN'}
+ if(guarded&&b.stamina<=0){b.guardBreak=62;b.block=false;b.stun=62;notice='GUARD BROKEN';sfx.play('guardBreak');if(playerInvolved)haptic(40)}
  else notice=guarded?'BLOCKED':a.heavy?'HEAVY STRIKE':'STRIKE';
  noticeTick=38;shake=guarded?1:4;spawnHit(b.x,b.y-83,guarded,a===foe);
  if(b.hp<=0){shake=0;round=a===player?'win':'lose';phaseTick=0;notice=round==='win'?'VICTORY':'DEFEAT'}
@@ -1017,6 +1110,7 @@ function physics(a){
  a.stamina=Math.min(100,a.stamina+(a.block?.10:.43));
  if(a.atk>0){
   let m=moves[a.attackKind];a.atk--;a.attackPhase=a.attackDuration-a.atk;
+  if(!a.swung&&a.attackPhase>=Math.round(a.attackDuration*m.activeStart/m.duration)-2){a.swung=true;sfx.play('swing',a.heavy)}
   const phase=a.attackPhase/a.attackDuration;
   if(phase>=m.activeStart/m.duration&&phase<=m.activeEnd/m.duration)hit(a,a===player?foe:player);
  }
@@ -1026,7 +1120,7 @@ function physics(a){
  a.vy+=.72;a.y+=a.vy;
  let surface=FLOOR;
  if(a.vy>=0&&a.drop===0)for(const p of stagePlatforms()){if(oldY<=p.y+5&&a.y>=p.y&&a.x>p.x-20&&a.x<p.x+p.w+20)surface=Math.min(surface,p.y)}
- if(a.y>=surface){a.y=surface;a.vy=0;a.ground=surface;a.coyote=7;if(wasAir)a.land=9}
+ if(a.y>=surface){a.y=surface;a.vy=0;a.ground=surface;a.coyote=7;if(wasAir){a.land=9;if(a.down>0){sfx.play('bodyFall');if(a===player)haptic(25)}else sfx.play('land')}}
  else{a.ground=-1;a.coyote=Math.max(0,a.coyote-1)}
  a.land=Math.max(0,a.land-1);
  a.x=Math.max(55,Math.min(arenaWorldWidth()-55,a.x+a.vx));
@@ -1065,11 +1159,12 @@ function separateFighters(previousPlayerX,previousFoeX){
 }
 function update(){
  if(menuState!=='game'){just={};return}
-  if(round==='intro'){phaseTick--;if(phaseTick<=0){round='play';notice='FIGHT';noticeTick=65}just={};return}
+  if(round==='intro'){phaseTick--;if(phaseTick===150)sfx.play('bell');if(phaseTick<=0){round='play';notice='FIGHT';noticeTick=65;sfx.play('gong')}just={};return}
  if(round!=='play'){
   // Keep simulating after the round ends so the loser falls and lands.
   physics(player);physics(foe);
   const winner=round==='win'?player:round==='lose'?foe:null;
+  if(phaseTick===55)sfx.play(round==='win'?'victory':'defeat');
   if(winner&&phaseTick>45&&winner.ground!==-1&&winner.atk===0&&winner.down===0)winner.victory=true;
  }
  if(round!=='play'){phaseTick++;shake=0;if(gameMode==='tournament'&&round==='win'&&phaseTick>170&&stageIndex<stages.length-1){stageIndex++;opponentIndex=stageIndex;try{sessionStorage.setItem(progressKey,String(stageIndex))}catch(e){}startStage();syncAnimatedBackdrop();}just={};return}
@@ -1085,7 +1180,7 @@ function update(){
    player.vx=move*(player.crouch?1.65:player.atk?2.1:5.2);player.face=move;
   }
   if(just.w&&!attackHeld)player.jumpBuffer=9;
-  if(!attackHeld&&player.jumpBuffer>0&&player.coyote>0&&player.atk===0&&!player.block&&!key('s')){player.vy=-17.4;player.land=0;player.coyote=0;player.jumpBuffer=0;player.ground=-1}
+  if(!attackHeld&&player.jumpBuffer>0&&player.coyote>0&&player.atk===0&&!player.block&&!key('s')){player.vy=-17.4;sfx.play('jump');player.land=0;player.coyote=0;player.jumpBuffer=0;player.ground=-1}
   if(!attackHeld&&just.s&&player.ground!==FLOOR&&player.ground!==-1){player.drop=17;player.vy=3;aerialDrop(player)}
   // Both attack types are allowed in the air, subject to cooldown.
   if(attackHeld&&!attackCharged){attackHoldFrames++;if(attackHoldFrames>=23)attackCharged=true}
