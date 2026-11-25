@@ -175,7 +175,12 @@ canvas#game{position:relative;z-index:1;display:block;width:min(100%,1100px);asp
 .seg button{min-width:48px;min-height:42px;padding:0 10px;border-radius:9px;border:2px solid #3a3f4a;background:#2b2e36;color:#e9e2cf;font:700 13px 'Silkscreen',ui-monospace,monospace;cursor:pointer}
 .seg button[aria-pressed=true]{background:#f9c250;border-color:#7a5212;color:#1a1206}
 .seg output{min-width:28px;text-align:center;font-size:16px;color:#f9c250}
-</style></head><body><header>LINK'S MELEE <small>v1.16.0 · Music</small></header><div id="arenaClip" class="arena-clip" aria-hidden="true"><img id="animatedArenaGif" class="animated-arena-gif" alt="" hidden></div><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
+@font-face{font-family:'Press Start 2P';src:url('fonts/press-start-2p.woff2') format('woff2');font-display:block}
+/* v1.17.0 logo: same composition as Link's Labyrinth */
+.front-brand{position:relative;width:min(94vw,470px)!important;height:auto!important;aspect-ratio:760/600;display:block;filter:drop-shadow(0 10px 15px #0009)}
+.front-logo{display:block;width:100%;height:100%}
+@media (orientation:landscape) and (max-height:600px){.front-brand{width:auto!important;height:min(58vh,300px)!important}}
+</style></head><body><header>LINK'S MELEE <small>v1.17.0 · Polish &amp; Logo</small></header><div id="arenaClip" class="arena-clip" aria-hidden="true"><img id="animatedArenaGif" class="animated-arena-gif" alt="" hidden></div><canvas id="game" width="960" height="540"></canvas><div class="hint">A / D move · W jump · S crouch · J attack · K block · L heavy · R restart</div>
 <div class="dock">
  <div class="dock-top">
   <button class="pill restart" id="restart" type="button" aria-label="Restart"><span class="cap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4a8 8 0 1 0 7.75 10h-2.1A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35A7.96 7.96 0 0 0 12 4z"/></svg></span>RESTART</button>
@@ -214,6 +219,7 @@ canvas#game{position:relative;z-index:1;display:block;width:min(100%,1100px);asp
   <p class="opt-note">Tournament matches are always best of 3.</p>
   <div class="opt-row"><span>Sound</span><div class="seg" data-opt="sound"><button type="button" data-v="true">ON</button><button type="button" data-v="false">OFF</button></div></div>
   <div class="opt-row"><span>Volume</span><div class="seg stepper"><button type="button" id="volDown" aria-label="Volume down">-</button><output id="volValue">8</output><button type="button" id="volUp" aria-label="Volume up">+</button></div></div>
+  <div class="opt-row"><span>Smooth sprites</span><div class="seg" data-opt="smooth"><button type="button" data-v="true">ON</button><button type="button" data-v="false">OFF</button></div></div>
   <div class="opt-row"><span>Music</span><div class="seg" data-opt="music"><button type="button" data-v="true">ON</button><button type="button" data-v="false">OFF</button></div></div>
   <div class="opt-row"><span>Music volume</span><div class="seg stepper"><button type="button" id="musDown" aria-label="Music volume down">-</button><output id="musValue">6</output><button type="button" id="musUp" aria-label="Music volume up">+</button></div></div>
   <div class="opt-row"><span>Vibration</span><div class="seg" data-opt="haptics"><button type="button" data-v="true">ON</button><button type="button" data-v="false">OFF</button></div></div>
@@ -223,24 +229,36 @@ canvas#game{position:relative;z-index:1;display:block;width:min(100%,1100px);asp
 <div id="frontScreen" class="front-screen" role="dialog" aria-label="Link's Melee main menu">
  <section id="titlePanel" class="front-panel" aria-label="Title screen">
   <div class="front-brand">
-   <svg class="front-emblem" viewBox="0 0 360 300" role="img" aria-label="Sword and shield emblem" xmlns="http://www.w3.org/2000/svg">
-    <defs><linearGradient id="metal" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#728294"/><stop offset=".31" stop-color="#e8eef0"/><stop offset=".57" stop-color="#ffffff"/><stop offset="1" stop-color="#8498ad"/></linearGradient><linearGradient id="wood" x1="0" y1="0" x2=".9" y2="1"><stop offset="0" stop-color="#805d3a"/><stop offset="1" stop-color="#3c2b21"/></linearGradient></defs>
-    <g transform="translate(174 145) rotate(-43)">
-     <path d="M-13 -86 L13 -86 L13 125 L0 169 L-13 125 Z" fill="url(#metal)" stroke="#313d51" stroke-width="5"/>
-     <path d="M0 -78 L0 147" stroke="#f7fbff" stroke-width="4" opacity=".85"/>
-     <path d="M-14 -130 L14 -130 L14 -88 L-14 -88 Z" fill="#71502f" stroke="#32251d" stroke-width="4"/>
-     <path d="M-47 -103 L47 -103 L47 -89 L-47 -89 Z" fill="#e2a632" stroke="#5e3e14" stroke-width="5"/>
-     <path d="M-14 -157 L14 -157 L14 -134 L-14 -134 Z" fill="#775a37" stroke="#422a1c" stroke-width="4"/>
-     <path d="M-19 -166 L19 -166 L19 -149 L-19 -149 Z" fill="#edb23f" stroke="#6d4619" stroke-width="3"/>
+   <svg class="front-logo" viewBox="0 0 760 600" role="img" aria-label="Link's Melee" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+     <radialGradient id="lgBoss" cx=".42" cy=".38" r=".7"><stop offset="0" stop-color="#ffe08a"/><stop offset=".45" stop-color="#e9b443"/><stop offset="1" stop-color="#8f6418"/></radialGradient>
+     <linearGradient id="lgWood" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6a4a29"/><stop offset="1" stop-color="#58391e"/></linearGradient>
+    </defs>
+    <!-- sword, behind the shield -->
+    <g transform="translate(115 32) rotate(45.4)">
+     <polygon points="150,-15 735,-15 772,0 735,15 150,15" fill="#cad1de" stroke="#281c10" stroke-width="4"/>
+     <polygon points="150,2 735,2 772,0 735,15 150,15" fill="#8e9cb5"/>
+     <rect x="150" y="-9" width="585" height="5" fill="#eef0f4"/>
+     <polygon points="735,-15 772,0 735,15" fill="#dfe4ec"/>
+     <rect x="20" y="-12" width="112" height="24" fill="#65472a" stroke="#281c10" stroke-width="4"/>
+     <g fill="#4d331b"><rect x="36" y="-12" width="9" height="24"/><rect x="62" y="-12" width="9" height="24"/><rect x="88" y="-12" width="9" height="24"/><rect x="114" y="-12" width="9" height="24"/></g>
+     <rect x="128" y="-40" width="24" height="80" fill="#e9a931" stroke="#281c10" stroke-width="4"/><rect x="128" y="2" width="24" height="38" fill="#b9821f"/>
+     <rect x="-18" y="-18" width="38" height="36" fill="#e9a931" stroke="#281c10" stroke-width="4"/><rect x="-18" y="2" width="38" height="16" fill="#b9821f"/>
     </g>
-    <circle cx="177" cy="148" r="103" fill="#704818" stroke="#271b13" stroke-width="9"/>
-    <circle cx="177" cy="148" r="94" fill="#c18a2c" stroke="#e7aa33" stroke-width="7"/>
-    <circle cx="177" cy="148" r="84" fill="url(#wood)" stroke="#3b2816" stroke-width="7"/>
-    <path d="M117 102 Q177 81 235 103 M113 128 Q177 110 242 130 M115 179 Q176 198 240 175 M140 215 Q177 225 212 214" fill="none" stroke="#9a7243" stroke-width="5" opacity=".34"/>
-    <circle cx="177" cy="148" r="17" fill="#a37735" stroke="#342b23" stroke-width="6"/>
-    <circle cx="177" cy="148" r="6" fill="#d6a34e"/>
+    <!-- shield -->
+    <polygon points="558.8,333.3 541.3,387.2 508.0,433.0 462.2,466.3 408.3,483.8 351.7,483.8 297.8,466.3 252.0,433.0 218.7,387.2 201.2,333.3 201.2,276.7 218.7,222.8 252.0,177.0 297.8,143.7 351.7,126.2 408.3,126.2 462.2,143.7 508.0,177.0 541.3,222.8 558.8,276.7" fill="#1c150c"/>
+    <polygon points="555.8,332.8 538.6,385.8 505.9,430.9 460.8,463.6 407.8,480.8 352.2,480.8 299.2,463.6 254.1,430.9 221.4,385.8 204.2,332.8 204.2,277.2 221.4,224.2 254.1,179.1 299.2,146.4 352.2,129.2 407.8,129.2 460.8,146.4 505.9,179.1 538.6,224.2 555.8,277.2" fill="#af7c20"/>
+    <polygon points="543.0,330.8 527.0,379.9 496.7,421.7 454.9,452.0 405.8,468.0 354.2,468.0 305.1,452.0 263.3,421.7 233.0,379.9 217.0,330.8 217.0,279.2 233.0,230.1 263.3,188.3 305.1,158.0 354.2,142.0 405.8,142.0 454.9,158.0 496.7,188.3 527.0,230.1 543.0,279.2" fill="#7c5612"/>
+    <polygon points="537.0,329.9 521.7,377.2 492.4,417.4 452.2,446.7 404.9,462.0 355.1,462.0 307.8,446.7 267.6,417.4 238.3,377.2 223.0,329.9 223.0,280.1 238.3,232.8 267.6,192.6 307.8,163.3 355.1,148.0 404.9,148.0 452.2,163.3 492.4,192.6 521.7,232.8 537.0,280.1" fill="#281c10"/>
+    <polygon points="529.1,328.6 514.5,373.6 486.8,411.8 448.6,439.5 403.6,454.1 356.4,454.1 311.4,439.5 273.2,411.8 245.5,373.6 230.9,328.6 230.9,281.4 245.5,236.4 273.2,198.2 311.4,170.5 356.4,155.9 403.6,155.9 448.6,170.5 486.8,198.2 514.5,236.4 529.1,281.4" fill="#634527"/>
+    <rect x="229" y="301" width="302" height="7" fill="#462e16"/>
+    <circle cx="380" cy="305" r="56" fill="#281c10"/><circle cx="380" cy="305" r="50" fill="#3a2913"/><circle cx="380" cy="305" r="43" fill="url(#lgBoss)"/>
+    <!-- title -->
+    <g font-family="'Press Start 2P',monospace" font-size="79" text-anchor="middle">
+     <text x="380" y="312" fill="#6e4d0f">Link's</text><text x="380" y="300" fill="#f2b134">Link's</text>
+     <text x="380" y="397" fill="#6e4d0f">Melee</text><text x="380" y="385" fill="#f2b134">Melee</text>
+    </g>
    </svg>
-   <div class="front-brand-title"><span>Link's</span><span>Melee</span></div>
   </div>
   <nav class="front-actions" aria-label="Choose game mode">
    <button id="startTournament" class="front-action">START TOURNAMENT</button>
@@ -258,7 +276,7 @@ canvas#game{position:relative;z-index:1;display:block;width:min(100%,1100px);asp
  </section>
 </div>
 
-<footer>Five-stage tournament · Exhibition mode · Swordsman duels</footer><script>
+<footer>Five-stage tournament · Exhibition mode · Link duels</footer><script>
 (()=>{
 // Block double-tap smart zoom and pinch zoom at the document level,
 // including the space between buttons (which previously remained zoomable).
@@ -285,7 +303,7 @@ document.addEventListener('touchstart',e=>{
 // v1.8.0 sound: every effect is synthesised with Web Audio (no audio files).
 // iOS only allows audio after a user gesture, so the context is created and
 // resumed on the first touch / key press. Settings persist per device.
-const settings=(()=>{const d={sound:true,volume:.8,haptics:true,exhibitionRounds:1,difficulty:'normal',music:true,musicVolume:.6};
+const settings=(()=>{const d={sound:true,volume:.8,haptics:true,exhibitionRounds:1,difficulty:'normal',music:true,musicVolume:.6,smooth:true};
  try{return Object.assign(d,JSON.parse(localStorage.getItem('links-melee-settings')||'{}'))}catch(e){return d}})();
 function saveSettings(){try{localStorage.setItem('links-melee-settings',JSON.stringify(settings))}catch(e){}}
 const sfx=(()=>{
@@ -622,7 +640,14 @@ const music=(()=>{
  return {play,stop,sync};
 })();
 window.onAudioReady=()=>music.sync();
-const canvas=document.getElementById('game'),c=canvas.getContext('2d');const animatedArenaGif=document.getElementById('animatedArenaGif');c.imageSmoothingEnabled=false;const W=960,H=540,WORLD=1720,platforms=[{x:375,y:345,w:235,h:16},{x:1110,y:345,w:235,h:16},{x:175,y:263,w:240,h:13},{x:730,y:267,w:250,h:13},{x:1325,y:263,w:215,h:13}];
+const canvas=document.getElementById('game'),c=canvas.getContext('2d');
+// Backing store matches the display (up to 2x the 960x540 game space), so
+// sprites and text are drawn at screen resolution instead of being stretched.
+let RES=1;
+function resizeBacking(){
+ const want=Math.max(1,Math.min(2,Math.round((canvas.clientWidth||W)*(window.devicePixelRatio||1)/W)));
+ if(want!==RES||canvas.width!==W*want){RES=want;canvas.width=W*want;canvas.height=H*want;c.imageSmoothingEnabled=false}
+}const animatedArenaGif=document.getElementById('animatedArenaGif');c.imageSmoothingEnabled=false;const W=960,H=540,WORLD=1720,platforms=[{x:375,y:345,w:235,h:16},{x:1110,y:345,w:235,h:16},{x:175,y:263,w:240,h:13},{x:730,y:267,w:250,h:13},{x:1325,y:263,w:215,h:13}];
 // v1.7.0: the floor is per arena, matched to where each artwork's ground is.
 let FLOOR=438;let camera=0;
 // v1.10.1: one size multiplier for every fighter, applied around the feet,
@@ -641,7 +666,7 @@ const stages=[
  {opponent:'RUINS CHALLENGER',pool:['IMG_3335.GIF','IMG_3341.GIF','IMG_3342.GIF','IMG_3418.GIF']},
  {opponent:'RED SWORDSMAN',pool:['IMG_3350.GIF','IMG_3348.GIF','IMG_3429.GIF']},
  {opponent:'HOODED DARK SWORDSMAN',pool:['IMG_3355.GIF','IMG_3353.GIF','IMG_3414.GIF','IMG_3422.GIF']},
- {opponent:'SHADOW LINK',pool:['throne_room_flickering_candles.png','IMG_3431.GIF','IMG_3357.GIF']}
+ {opponent:'DARK LINK',pool:['throne_room_flickering_candles.png','IMG_3431.GIF','IMG_3357.GIF']}
 ];
 for(const st of stages){st.pool=st.pool.map(file=>({name:arenaNames[file]||file,background:'Stages/'+file,source:file,animated:true}));st.current=st.pool[0]}
 function drawTournamentArena(i){
@@ -755,7 +780,8 @@ function arenaImageLoaded(){
  backdropKey='';positionAnimatedBackdrop();
 }
 animatedArenaGif.addEventListener('load',arenaImageLoaded);
-window.addEventListener('resize',positionAnimatedBackdrop);
+window.addEventListener('resize',()=>{resizeBacking();positionAnimatedBackdrop()});
+resizeBacking();
 window.addEventListener('orientationchange',positionAnimatedBackdrop);
 if(window.visualViewport)window.visualViewport.addEventListener('resize',positionAnimatedBackdrop);
 function stagePlatforms(){
@@ -810,7 +836,7 @@ function endRound(result,byTime){
   if(record)try{localStorage.setItem('links-melee-best-clear',String(tourneyFrames))}catch(e){}
   clearInfo={time:tourneyFrames,best:record?tourneyFrames:best,record};
  }
- else notice=(byTime?'TIME — ':'')+(result==='win'?'SWORDSMAN':stages[opponentIndex].opponent)+' TAKES ROUND '+roundNum;
+ if(!matchOver)notice=(byTime?'TIME — ':'')+(result==='win'?'LINK':stages[opponentIndex].opponent)+' TAKES ROUND '+roundNum;
 }
 function startStage(){
  FLOOR=arenaFloor();
@@ -1113,7 +1139,7 @@ function drawSlashFrames(a,shadow=false){
  // Use a single, stable scale for every frame to prevent size pumping.
  const scale=2.05;
  const footX=71,footY=115;
- c.drawImage(im,-footX*scale,-footY*scale,142*scale,127*scale);
+ drawSprite(im,-footX*scale,-footY*scale,142*scale,127*scale);
  drawHitFlash(a,slashFrames[frame],-footX*scale,-footY*scale,142*scale,127*scale);
  c.restore();return true;
 }
@@ -1145,7 +1171,52 @@ function flashImage(im){
 function drawHitFlash(a,src,...args){
  if(!(a.flash>0))return;
  const prev=c.globalAlpha;c.globalAlpha=Math.min(.8,a.flash/6*.85);
- c.drawImage(flashImage(src),...args);c.globalAlpha=prev;
+ drawSprite(flashImage(src),...args);c.globalAlpha=prev;
+}
+// v1.17.0 sprite fidelity. Each sprite region is cropped to its visible
+// pixels, upscaled 4x with Scale2x applied twice (a pixel-art upscaler that
+// turns stair-stepped edges into clean diagonals and curves), reduced to 3x
+// with high-quality filtering, cached, and drawn with smoothing. Built once
+// per frame, on first use or during idle time.
+const UPS=new WeakMap();
+function epx2(src,w,h){
+ const out=new Uint32Array(w*h*4),W2=w*2;
+ for(let y=0;y<h;y++){const ym=y?y-1:0,yp=y<h-1?y+1:y;
+  for(let x=0;x<w;x++){const P=src[y*w+x],A=src[ym*w+x],D=src[yp*w+x],C=src[y*w+(x?x-1:0)],B=src[y*w+(x<w-1?x+1:x)];
+   const o=(y*2)*W2+x*2;
+   out[o]=(C===A&&C!==D&&A!==B)?A:P;out[o+1]=(A===B&&A!==C&&B!==D)?B:P;
+   out[o+W2]=(D===C&&D!==B&&C!==A)?C:P;out[o+W2+1]=(B===D&&B!==A&&D!==C)?D:P}}
+ return out;
+}
+function buildUpscaled(src,sx,sy,sw,sh){
+ const t=document.createElement('canvas');t.width=sw;t.height=sh;const g=t.getContext('2d',{willReadFrequently:true});
+ g.drawImage(src,sx,sy,sw,sh,0,0,sw,sh);const id=g.getImageData(0,0,sw,sh),p=new Uint32Array(id.data.buffer);
+ let x0=sw,y0=sh,x1=-1,y1=-1;
+ for(let y=0;y<sh;y++)for(let x=0;x<sw;x++){const i=y*sw+x;if(p[i]>>>24){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y}else p[i]=0}
+ if(x1<0)return {empty:true};
+ const cx=Math.max(0,x0-1),cy=Math.max(0,y0-1),cw=Math.min(sw,x1+2)-cx,ch=Math.min(sh,y1+2)-cy;
+ let a=new Uint32Array(cw*ch);for(let y=0;y<ch;y++)a.set(p.subarray((y+cy)*sw+cx,(y+cy)*sw+cx+cw),y*cw);
+ a=epx2(a,cw,ch);a=epx2(a,cw*2,ch*2);
+ const c4=document.createElement('canvas');c4.width=cw*4;c4.height=ch*4;c4.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(a.buffer),cw*4,ch*4),0,0);
+ const cv=document.createElement('canvas');cv.width=cw*3;cv.height=ch*3;const g3=cv.getContext('2d');g3.imageSmoothingEnabled=true;g3.imageSmoothingQuality='high';g3.drawImage(c4,0,0,cw*3,ch*3);
+ return {cv,cx,cy,cw,ch};
+}
+function upscaled(src,sx,sy,sw,sh){
+ let m=UPS.get(src);if(!m){m=new Map();UPS.set(src,m)}
+ const key=sx+','+sy+','+sw+','+sh;let e=m.get(key);
+ if(e===undefined){try{e=buildUpscaled(src,sx,sy,sw,sh)}catch(err){e=null}m.set(key,e)}
+ return e;
+}
+// Drop-in for c.drawImage(src,dx,dy,dw,dh) / (src,sx,sy,sw,sh,dx,dy,dw,dh).
+function drawSprite(src,...a){
+ let sx,sy,sw,sh,dx,dy,dw,dh;
+ if(a.length===4){sx=0;sy=0;sw=src.naturalWidth||src.width;sh=src.naturalHeight||src.height;[dx,dy,dw,dh]=a}else [sx,sy,sw,sh,dx,dy,dw,dh]=a;
+ const ready=src&&(src.complete===undefined||src.complete)&&sw>0&&sh>0;
+ const e=settings.smooth&&ready?upscaled(src,Math.round(sx),Math.round(sy),Math.round(sw),Math.round(sh)):null;
+ if(!e){c.drawImage(src,sx,sy,sw,sh,dx,dy,dw,dh);return}
+ if(e.empty)return;
+ const kx=dw/sw,ky=dh/sh,ps=c.imageSmoothingEnabled;c.imageSmoothingEnabled=true;c.imageSmoothingQuality='high';
+ c.drawImage(e.cv,dx+e.cx*kx,dy+e.cy*ky,e.cw*kx,e.ch*ky);c.imageSmoothingEnabled=ps;
 }
 const frameBoundsCache=new WeakMap();
 function getFrameBounds(im,row,col,cw,ch){
@@ -1321,6 +1392,27 @@ function trimApprovedHalo(image,w,h,role){
   else d[p+3]=Math.min(d[p+3],42);
  }
 }
+// v1.17.0 white-matte fringe: the sheet was drawn on white, so outline pixels
+// are pale blends of the sprite and the background. A pale, desaturated pixel
+// on the sprite's edge takes the colour of its darkest solid neighbour (the
+// outline it belongs to), or is cleared if it has none. Bluish blade pixels and
+// saturated hair / skin are left alone.
+function defringeApproved(image,w,h){
+ const d=image.data,src=new Uint8ClampedArray(d);const A=i=>src[i*4+3];
+ const lum=i=>.299*src[i*4]+.587*src[i*4+1]+.114*src[i*4+2];
+ const pale=i=>{const r=src[i*4],g=src[i*4+1],b=src[i*4+2],hi=Math.max(r,g,b),lo=Math.min(r,g,b);
+  return lum(i)>150&&(hi===0?0:(hi-lo)/hi)<.38&&r+6>=b};
+ for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+  const i=y*w+x;if(!A(i))continue;
+  let edge=false;for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,ny=y+dy;if(nx<0||ny<0||nx>=w||ny>=h||A(ny*w+nx)<40){edge=true;break}}
+  if(!edge||!(pale(i)||(A(i)<200&&lum(i)>140)))continue;
+  let best=-1,bl=999;
+  for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){if(!dx&&!dy)continue;const nx=x+dx,ny=y+dy;if(nx<0||ny<0||nx>=w||ny>=h)continue;const j=ny*w+nx;
+   if(A(j)<200||pale(j))continue;const l=lum(j);if(l<bl){bl=l;best=j}}
+  if(best<0||bl>150){d[i*4+3]=0;continue}
+  d[i*4]=src[best*4];d[i*4+1]=src[best*4+1];d[i*4+2]=src[best*4+2];d[i*4+3]=255;
+ }
+}
 function buildApprovedFrames(){
  if(!approvedSheet.naturalWidth)return;
  const sx=approvedSheet.naturalWidth/1536,sy=approvedSheet.naturalHeight/1024;
@@ -1358,7 +1450,7 @@ function buildApprovedFrames(){
       d[p+3]=Math.min(d[p+3],Math.max(0,Math.round((246-lo)*4.2)));
     }
     const valid=cleanApprovedPixels(image,raw.width,raw.height);
-    if(valid)trimApprovedHalo(image,raw.width,raw.height,role);
+    if(valid){trimApprovedHalo(image,raw.width,raw.height,role);defringeApproved(image,raw.width,raw.height);defringeApproved(image,raw.width,raw.height)}
     rc.putImageData(image,0,0);
     if(valid){
      // Both approved fighters stand on their visible boot pixels. The red
@@ -1392,7 +1484,7 @@ function drawApproved(a,role,action,progress){
  if(a.inv>0&&a.inv%4<2)c.globalAlpha=.6;
  // The dark fighter is anchored by his visible boot pixels, not the
  // invisible padding below the sprite on the source reference sheet.
- c.imageSmoothingEnabled=false;c.drawImage(im,-dw/2,-foot*scale,dw,dh);
+ c.imageSmoothingEnabled=false;drawSprite(im,-dw/2,-foot*scale,dw,dh);
  drawHitFlash(a,im,-dw/2,-foot*scale,dw,dh);
  c.restore();return true;
 }
@@ -1431,7 +1523,7 @@ function drawAtlas(a,dark,action,progress){
  if(dark&&opponentIndex===4){
   // Recolor the *pixels*, rather than relying on canvas filter (unreliable in iOS WebViews).
   const darkSheet=getShadowAtlas(im);
-  c.drawImage(darkSheet,sx,sy,cellW,cellH,-76,-166+footLift,152,166);
+  drawSprite(darkSheet,sx,sy,cellW,cellH,-76,-166+footLift,152,166);
   drawHitFlash(a,im,sx,sy,cellW,cellH,-76,-166+footLift,152,166);
  }else if(dark&&(opponentIndex===1||opponentIndex===2||opponentIndex===3)){
   // One constant scale per fighter, set so the idle pose stands 105 px tall.
@@ -1443,10 +1535,10 @@ function drawAtlas(a,dark,action,progress){
   const cx=cellBounds?(cellBounds.x+cellBounds.w/2-sx)*k:dw/2;
   // Centre on the body rather than the cell for frames that lean far forward.
   const anchorX=action==='idle'||action==='walk'||action==='block'||action==='crouch'?cx:dw/2;
-  c.drawImage(im,sx,sy,cellW,cellH,-anchorX,-dh+lift,dw,dh);
+  drawSprite(im,sx,sy,cellW,cellH,-anchorX,-dh+lift,dw,dh);
   drawHitFlash(a,im,sx,sy,cellW,cellH,-anchorX,-dh+lift,dw,dh);
  }else{
-  c.drawImage(im,sx,sy,cellW,cellH,-76,-166+footLift,152,166);
+  drawSprite(im,sx,sy,cellW,cellH,-76,-166+footLift,152,166);
   drawHitFlash(a,im,sx,sy,cellW,cellH,-76,-166+footLift,152,166);
  }
  c.restore();return true;
@@ -1478,7 +1570,7 @@ const AI_PROFILES=[
  // 4 Hooded Dark Swordsman: an executioner. Long lunges and heavies from
  // range, breaks guards that turtle, steps away to reset spacing.
  {style:'EXECUTIONER',react:15,block:.45,punish:.6,antiAir:.35,aggro:.55,range:1.35,retreat:.25,jump:.04,walk:2.3,windup:[18,10],recover:[30,16],combo:1,mix:{lunge:4,heavy:4,downward:2},special:.75,guardCrush:true},
- // 5 Shadow Link: the mirror. Near-instant reads, punishes, anti-airs,
+ // 5 Dark Link: the mirror. Near-instant reads, punishes, anti-airs,
  // feints, jumps in, and spends meter. The final test.
  {style:'SHADOW',react:7,block:.8,punish:.92,antiAir:.75,aggro:.72,range:1.05,retreat:.2,jump:.07,walk:3.3,windup:[6,6],recover:[11,10],combo:3,mix:{light:5,downward:2,lunge:2,dash:2,low:1,heavy:2,rising:1},special:1,feint:.18}
 ];
@@ -1504,7 +1596,7 @@ const rnd=n=>Math.floor(Math.random()*(n+1));
 function pickMove(P){const e=Object.entries(P.mix);let r=Math.random()*e.reduce((t,[,w])=>t+w,0);for(const [k,w] of e)if((r-=w)<0)return k;return 'light'}
 function aiStrike(kind,dir){
  if(foe.ground===-1)kind='aerial';
- // Shadow Link mirrors the player's string and dash thrust.
+ // Dark Link mirrors the player's string and dash thrust.
  if(opponentIndex===4&&kind==='light'&&foe.lastKind==='light'&&foe.lastKindT>0)kind='combo2';
  else if(opponentIndex===4&&kind==='light'&&foe.lastKind==='combo2'&&foe.lastKindT>0)kind='combo3';
  foe.lastKind=kind;foe.lastKindT=40;
@@ -1820,10 +1912,10 @@ function darkSprite(source){
  g.globalCompositeOperation='destination-in';g.drawImage(source,0,0);
  darkSpriteCache.set(source,layer);return layer;
 }
-const SHEET_MOVES={"idle":{"dir":1,"f":[[10,1162,54,1216],[57,1162,102,1216],[106,1163,151,1216],[160,1164,205,1216],[209,1164,254,1216],[261,1163,305,1216]]},"walk":{"dir":1,"f":[[305,144,351,199],[355,143,396,198],[402,144,444,198],[450,143,496,198],[502,144,555,199],[561,145,611,198]]},"run":{"dir":1,"f":[[27,402,80,452],[87,403,137,456],[144,405,191,456],[198,404,244,456],[251,402,303,452],[310,403,358,455],[365,405,412,455],[419,404,467,455],[501,402,554,452],[561,403,611,456],[618,405,661,456],[668,404,710,456],[717,402,769,452],[776,403,824,455],[831,405,874,455],[881,404,925,455]]},"jump":{"dir":-1,"f":[[794,557,835,621]]},"crouch":{"dir":-1,"f":[[662,627,717,675],[727,633,782,675],[792,638,848,675],[858,638,913,675],[923,638,978,675]]},"block":{"dir":1,"f":[[205,2374,264,2416]]},"combo2":{"dir":1,"f":[[22,1271,70,1325],[75,1271,150,1325],[156,1272,259,1325]]},"combo3":{"dir":1,"f":[[481,1251,543,1325],[552,1246,641,1325],[647,1275,735,1325],[741,1275,817,1325]]},"lunge":{"dir":1,"f":[[31,1335,75,1388],[81,1336,127,1388],[133,1336,179,1388],[182,1338,265,1388],[275,1338,359,1388],[365,1338,449,1388],[455,1338,539,1388],[545,1335,589,1388]]},"dash":{"dir":1,"f":[[17,1444,61,1496],[65,1445,149,1496],[158,1445,240,1496],[248,1445,330,1496],[338,1445,420,1496]]},"rising":{"dir":1,"f":[[309,1058,367,1126],[368,1066,421,1127],[434,1049,476,1127],[480,1077,548,1127],[552,1074,593,1144],[597,1072,646,1132]]},"downstab":{"dir":1,"f":[[309,2045,367,2113],[383,2045,432,2113],[427,2060,474,2113],[484,2063,525,2118],[536,2056,577,2120],[702,2073,760,2134],[768,2041,797,2134]]},"special":{"dir":1,"f":[[31,2251,79,2304],[85,2250,135,2304],[141,2250,174,2304],[180,2250,235,2304],[241,2250,292,2304],[298,2250,349,2304],[355,2250,406,2304],[412,2250,466,2304],[472,2250,530,2304],[536,2250,586,2304],[592,2251,641,2304],[645,2252,701,2304],[705,2254,761,2304],[765,2252,821,2304],[825,2249,881,2304],[885,2254,941,2304],[945,2254,1001,2304]]},"bash":{"dir":1,"f":[[414,2366,439,2413],[463,2369,488,2413],[510,2369,535,2413],[555,2368,582,2412],[627,2371,684,2420],[706,2350,733,2420],[753,2376,808,2422],[811,2376,855,2420]]},"hit":{"dir":1,"f":[[746,719,788,769],[797,717,834,770]]},"knock":{"dir":1,"f":[[842,722,904,769],[917,725,987,761]]},"getup":{"dir":-1,"f":[[789,805,842,833],[848,800,912,834],[914,796,966,833],[973,787,1025,832]]}};
+const SHEET_MOVES={"idle":{"dir":1,"f":[[10,1162,54,1216],[57,1162,102,1216],[106,1163,151,1216],[160,1164,205,1216],[209,1164,254,1216],[261,1163,305,1216]]},"walk":{"dir":1,"f":[[305,144,351,199],[355,143,396,198],[402,144,444,198],[450,143,496,198],[502,144,555,199],[561,145,611,198]]},"run":{"dir":1,"f":[[27,402,80,452],[87,403,137,456],[144,405,191,456],[198,404,244,456],[251,402,303,452],[310,403,358,455],[365,405,412,455],[419,404,467,455],[501,402,554,452],[561,403,611,456],[618,405,661,456],[668,404,710,456],[717,402,769,452],[776,403,824,455],[831,405,874,455],[881,404,925,455]]},"jump":{"dir":-1,"f":[[794,557,835,621]]},"crouch":{"dir":-1,"f":[[662,627,717,675],[727,633,782,675],[792,638,848,675],[858,638,913,675],[923,638,978,675]]},"block":{"dir":1,"f":[[205,2374,264,2416]]},"combo2":{"dir":1,"f":[[22,1271,70,1325],[75,1271,150,1325],[156,1272,259,1325]]},"combo3":{"dir":1,"f":[[481,1251,543,1325],[552,1246,641,1325],[647,1275,735,1325],[741,1275,817,1325]]},"lunge":{"dir":1,"f":[[31,1335,75,1388],[81,1336,127,1388],[133,1336,179,1388],[182,1338,265,1388],[275,1338,359,1388],[365,1338,449,1388],[455,1338,539,1388],[545,1335,589,1388]]},"dash":{"dir":1,"f":[[17,1444,61,1496],[65,1445,149,1496],[158,1445,240,1496],[248,1445,330,1496],[338,1445,420,1496]]},"rising":{"dir":1,"f":[[309,1058,367,1126],[368,1066,421,1127],[434,1049,476,1127],[480,1077,548,1127],[552,1074,593,1144],[597,1072,646,1132]]},"downstab":{"dir":1,"f":[[309,2045,367,2113],[383,2045,432,2113],[427,2060,474,2113],[484,2063,525,2118],[536,2056,577,2120],[702,2073,760,2134],[768,2041,797,2134]]},"special":{"dir":1,"f":[[31,2251,79,2304],[85,2250,135,2304],[141,2250,174,2304],[180,2250,235,2304],[241,2250,292,2304],[298,2250,349,2304],[355,2250,406,2304],[412,2250,466,2304],[472,2250,530,2304],[536,2250,586,2304],[592,2251,641,2304],[645,2252,701,2304],[705,2254,761,2304],[765,2252,821,2304],[825,2249,881,2304],[885,2254,941,2304],[945,2254,1001,2304]]},"bash":{"dir":1,"f":[[414,2366,439,2413],[463,2369,488,2413],[510,2369,535,2413],[555,2368,582,2412],[627,2371,684,2420],[706,2350,733,2420],[753,2376,808,2422],[811,2376,855,2420]]},"hit":{"dir":1,"f":[[746,719,788,769],[797,717,834,770]]},"knock":{"dir":1,"f":[[842,722,904,769],[917,725,987,761]]},"getup":{"dir":-1,"f":[[789,805,842,833],[848,800,912,834],[914,796,966,833],[973,787,1025,832]]},"victory":{"dir":1,"f":[[768,2041,797,2134]]}};
 // v1.15.0 Swordsman sheet (IMG_3225, same artist as the hero atlas). Frames
 // are cut once at load, background keyed out, and anchored on the boots;
-// Shadow Link reuses them through the same pixel recolour as his atlas.
+// Dark Link reuses them through the same pixel recolour as his atlas.
 const swordSheet=new Image();swordSheet.src='IMG_3225.PNG';
 const sheetFrames={},SHEET_SCALE=1.86;
 function buildSheetFrames(){
@@ -1843,7 +1935,14 @@ function buildSheetFrames(){
   });
  }
 }
-swordSheet.onload=buildSheetFrames;
+swordSheet.onload=()=>{buildSheetFrames();warmUpscales()};
+// Pre-build upscaled frames a few at a time while idle so the first use of a
+// pose never stalls a fight.
+function warmUpscales(){
+ const q=[];for(const seq of Object.values(sheetFrames))for(const f of seq)q.push(f.cv);
+ const step=()=>{const t=performance.now();while(q.length&&performance.now()-t<6){const cv=q.shift();if(settings.smooth)upscaled(cv,0,0,cv.width,cv.height)}if(q.length)setTimeout(step,30)};
+ setTimeout(step,300);
+}
 function sheetFighter(dark){return !dark||opponentIndex===4}
 function drawSheet(a,dark){
  if(!swordSheet.complete||!sheetFrames.idle)return false;
@@ -1853,7 +1952,7 @@ function drawSheet(a,dark){
   if(!a.ko&&a.stun<14&&!airborne){name='getup';p=Math.min(.99,(14-a.stun)/14)}
   else if(airborne){name='knock';p=a.vy<2?0:.99}
   else{name='knock';p=.99}
- }else if(a.victory)return false;
+ }else if(a.victory){name='victory'} // sword held straight up
  else if(a.hurt>0&&!attacking){name='hit';p=a.hurt>10?0:.99}
  else if(!dark&&attackHeld&&!attacking&&round==='play')return false;
  else if(attacking){
@@ -1874,7 +1973,7 @@ function drawSheet(a,dark){
  if(a.face*SHEET_MOVES[name].dir<0)c.scale(-1,1);
  if(a.inv>0&&a.inv<99999&&a.inv%4<2&&!(a.down>0))c.globalAlpha=.6;
  c.imageSmoothingEnabled=false;
- c.drawImage(src,-f.ax*K,-f.ay*K,f.w*K,f.h*K);
+ drawSprite(src,-f.ax*K,-f.ay*K,f.w*K,f.h*K);
  drawHitFlash(a,f.cv,-f.ax*K,-f.ay*K,f.w*K,f.h*K);
  if(a.guardBreak>0){c.scale(a.face*SHEET_MOVES[name].dir<0?-1:1,1);c.fillStyle='#ffe6a3';c.font='bold 14px system-ui';c.textAlign='center';c.fillText('GUARD BREAK',0,-163)}
  c.restore();return true;
@@ -1945,7 +2044,7 @@ function fighterDraw(a,dark){
  c.fillStyle='#0b0e1b85';c.beginPath();c.ellipse(0,2,38,7,0,0,Math.PI*2);c.fill();
  // Render authored poses at a fixed height and ground anchor. No extra swords,
  // squashing, rotation or frame blending that deforms the illustrations.
- c.drawImage(dark?darkSprite(im):im,-w/2,-h,w,h);
+ drawSprite(dark?darkSprite(im):im,-w/2,-h,w,h);
  if(a.guardBreak>0){c.fillStyle='#ffe6a3';c.font='bold 14px system-ui';c.textAlign='center';c.fillText('GUARD BREAK',0,-163)}
  c.restore();
 }
@@ -1988,7 +2087,7 @@ function drawStage(){
 function fmtTime(frames){const t=Math.round(frames/60);return Math.floor(t/60)+':'+String(t%60).padStart(2,'0')}
 function drawVS(){
  const t=190-phaseTick,slide=Math.min(1,t/22),ease=1-Math.pow(1-slide,3);
- c.save();c.setTransform(1,0,0,1,0,0);
+ c.save();c.setTransform(RES,0,0,RES,0,0);
  c.fillStyle='#07090f';c.fillRect(0,0,W,H);
  // Split panels slide in from each side.
  c.save();c.translate(-(1-ease)*520,0);c.fillStyle='#173524';c.beginPath();c.moveTo(0,0);c.lineTo(530,0);c.lineTo(430,H);c.lineTo(0,H);c.fill();c.restore();
@@ -2002,7 +2101,7 @@ function drawVS(){
  }
  const name=stages[opponentIndex].opponent;
  c.globalAlpha=ease;
- text('SWORDSMAN',250,488,34,'#b8f0a8');text(name,710,488,name.length>16?26:34,'#e4baff');
+ text('LINK',250,488,34,'#b8f0a8');text(name,710,488,name.length>16?26:34,'#e4baff');
  text('MATCH '+(stageIndex+1)+' OF '+stages.length,480,44,22,'#cfc8b6');text(currentArena().name,480,74,18,'#9d978a');
  c.globalAlpha=1;
  const pop=Math.min(1,Math.max(0,(t-18)/10));
@@ -2013,6 +2112,7 @@ function drawVS(){
  c.restore();
 }
 function render(){
+ c.setTransform(RES,0,0,RES,0,0);
  // Without a full-screen canvas background, erase the preceding combat
  // frame so characters, particles and the HUD never leave ghost images.
  if(animatedArenaActive()){c.clearRect(0,0,W,H);positionAnimatedBackdrop()}
@@ -2042,7 +2142,7 @@ function render(){
  for(const [a,x,al] of [[player,28,'left'],[foe,932,'right']])if(a.comboShow>0&&a.comboHits>=2){
   c.globalAlpha=Math.min(1,a.comboShow/15);text(a.comboHits+' HITS',x,a===player&&player.meter>=100?134:118,24+Math.min(10,a.comboHits*2),'#ffd877',al);c.globalAlpha=1;
  }
- text('SWORDSMAN',28,85,18,'#f8e0ad','left');text(stages[opponentIndex].opponent,932,85,18,'#e4baff','right');
+ text('LINK',28,85,18,'#f8e0ad','left');text(stages[opponentIndex].opponent,932,85,18,'#e4baff','right');
  text(String(Math.max(0,Math.ceil(clock/60))),480,48,38);
  // Round markers either side of the clock (best-of-3 shows two per side).
  if(roundsToWin>1)for(let i=0;i<roundsToWin;i++){
